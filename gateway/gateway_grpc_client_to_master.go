@@ -41,6 +41,7 @@ func (gs *gatewayServer) registerGatewayAtMasterServer() error {
 	}
 
 	// gs.testPut()
+	gs.testTcpPut()
 
 	select {}
 

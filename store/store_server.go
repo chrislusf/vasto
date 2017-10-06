@@ -35,10 +35,10 @@ func RunStore(option *StoreOption) {
 	fmt.Printf("vasto store starts on %v:%d\n", *option.Host, *option.Port)
 
 	m := cmux.New(listener)
-	grpcListener := m.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
+	// grpcListener := m.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
 	tcpListener := m.Match(cmux.Any())
 
-	go ss.serveGrpc(grpcListener)
+	// go ss.serveGrpc(grpcListener)
 	go ss.serveTcp(tcpListener)
 
 	go ss.registerAtMasterServer()

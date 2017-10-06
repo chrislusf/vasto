@@ -37,7 +37,7 @@ func (gs *gatewayServer) testTcpPut() error {
 	}
 
 	start := time.Now()
-	N := int64(100000)
+	N := int64(1000000)
 
 	for i := int64(0); i < N; i++ {
 		_, err = sendRequest(conn, request)
@@ -48,7 +48,7 @@ func (gs *gatewayServer) testTcpPut() error {
 	}
 
 	taken := time.Now().Sub(start)
-	fmt.Printf("%d put average taken %d ns/op", N, taken.Nanoseconds()/N)
+	fmt.Printf("%d put average taken %v %d ns/op", N, taken, taken.Nanoseconds()/N)
 
 	return nil
 }

@@ -36,37 +36,51 @@ func (ss *storeServer) serveTcp(listener net.Listener) {
 
 func (ss *storeServer) handleConnection(conn net.Conn) {
 
+	for {
+		if err := ss.handleRequest(conn); err != nil {
+			log.Printf("handleRequest: %v", err)
+			return
+		}
+	}
+
+}
+
+func (ss *storeServer) handleRequest(conn net.Conn) error {
+
 	var input, output []byte
 	var err error
 
 	input, err = util.ReadMessage(conn)
 
 	if err != nil {
-		log.Printf("Failed to read command:%v", err)
-		return
+		return fmt.Errorf("read message: %v", err)
 	}
 
 	request := &pb.Request{}
 	if err = proto.Unmarshal(input, request); err != nil {
-		log.Printf("Unmarshal error: ", err)
-		return
+		return fmt.Errorf("unmarshal: %v", err)
 	}
 
-	response := ss.handleRequest(request)
+	response := ss.processRequest(request)
 
 	output, err = proto.Marshal(response)
 	if err != nil {
-		log.Printf("Marshal error: ", err)
-		return
+		return fmt.Errorf("marshal: %v", err)
 	}
 
 	err = util.WriteMessage(conn, output)
 	if err != nil {
-		log.Printf("WriteMessage error: ", err)
-		return
+		return fmt.Errorf("write message: %v", err)
 	}
+
+	return nil
+
 }
 
-func (ss *storeServer) handleRequest(command *pb.Request) *pb.Response {
-	return &pb.Response{}
+func (ss *storeServer) processRequest(command *pb.Request) *pb.Response {
+	return &pb.Response{
+		Put: &pb.PutResponse{
+			Ok: true,
+		},
+	}
 }
