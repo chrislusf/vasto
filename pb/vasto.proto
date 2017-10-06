@@ -1,0 +1,120 @@
+syntax = "proto3";
+
+package pb;
+
+service VastoMaster {
+    rpc RegisterStore (stream StoreHeartbeat) returns (stream Ring) {
+        // Stores send the heartbeat to Master
+        // Master remembers the stores
+        // and broadcast to all other stores and clients
+    }
+
+    rpc RegisterGateway (stream GatewayHeartbeat) returns (stream Topology) {
+        // Stores send the heartbeat to Master
+        // Master remembers the stores
+        // and broadcast to all other stores and clients
+    }
+}
+
+//////////////////////////////////////////////////
+// 1. master received request to balance the data
+
+//////////////////////////////////////////////////
+// 1. master received request to balance the data
+message BalanceRequest {
+    string data_center = 1;
+    string store_group = 2;
+    uint32 store_count = 3; // 0 means to use all existing nodes. can not be more than existing stores.
+}
+
+message Topology {
+    repeated Ring rings = 1;
+}
+
+message Ring {
+    string data_center = 1;
+    string store_group = 2;
+    repeated StoreResource stores = 3;
+    repeated Location proxies = 4;
+}
+
+message StoreResource {
+    int32 id = 1;
+    Location location = 2;
+}
+
+message Location {
+    string server = 1;
+    int32 port = 2;
+}
+
+//////////////////////////////////////////////////
+message StoreHeartbeat {
+    StoreResource store = 1;
+}
+
+message GatewayHeartbeat {
+    Location location = 1;
+}
+
+message Empty {
+}
+
+//////////////////////////////////////////////////
+message Request {
+    PutRequest put = 1;
+    GetRequest get = 2;
+    RangeGetRequest range_get = 3;
+    DeleteRequest delete = 4;
+}
+
+message PutRequest {
+    KeyValue key_value = 1;
+    int64 timestamp_ns = 2;
+    uint32 ttl_ms = 3;
+}
+
+message PutResponse {
+    bool ok = 1;
+    string status = 2;
+}
+
+message DeleteRequest {
+    bytes key = 1;
+}
+
+message DeleteResponse {
+    bool ok = 1;
+    string status = 2;
+}
+
+message GetRequest {
+    bytes key = 1;
+}
+
+message GetResponse {
+    bool ok = 1;
+    KeyValue key_value = 2;
+}
+
+message RangeGetRequest {
+    bytes prefix = 1;
+    bytes start_key = 2;
+    uint32 limit = 3;
+}
+
+message RangeGetResponse {
+    repeated KeyValue key_values = 1;
+}
+
+message Response {
+    PutResponse put = 1;
+    GetResponse get = 2;
+    RangeGetResponse range_get = 3;
+    DeleteResponse delete = 4;
+}
+
+message KeyValue {
+    bytes key = 1;
+    bytes value = 2;
+}
