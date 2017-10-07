@@ -5,6 +5,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/util"
 	"github.com/golang/protobuf/proto"
+	"io"
 	"log"
 	"net"
 	"time"
@@ -28,6 +29,8 @@ func (ss *storeServer) serveTcp(listener net.Listener) {
 			}
 			if c, ok := conn.(*net.TCPConn); ok {
 				c.SetKeepAlive(true)
+				c.SetNoDelay(true)
+				c.SetLinger(0)
 			}
 			ss.handleConnection(conn)
 		}()
@@ -38,7 +41,9 @@ func (ss *storeServer) handleConnection(conn net.Conn) {
 
 	for {
 		if err := ss.handleRequest(conn); err != nil {
-			log.Printf("handleRequest: %v", err)
+			if err != io.EOF {
+				log.Printf("handleRequest: %v", err)
+			}
 			return
 		}
 	}
@@ -52,6 +57,9 @@ func (ss *storeServer) handleRequest(conn net.Conn) error {
 
 	input, err = util.ReadMessage(conn)
 
+	if err == io.EOF {
+		return err
+	}
 	if err != nil {
 		return fmt.Errorf("read message: %v", err)
 	}
