@@ -27,7 +27,7 @@ func RunMaster(option *MasterOption) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("vasto master starts on %s\n", *option.Address)
+	fmt.Printf("Vasto master starts on %s\n", *option.Address)
 
 	m := cmux.New(listener)
 	grpcListener := m.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))

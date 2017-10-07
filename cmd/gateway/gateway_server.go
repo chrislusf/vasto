@@ -29,7 +29,7 @@ func RunGateway(option *GatewayOption) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("vasto gateway starts grpc %v:%d\n", *option.Host, *option.GrpcPort)
+		fmt.Printf("Vasto gateway starts grpc %v:%d\n", *option.Host, *option.GrpcPort)
 		go gs.serveGrpc(grpcListener)
 	}
 
