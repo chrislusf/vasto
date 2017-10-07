@@ -17,6 +17,7 @@ type BenchmarkOption struct {
 	DataCenter   *string
 	ClientCount  *int32
 	RequestCount *int32
+	BatchSize    *int32
 }
 
 type benchmarker struct {
@@ -28,20 +29,24 @@ func RunBenchmarker(option *BenchmarkOption) {
 		option: option,
 	}
 
-	b.startThreads("put", func(r *rand.Rand) *pb.Request {
-		request := &pb.Request{
-			Put: &pb.PutRequest{
-				KeyValue: &pb.KeyValue{
-					Key:   make([]byte, 4),
-					Value: make([]byte, 4),
+	b.startThreads("put", func(r *rand.Rand) *pb.Requests {
+		requests := &pb.Requests{}
+		for i := 0; i < int(*b.option.BatchSize); i++ {
+			request := &pb.Request{
+				Put: &pb.PutRequest{
+					KeyValue: &pb.KeyValue{
+						Key:   make([]byte, 4),
+						Value: make([]byte, 4),
+					},
+					TimestampNs: 0,
+					TtlMs:       0,
 				},
-				TimestampNs: 0,
-				TtlMs:       0,
-			},
+			}
+			Uint32toBytes(request.Put.KeyValue.Key, r.Uint32())
+			Uint32toBytes(request.Put.KeyValue.Value, r.Uint32())
+			requests.Requests = append(requests.Requests, request)
 		}
-		Uint32toBytes(request.Put.KeyValue.Key, r.Uint32())
-		Uint32toBytes(request.Put.KeyValue.Value, r.Uint32())
-		return request
+		return requests
 	})
 }
 
@@ -61,7 +66,7 @@ func (b *benchmarker) startThreads(name string, op operation) {
 	wg.Wait()
 
 	elapsed := time.Since(start)
-	speed := float64(*b.option.RequestCount) * 1e9 / float64(elapsed)
+	speed := float64(*b.option.RequestCount**b.option.BatchSize) * 1e9 / float64(elapsed)
 	fmt.Printf("%-10s : %9.1f op/s\n", name, speed)
 
 	var hist = hists[0]
@@ -94,18 +99,21 @@ func (b *benchmarker) startClient(hist *Histogram, op operation) error {
 
 	for i := 0; i < requestCount; i++ {
 		start := time.Now()
-		_, err = pb.SendRequest(conn, op(r))
+		responses, err := pb.SendRequest(conn, op(r))
 		if err != nil {
 			log.Printf("put error: %v", err)
 			return err
 		}
-		hist.Add(float64(time.Since(start) / 1000))
+		taken := float64(time.Since(start) / 1000)
+		for range responses.Responses {
+			hist.Add(taken)
+		}
 	}
 
 	return nil
 }
 
-type operation func(rand *rand.Rand) *pb.Request
+type operation func(rand *rand.Rand) *pb.Requests
 
 func Uint32toBytes(b []byte, v uint32) {
 	for i := uint(0); i < 4; i++ {

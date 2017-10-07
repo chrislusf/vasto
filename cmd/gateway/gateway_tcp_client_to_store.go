@@ -9,7 +9,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 )
 
-func (gs *gatewayServer) testTcpPut() error {
+func (gs *gatewayServer) tcpPut() error {
 
 	address := "localhost:8279"
 
@@ -39,8 +39,11 @@ func (gs *gatewayServer) testTcpPut() error {
 
 	fmt.Printf("%d tcp put test start\n", N)
 
+	requests := &pb.Requests{}
+	requests.Requests = append(requests.Requests, request)
+
 	for i := int64(0); i < N; i++ {
-		_, err = pb.SendRequest(conn, request)
+		_, err = pb.SendRequest(conn, requests)
 		if err != nil {
 			log.Printf("put error: %v", err)
 			return err

@@ -65,6 +65,7 @@ var (
 		UnixSocket:   bench.Flag("socket", "store listening unix socket").Default("").Short('s').String(),
 		ClientCount:  bench.Flag("clientCount", "parallel client count").Default("8").Short('c').Int32(),
 		RequestCount: bench.Flag("requestCount", "total request count").Default("1024000").Short('n').Int32(),
+		BatchSize:    bench.Flag("batchSize", "put requests in batch").Default("1").Short('b').Int32(),
 		Master:       bench.Flag("master", "master address").Default("localhost:8278").String(),
 		DataCenter:   bench.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
 	}

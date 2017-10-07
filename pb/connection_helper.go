@@ -8,7 +8,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-func SendRequest(conn io.ReadWriter, request *Request) (*Response, error) {
+func SendRequest(conn io.ReadWriter, request *Requests) (*Responses, error) {
 
 	var input, output []byte
 	var err error
@@ -28,11 +28,11 @@ func SendRequest(conn io.ReadWriter, request *Request) (*Response, error) {
 		return nil, fmt.Errorf("read response: %v", err)
 	}
 
-	response := &Response{}
-	if err = proto.Unmarshal(output, response); err != nil {
+	responses := &Responses{}
+	if err = proto.Unmarshal(output, responses); err != nil {
 		return nil, fmt.Errorf("unmarshal response: %v", err)
 	}
 
-	return response, nil
+	return responses, nil
 
 }

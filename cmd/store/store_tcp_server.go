@@ -1,6 +1,7 @@
 package store
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/util"
@@ -39,8 +40,10 @@ func (ss *storeServer) serveTcp(listener net.Listener) {
 
 func (ss *storeServer) handleConnection(conn net.Conn) {
 
+	reader := bufio.NewReader(conn)
+
 	for {
-		if err := ss.handleRequest(conn); err != nil {
+		if err := ss.handleRequest(reader, conn); err != nil {
 			if err != io.EOF {
 				log.Printf("handleRequest: %v", err)
 			}
@@ -50,12 +53,12 @@ func (ss *storeServer) handleConnection(conn net.Conn) {
 
 }
 
-func (ss *storeServer) handleRequest(conn net.Conn) error {
+func (ss *storeServer) handleRequest(reader io.Reader, writer io.Writer) error {
 
 	var input, output []byte
 	var err error
 
-	input, err = util.ReadMessage(conn)
+	input, err = util.ReadMessage(reader)
 
 	if err == io.EOF {
 		return err
@@ -64,19 +67,23 @@ func (ss *storeServer) handleRequest(conn net.Conn) error {
 		return fmt.Errorf("read message: %v", err)
 	}
 
-	request := &pb.Request{}
-	if err = proto.Unmarshal(input, request); err != nil {
+	requests := &pb.Requests{}
+	if err = proto.Unmarshal(input, requests); err != nil {
 		return fmt.Errorf("unmarshal: %v", err)
 	}
 
-	response := ss.processRequest(request)
+	responses := &pb.Responses{}
+	for _, request := range requests.Requests {
+		response := ss.processRequest(request)
+		responses.Responses = append(responses.Responses, response)
+	}
 
-	output, err = proto.Marshal(response)
+	output, err = proto.Marshal(responses)
 	if err != nil {
 		return fmt.Errorf("marshal: %v", err)
 	}
 
-	err = util.WriteMessage(conn, output)
+	err = util.WriteMessage(writer, output)
 	if err != nil {
 		return fmt.Errorf("write message: %v", err)
 	}

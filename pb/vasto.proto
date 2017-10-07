@@ -66,6 +66,14 @@ message Empty {
 }
 
 //////////////////////////////////////////////////
+message Requests {
+    repeated Request requests = 1;
+}
+
+message Responses {
+    repeated Response responses = 1;
+}
+
 message Request {
     PutRequest put = 1;
     GetRequest get = 2;
