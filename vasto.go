@@ -64,7 +64,7 @@ var (
 		StoreAddress: bench.Flag("storeTcpAddress", "store listening tcp address").Default("localhost:8279").String(),
 		Network:      bench.Flag("network", "store listening network [tcp|unix]").Default("tcp").String(),
 		ClientCount:  bench.Flag("clientCount", "parallel client count").Default("8").Short('c').Int32(),
-		RequestCount: bench.Flag("requestCount", "parallel client count").Default("1024000").Short('n').Int32(),
+		RequestCount: bench.Flag("requestCount", "total request count").Default("1024000").Short('n').Int32(),
 		Master:       bench.Flag("master", "master address").Default("localhost:8278").String(),
 		DataCenter:   bench.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
 	}

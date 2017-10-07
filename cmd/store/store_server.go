@@ -2,8 +2,10 @@ package store
 
 import (
 	"fmt"
+	"github.com/chrislusf/seaweedfs/weed/util"
 	"log"
 	"net"
+	"os"
 )
 
 type StoreOption struct {
@@ -27,12 +29,14 @@ func RunStore(option *StoreOption) {
 		option: option,
 	}
 
+	startsStatus := "Vasto store starts on"
+
 	if *option.TcpPort != 0 {
 		tcpListener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *option.ListenHost, *option.TcpPort))
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("vasto store starts tcp %v:%d\n", *option.ListenHost, *option.TcpPort)
+		startsStatus += fmt.Sprintf("\n tcp     %v:%d", *option.ListenHost, *option.TcpPort)
 		go ss.serveTcp(tcpListener)
 	}
 
@@ -41,7 +45,7 @@ func RunStore(option *StoreOption) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("vasto store starts grpc %v:%d\n", *option.ListenHost, *option.GrpcPort)
+		startsStatus += fmt.Sprintf("\n grpc    %v:%d", *option.ListenHost, *option.GrpcPort)
 		go ss.serveGrpc(grpcListener)
 	}
 
@@ -50,9 +54,14 @@ func RunStore(option *StoreOption) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("vasto store starts socket %s\n", *option.UnixSocket)
+		startsStatus += fmt.Sprintf("\n socket   %s", *option.UnixSocket)
+		util.OnInterrupt(func() {
+			os.Remove(*option.UnixSocket)
+		})
 		go ss.serveTcp(unixSocketListener)
 	}
+
+	log.Println(startsStatus)
 
 	go ss.registerAtMasterServer()
 
