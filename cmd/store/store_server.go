@@ -11,7 +11,7 @@ type StoreOption struct {
 	Host       *string
 	ListenHost *string
 	TcpPort    *int32
-	UdpPort    *int32
+	UnixSocket *string
 	GrpcPort   *int32
 	Master     *string
 	DataCenter *string
@@ -43,6 +43,15 @@ func RunStore(option *StoreOption) {
 		}
 		fmt.Printf("vasto store starts grpc %v:%d\n", *option.ListenHost, *option.GrpcPort)
 		go ss.serveGrpc(grpcListener)
+	}
+
+	if *option.UnixSocket != "" {
+		unixSocketListener, err := net.Listen("unix", *option.UnixSocket)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("vasto store starts socket %s\n", *option.UnixSocket)
+		go ss.serveTcp(unixSocketListener)
 	}
 
 	go ss.registerAtMasterServer()

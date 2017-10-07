@@ -12,6 +12,7 @@ import (
 
 type BenchmarkOption struct {
 	StoreAddress *string
+	Network      *string
 	Master       *string
 	DataCenter   *string
 	ClientCount  *int32
@@ -38,8 +39,8 @@ func RunBenchmarker(option *BenchmarkOption) {
 				TtlMs:       0,
 			},
 		}
-		// Uint32toBytes(request.Put.KeyValue.Key, r.Uint32())
-		// Uint32toBytes(request.Put.KeyValue.Value, r.Uint32())
+		Uint32toBytes(request.Put.KeyValue.Key, r.Uint32())
+		Uint32toBytes(request.Put.KeyValue.Value, r.Uint32())
 		return request
 	})
 }
@@ -72,9 +73,9 @@ func (b *benchmarker) startThreads(name string, op operation) {
 
 func (b *benchmarker) startClient(hist *Histogram, op operation) error {
 
-	conn, err := net.Dial("tcp", *b.option.StoreAddress)
+	conn, err := net.Dial(*b.option.Network, *b.option.StoreAddress)
 	if err != nil {
-		return fmt.Errorf("dial store %s: %v", *b.option.StoreAddress, err)
+		return fmt.Errorf("dial store %s %s: %v", *b.option.Network, *b.option.StoreAddress, err)
 	}
 	defer conn.Close()
 	conn.SetDeadline(time.Time{})
