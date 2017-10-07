@@ -16,6 +16,11 @@ service VastoMaster {
     }
 }
 
+service VastoStore {
+    rpc Put (PutRequest) returns (PutResponse) {
+    }
+}
+
 //////////////////////////////////////////////////
 // 1. master received request to balance the data
 

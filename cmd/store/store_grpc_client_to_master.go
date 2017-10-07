@@ -30,7 +30,7 @@ func (ss *storeServer) registerAtMasterServer() error {
 		Id: 123,
 		Location: &pb.Location{
 			Server: *ss.option.Host,
-			Port:   int32(*ss.option.Port),
+			Port:   int32(*ss.option.TcpPort),
 		},
 	}
 

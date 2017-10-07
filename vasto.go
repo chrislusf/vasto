@@ -19,9 +19,10 @@ import (
 	"os"
 	"runtime/pprof"
 
-	g "github.com/chrislusf/vasto/gateway"
-	m "github.com/chrislusf/vasto/master"
-	s "github.com/chrislusf/vasto/store"
+	b "github.com/chrislusf/vasto/cmd/benchmark"
+	g "github.com/chrislusf/vasto/cmd/gateway"
+	m "github.com/chrislusf/vasto/cmd/master"
+	s "github.com/chrislusf/vasto/cmd/store"
 	"github.com/chrislusf/vasto/util"
 	"github.com/chrislusf/vasto/util/on_interrupt"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
@@ -38,8 +39,11 @@ var (
 	store       = app.Command("store", "Start a vasto store")
 	storeOption = &s.StoreOption{
 		Dir:        store.Flag("dir", "folder to store data").Default(os.TempDir()).String(),
-		Host:       store.Flag("host", "store listening host address.").Default(util.GetLocalIP()).String(),
-		Port:       store.Flag("port", "store listening port").Default("8279").Int32(),
+		Host:       store.Flag("host", "store host address").Default(util.GetLocalIP()).String(),
+		ListenHost: store.Flag("listenHost", "store listening host address").Default("").String(),
+		TcpPort:    store.Flag("tcpPort", "store listening tcp port").Default("8279").Int32(),
+		GrpcPort:   store.Flag("grpcPort", "store listening grpc port").Default("8280").Int32(),
+		UdpPort:    store.Flag("udpPort", "store listening udp port").Default("8281").Int32(),
 		Master:     store.Flag("master", "master address").Default("localhost:8278").String(),
 		DataCenter: store.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
 	}
@@ -47,12 +51,22 @@ var (
 
 	gateway       = app.Command("gateway", "Start a vasto gateway")
 	gatewayOption = &g.GatewayOption{
-		Host:       gateway.Flag("host", "store listening host address.").Default(util.GetLocalIP()).String(),
-		Port:       gateway.Flag("port", "gateway listening port").Default("8280").Int32(),
+		Host:       gateway.Flag("host", "store listening host address.").Default("").String(),
+		TcpPort:    gateway.Flag("tcpPort", "gateway listening port").Default("8282").Int32(),
+		GrpcPort:   gateway.Flag("grpcPort", "store listening grpc port").Default("8283").Int32(),
 		Master:     gateway.Flag("master", "master address").Default("localhost:8278").String(),
 		DataCenter: gateway.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
 	}
 	gatewayProfile = gateway.Flag("cpuprofile", "cpu profile output file").Default("").String()
+
+	bench           = app.Command("bench", "Start a vasto benchmark")
+	benchmarkOption = &b.BenchmarkOption{
+		StoreAddress: bench.Flag("storeTcpAddress", "store listening tcp address").Default("localhost:8279").String(),
+		ClientCount:  bench.Flag("clientCount", "parallel client count").Default("8").Short('c').Int32(),
+		RequestCount: bench.Flag("requestCount", "parallel client count").Default("1024000").Short('n').Int32(),
+		Master:       bench.Flag("master", "master address").Default("localhost:8278").String(),
+		DataCenter:   bench.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
+	}
 )
 
 func main() {
@@ -60,9 +74,10 @@ func main() {
 	cmd := kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	cpuProfile := *storeProfile + *gatewayProfile
-	println("profiling to", cpuProfile)
 
 	if cpuProfile != "" {
+		println("profiling to", cpuProfile)
+
 		f, err := os.Create(cpuProfile)
 		if err != nil {
 			log.Fatal(err)
@@ -86,6 +101,9 @@ func main() {
 
 	case gateway.FullCommand():
 		g.RunGateway(gatewayOption)
+
+	case bench.FullCommand():
+		b.RunBenchmarker(benchmarkOption)
 
 	}
 }

@@ -29,7 +29,7 @@ func (gs *gatewayServer) registerGatewayAtMasterServer() error {
 	gatewayHeartbeat := &pb.GatewayHeartbeat{
 		Location: &pb.Location{
 			Server: *gs.option.Host,
-			Port:   int32(*gs.option.Port),
+			Port:   int32(*gs.option.GrpcPort),
 		},
 	}
 
@@ -41,7 +41,7 @@ func (gs *gatewayServer) registerGatewayAtMasterServer() error {
 	}
 
 	// gs.testPut()
-	gs.testTcpPut()
+	// gs.testTcpPut()
 
 	select {}
 
