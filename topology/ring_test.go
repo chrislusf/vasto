@@ -54,24 +54,26 @@ func TestHashing(t *testing.T) {
 	ring2 := createRing(16)
 
 	var count = 500000
-	var moved int
+	var moved, movedInRing1 int
+	ring1Size := ring1.Size()
 
 	for n := 0; n < count; n++ {
 		x := ring1.FindBucket(uint64(n))
 		y := ring2.FindBucket(uint64(n))
 		if x != y {
 			moved += 1
+			if y < ring1Size {
+				movedInRing1 += 1
+			}
 		}
 	}
 
+	printMovedStats("moved", moved, count)
+	printMovedStats("movedInRing1", movedInRing1, count)
+
 	actualMovedPercentage := float64(100*moved) / float64(count)
 	expectedMovePercentage := 100 * math.Abs(float64(ring2.Size()-ring1.Size())) / float64(ring2.Size())
-
-	fmt.Printf("moved: %d, percent: %f%% expected %f%%\n",
-		moved,
-		actualMovedPercentage,
-		expectedMovePercentage,
-	)
+	fmt.Printf("expected %f%%\n", expectedMovePercentage)
 
 	assert.True(t, actualMovedPercentage < expectedMovePercentage+0.002)
 }
@@ -82,4 +84,14 @@ func createRing(hosts int) Ring {
 		ring.Add(NewNode(i, fmt.Sprint("localhost:", 7000+i)))
 	}
 	return ring
+}
+
+func printMovedStats(name string, moved, count int) {
+	actualMovedPercentage := float64(100*moved) / float64(count)
+
+	fmt.Printf("%-10s: %d, percent: %f%%\n",
+		name,
+		moved,
+		actualMovedPercentage,
+	)
 }
