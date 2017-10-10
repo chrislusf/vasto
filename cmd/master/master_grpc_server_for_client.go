@@ -5,6 +5,7 @@ import (
 
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/topology"
 	"google.golang.org/grpc/peer"
 	"log"
 	"net"
@@ -37,6 +38,19 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 	ch, err := ms.clientChans.addClient(clientHeartbeat.Location.DataCenter, pr.Addr.String())
 	if err != nil {
 		return err
+	}
+
+	ms.Lock()
+	ring, ok := ms.rings[clientHeartbeat.Location.DataCenter]
+	ms.Unlock()
+	if ok {
+		ms.clientChans.notifyClients(
+			clientHeartbeat.Location.DataCenter,
+			&pb.ClientMessage{
+				Stores:   topology.ToStores(ring),
+				IsDelete: false,
+			},
+		)
 	}
 
 	clientDisconnectedChan := make(chan bool, 1)

@@ -36,7 +36,8 @@ message StoreMessage {
 }
 
 message ClientMessage {
-    StoreResource store = 1;
+    repeated StoreResource stores = 1;
+    bool is_delete = 2;
 }
 
 message Topology {
@@ -55,8 +56,7 @@ message StoreResource {
 
 message Location {
     string data_center = 1;
-    string server = 2;
-    int32 port = 3;
+    string address = 2;
 }
 
 //////////////////////////////////////////////////

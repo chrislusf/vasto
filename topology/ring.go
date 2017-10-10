@@ -12,6 +12,7 @@ type Node interface {
 type Ring interface {
 	Add(n Node)
 	Remove(n Node)
+	GetDataCenter() string
 
 	FindBucket(key uint64) int
 
@@ -52,7 +53,8 @@ func NewNode(id int, host string) Node {
 // --------------------
 
 type hashRing struct {
-	nodes []Node
+	dataCenter string
+	nodes      []Node
 }
 
 // adds a host (+virtual hosts to the ring)
@@ -67,7 +69,9 @@ func (h *hashRing) Add(n Node) {
 }
 
 func (h *hashRing) Remove(n Node) {
-	h.nodes[n.GetId()] = nil
+	if n.GetId() < len(h.nodes) {
+		h.nodes[n.GetId()] = nil
+	}
 }
 
 // calculates a Jump hash for the key provided
@@ -90,7 +94,14 @@ func (h *hashRing) GetNode(index int) Node {
 	return h.nodes[index]
 }
 
+func (h *hashRing) GetDataCenter() string {
+	return h.dataCenter
+}
+
 // NewHashRing creates a new hash ring.
-func NewHashRing() Ring {
-	return &hashRing{nodes: make([]Node, 0, 16)}
+func NewHashRing(dataCenter string) Ring {
+	return &hashRing{
+		dataCenter: dataCenter,
+		nodes:      make([]Node, 0, 16),
+	}
 }

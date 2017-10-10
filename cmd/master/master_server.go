@@ -10,6 +10,7 @@ import (
 	"github.com/chrislusf/vasto/topology"
 	//"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
+	"sync"
 )
 
 type MasterOption struct {
@@ -17,17 +18,17 @@ type MasterOption struct {
 }
 
 type masterServer struct {
-	option *MasterOption
-
+	option      *MasterOption
 	clientChans *clientChannels
-	ring        topology.Ring
+	rings       map[string]topology.Ring
+	sync.Mutex
 }
 
 func RunMaster(option *MasterOption) {
 	var ms = &masterServer{
 		option:      option,
 		clientChans: newClientChannels(),
-		ring:        topology.NewHashRing(),
+		rings:       make(map[string]topology.Ring),
 	}
 
 	listener, err := net.Listen("tcp", *option.Address)

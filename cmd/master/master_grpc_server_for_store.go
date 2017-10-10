@@ -22,15 +22,26 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 
 	fmt.Printf("store connected %v\n", storeHeartbeat.Store.Location)
 
-	node := topology.NewNode(
-		int(storeHeartbeat.Store.Id),
-		fmt.Sprintf("%s:%d",
-			storeHeartbeat.Store.Location.Server,
-			storeHeartbeat.Store.Location.Port,
-		),
-	)
+	node := topology.NewNodeFromStore(storeHeartbeat.Store)
 
-	ms.ring.Add(node)
+	ms.Lock()
+	ring, ok := ms.rings[storeHeartbeat.DataCenter]
+	if !ok {
+		ring = topology.NewHashRing(storeHeartbeat.DataCenter)
+		ms.rings[storeHeartbeat.DataCenter] = ring
+	}
+	ms.Unlock()
+
+	ring.Add(node)
+	ms.clientChans.notifyClients(
+		storeHeartbeat.DataCenter,
+		&pb.ClientMessage{
+			Stores: []*pb.StoreResource{
+				storeHeartbeat.Store,
+			},
+			IsDelete: false,
+		},
+	)
 
 	storeDisconnectedChan := make(chan bool, 1)
 
@@ -42,21 +53,29 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 				break
 			}
 		}
-		ms.ring.Remove(node)
 		fmt.Printf("store disconnected %v: %v\n", storeHeartbeat.Store.Location, e)
 		storeDisconnectedChan <- true
 	}()
 
-	ms.clientChans.notifyClients(
-		storeHeartbeat.DataCenter,
-		&pb.ClientMessage{
-			Store: storeHeartbeat.Store,
-		},
-	)
-
 	for {
 		select {
 		case <-storeDisconnectedChan:
+			ring.Remove(node)
+			ms.clientChans.notifyClients(
+				storeHeartbeat.DataCenter,
+				&pb.ClientMessage{
+					Stores: []*pb.StoreResource{
+						{
+							Id: int32(node.GetId()),
+							Location: &pb.Location{
+								DataCenter: storeHeartbeat.DataCenter,
+								Address:    node.GetHost(),
+							},
+						},
+					},
+					IsDelete: true,
+				},
+			)
 			return nil
 		}
 	}

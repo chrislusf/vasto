@@ -2,9 +2,11 @@ package client
 
 import (
 	"fmt"
-	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/util"
 	"time"
+
+	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/topology"
+	"github.com/chrislusf/vasto/util"
 )
 
 type ClientOption struct {
@@ -14,11 +16,13 @@ type ClientOption struct {
 
 type VastoClient struct {
 	option *ClientOption
+	ring   topology.Ring
 }
 
 func New(option *ClientOption) *VastoClient {
 	c := &VastoClient{
 		option: option,
+		ring:   topology.NewHashRing(*option.DataCenter),
 	}
 	return c
 }
@@ -33,6 +37,14 @@ func (c *VastoClient) Start() error {
 	for {
 		select {
 		case msg := <-msgChan:
+			for _, store := range msg.Stores {
+				node := topology.NewNodeFromStore(store)
+				if msg.GetIsDelete() {
+					c.ring.Remove(node)
+				} else {
+					c.ring.Add(node)
+				}
+			}
 			fmt.Printf("received message %v\n", msg)
 		}
 	}

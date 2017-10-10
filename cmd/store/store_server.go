@@ -9,6 +9,7 @@ import (
 )
 
 type StoreOption struct {
+	Id         *int32
 	Dir        *string
 	Host       *string
 	ListenHost *string

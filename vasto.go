@@ -38,6 +38,7 @@ var (
 
 	store       = app.Command("store", "Start a vasto store")
 	storeOption = &s.StoreOption{
+		Id:         store.Flag("id", "store id").Default("0").Int32(),
 		Dir:        store.Flag("dir", "folder to store data").Default(os.TempDir()).String(),
 		Host:       store.Flag("host", "store host address").Default(util.GetLocalIP()).String(),
 		ListenHost: store.Flag("listenHost", "store listening host address").Default("").String(),

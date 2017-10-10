@@ -1,4 +1,4 @@
-package gateway
+package client
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 )
 
-func (gs *gatewayServer) tcpPut() error {
+func (c *VastoClient) tcpPut() error {
 
 	address := "localhost:8279"
 
