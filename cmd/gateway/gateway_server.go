@@ -33,8 +33,6 @@ func RunGateway(option *GatewayOption) {
 		go gs.serveGrpc(grpcListener)
 	}
 
-	go gs.registerGatewayAtMasterServer()
-
 	select {}
 
 }

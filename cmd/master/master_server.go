@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"strings"
+	//"strings"
 
 	"github.com/chrislusf/vasto/pb"
-	"github.com/soheilhy/cmux"
+	"github.com/chrislusf/vasto/topology"
+	//"github.com/soheilhy/cmux"
+	"google.golang.org/grpc"
 )
 
 type MasterOption struct {
@@ -16,11 +18,16 @@ type MasterOption struct {
 
 type masterServer struct {
 	option *MasterOption
+
+	clientChans *clientChannels
+	ring        topology.Ring
 }
 
 func RunMaster(option *MasterOption) {
 	var ms = &masterServer{
-		option: option,
+		option:      option,
+		clientChans: newClientChannels(),
+		ring:        topology.NewHashRing(),
 	}
 
 	listener, err := net.Listen("tcp", *option.Address)
@@ -29,21 +36,19 @@ func RunMaster(option *MasterOption) {
 	}
 	fmt.Printf("Vasto master starts on %s\n", *option.Address)
 
-	m := cmux.New(listener)
-	grpcListener := m.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
+	// m := cmux.New(listener)
+	// grpcListener := m.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
 
-	go ms.serveGrpc(grpcListener)
+	ms.serveGrpc(listener)
 
-	if err := m.Serve(); !strings.Contains(err.Error(), "use of closed network connection") {
-		panic(err)
-	}
-
-}
-
-func (m *masterServer) addStore(dataCenter, groupName string, store *pb.StoreResource) {
+	//if err := m.Serve(); !strings.Contains(err.Error(), "use of closed network connection") {
+	//	panic(err)
+	//}
 
 }
 
-func (m *masterServer) start() {
-
+func (ms *masterServer) serveGrpc(listener net.Listener) {
+	grpcServer := grpc.NewServer()
+	pb.RegisterVastoMasterServer(grpcServer, ms)
+	grpcServer.Serve(listener)
 }

@@ -26,18 +26,21 @@ func (ss *storeServer) registerAtMasterServer() error {
 
 	log.Printf("register to master %s", *ss.option.Master)
 
-	storeResource := &pb.StoreResource{
-		Id: 123,
-		Location: &pb.Location{
-			Server: *ss.option.Host,
-			Port:   int32(*ss.option.TcpPort),
+	storeHeartbeat := &pb.StoreHeartbeat{
+		DataCenter: *ss.option.DataCenter,
+		Store: &pb.StoreResource{
+			Id: 123,
+			Location: &pb.Location{
+				Server: *ss.option.Host,
+				Port:   int32(*ss.option.TcpPort),
+			},
 		},
 	}
 
 	// log.Printf("Reporting allocated %v", as.allocatedResource)
 
-	if err := stream.Send(&pb.StoreHeartbeat{storeResource}); err != nil {
-		log.Printf("RegisterStore (%+v) = %v", storeResource, err)
+	if err := stream.Send(storeHeartbeat); err != nil {
+		log.Printf("RegisterStore (%+v) = %v", storeHeartbeat, err)
 		return err
 	}
 

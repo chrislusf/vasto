@@ -9,7 +9,7 @@ service VastoMaster {
         // and broadcast to all other stores and clients
     }
 
-    rpc RegisterGateway (stream GatewayHeartbeat) returns (stream Topology) {
+    rpc RegisterClient (stream ClientHeartbeat) returns (stream ClientMessage) {
         // Stores send the heartbeat to Master
         // Master remembers the stores
         // and broadcast to all other stores and clients
@@ -32,15 +32,17 @@ message BalanceRequest {
     uint32 store_count = 3; // 0 means to use all existing nodes. can not be more than existing stores.
 }
 
+message ClientMessage {
+    StoreResource store = 1;
+}
+
 message Topology {
     repeated Ring rings = 1;
 }
 
 message Ring {
     string data_center = 1;
-    string store_group = 2;
-    repeated StoreResource stores = 3;
-    repeated Location proxies = 4;
+    repeated StoreResource stores = 2;
 }
 
 message StoreResource {
@@ -49,16 +51,18 @@ message StoreResource {
 }
 
 message Location {
-    string server = 1;
-    int32 port = 2;
+    string data_center = 1;
+    string server = 2;
+    int32 port = 3;
 }
 
 //////////////////////////////////////////////////
 message StoreHeartbeat {
-    StoreResource store = 1;
+    string data_center = 1;
+    StoreResource store = 2;
 }
 
-message GatewayHeartbeat {
+message ClientHeartbeat {
     Location location = 1;
 }
 

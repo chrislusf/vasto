@@ -11,6 +11,7 @@ type Node interface {
 
 type Ring interface {
 	Add(n Node)
+	Remove(n Node)
 
 	FindBucket(key uint64) int
 
@@ -63,6 +64,10 @@ func (h *hashRing) Add(n Node) {
 		h.nodes = nodes
 	}
 	h.nodes[n.GetId()] = n
+}
+
+func (h *hashRing) Remove(n Node) {
+	h.nodes[n.GetId()] = nil
 }
 
 // calculates a Jump hash for the key provided
