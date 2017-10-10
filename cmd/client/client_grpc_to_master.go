@@ -25,9 +25,11 @@ func (c *VastoClient) registerClientAtMasterServer(msgChan chan *pb.ClientMessag
 		return err
 	}
 
-	log.Printf("register to master %s", *c.option.Master)
-
-	clientHeartbeat := &pb.ClientHeartbeat{}
+	clientHeartbeat := &pb.ClientHeartbeat{
+		Location: &pb.Location{
+			DataCenter: *c.option.DataCenter,
+		},
+	}
 
 	// log.Printf("Reporting allocated %v", as.allocatedResource)
 
@@ -35,6 +37,8 @@ func (c *VastoClient) registerClientAtMasterServer(msgChan chan *pb.ClientMessag
 		log.Printf("client send heartbeat: %v", err)
 		return err
 	}
+
+	log.Printf("register to master %s", *c.option.Master)
 
 	defer stream.CloseSend()
 

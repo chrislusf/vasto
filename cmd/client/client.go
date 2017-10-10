@@ -1,7 +1,15 @@
 package client
 
+import (
+	"fmt"
+	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/util"
+	"time"
+)
+
 type ClientOption struct {
-	Master *string
+	Master     *string
+	DataCenter *string
 }
 
 type VastoClient struct {
@@ -15,6 +23,19 @@ func New(option *ClientOption) *VastoClient {
 	return c
 }
 
-func connectToMaster() {
+func (c *VastoClient) Start() error {
+	msgChan := make(chan *pb.ClientMessage)
 
+	go util.RetryForever(func() error {
+		return c.registerClientAtMasterServer(msgChan)
+	}, 2*time.Second)
+
+	for {
+		select {
+		case msg := <-msgChan:
+			fmt.Printf("received message %v\n", msg)
+		}
+	}
+
+	return nil
 }

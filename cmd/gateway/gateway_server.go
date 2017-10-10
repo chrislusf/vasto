@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+
+	"github.com/chrislusf/vasto/cmd/client"
 )
 
 type GatewayOption struct {
@@ -16,12 +18,20 @@ type GatewayOption struct {
 
 type gatewayServer struct {
 	option *GatewayOption
+
+	clientToMaster *client.VastoClient
 }
 
 func RunGateway(option *GatewayOption) {
 
 	var gs = &gatewayServer{
 		option: option,
+		clientToMaster: client.New(
+			&client.ClientOption{
+				Master:     option.Master,
+				DataCenter: option.DataCenter,
+			},
+		),
 	}
 
 	if *option.GrpcPort != 0 {
@@ -32,6 +42,8 @@ func RunGateway(option *GatewayOption) {
 		fmt.Printf("Vasto gateway starts grpc %v:%d\n", *option.Host, *option.GrpcPort)
 		go gs.serveGrpc(grpcListener)
 	}
+
+	go gs.clientToMaster.Start()
 
 	select {}
 

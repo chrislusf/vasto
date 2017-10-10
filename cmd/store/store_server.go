@@ -2,7 +2,7 @@ package store
 
 import (
 	"fmt"
-	"github.com/chrislusf/seaweedfs/weed/util"
+	"github.com/chrislusf/vasto/util/on_interrupt"
 	"log"
 	"net"
 	"os"
@@ -55,15 +55,15 @@ func RunStore(option *StoreOption) {
 			log.Fatal(err)
 		}
 		startsStatus += fmt.Sprintf("\n socket   %s", *option.UnixSocket)
-		util.OnInterrupt(func() {
+		on_interrupt.OnInterrupt(func() {
 			os.Remove(*option.UnixSocket)
-		})
+		}, nil)
 		go ss.serveTcp(unixSocketListener)
 	}
 
 	log.Println(startsStatus)
 
-	go ss.registerAtMasterServer()
+	go ss.keepConnectedToMasterServer()
 
 	select {}
 

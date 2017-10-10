@@ -5,6 +5,9 @@ import (
 
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
+	"google.golang.org/grpc/peer"
+	"log"
+	"net"
 )
 
 func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServer) error {
@@ -17,9 +20,21 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 		return err
 	}
 
-	fmt.Printf("client connected %v\n", clientHeartbeat.Location)
+	ctx := stream.Context()
+	// fmt.Printf("FromContext %+v\n", ctx)
+	pr, ok := peer.FromContext(ctx)
+	if !ok {
+		log.Println("failed to get peer from ctx")
+		return fmt.Errorf("failed to get peer from ctx")
+	}
+	if pr.Addr == net.Addr(nil) {
+		log.Println("failed to get peer address")
+		return fmt.Errorf("failed to get peer address")
+	}
 
-	ch, err := ms.clientChans.addClient(clientHeartbeat.Location)
+	fmt.Printf("client connected %v\n", pr.Addr.String())
+
+	ch, err := ms.clientChans.addClient(clientHeartbeat.Location.DataCenter, pr.Addr.String())
 	if err != nil {
 		return err
 	}
@@ -34,15 +49,15 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 				break
 			}
 		}
-		ms.clientChans.removeClient(clientHeartbeat.Location)
-		fmt.Printf("client disconnected %v: %v\n", clientHeartbeat.Location, e)
+		ms.clientChans.removeClient(clientHeartbeat.Location.DataCenter, pr.Addr.String())
+		fmt.Printf("client disconnected %v: %v\n", pr.Addr.String(), e)
 		clientDisconnectedChan <- true
 	}()
 
 	for {
 		select {
 		case msg := <-ch:
-			fmt.Println("received message", msg)
+			fmt.Printf("received message %v\n", msg)
 			if err := stream.Send(msg); err != nil {
 				return err
 			}

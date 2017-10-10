@@ -6,8 +6,19 @@ import (
 	"log"
 
 	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/util"
 	"google.golang.org/grpc"
+	"io"
+	"time"
 )
+
+func (ss *storeServer) keepConnectedToMasterServer() {
+
+	util.RetryForever(func() error {
+		return ss.registerAtMasterServer()
+	}, 2*time.Second)
+
+}
 
 func (ss *storeServer) registerAtMasterServer() error {
 	grpcConnection, err := grpc.Dial(*ss.option.Master, grpc.WithInsecure())
@@ -44,6 +55,22 @@ func (ss *storeServer) registerAtMasterServer() error {
 		return err
 	}
 
-	select {}
+	for {
+		msg, err := stream.Recv()
+		if err == io.EOF {
+			// read done.
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("receive topology : %v", err)
+		}
+		ss.processStoreMessage(msg)
+	}
 
+	return nil
+
+}
+
+func (ss *storeServer) processStoreMessage(msg *pb.StoreMessage) {
+	log.Printf("Received message %v", msg)
 }

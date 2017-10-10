@@ -19,8 +19,8 @@ func newClientChannels() *clientChannels {
 	}
 }
 
-func (cc *clientChannels) addClient(location *pb.Location) (chan *pb.ClientMessage, error) {
-	key := fmt.Sprintf("%s:%s:%d", location.DataCenter, location.Server, location.Port)
+func (cc *clientChannels) addClient(dataCenter, server string) (chan *pb.ClientMessage, error) {
+	key := fmt.Sprintf("%s:%s", dataCenter, server)
 	if _, ok := cc.clientChans[key]; ok {
 		return nil, fmt.Errorf("client key is already in use: %s", key)
 	}
@@ -31,8 +31,8 @@ func (cc *clientChannels) addClient(location *pb.Location) (chan *pb.ClientMessa
 	return ch, nil
 }
 
-func (cc *clientChannels) removeClient(location *pb.Location) error {
-	key := fmt.Sprintf("%s:%s:%d", location.DataCenter, location.Server, location.Port)
+func (cc *clientChannels) removeClient(dataCenter, server string) error {
+	key := fmt.Sprintf("%s:%s", dataCenter, server)
 	cc.Lock()
 	if ch, ok := cc.clientChans[key]; !ok {
 		return fmt.Errorf("client key is not in use: %s", key)

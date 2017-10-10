@@ -3,7 +3,7 @@ syntax = "proto3";
 package pb;
 
 service VastoMaster {
-    rpc RegisterStore (stream StoreHeartbeat) returns (stream Ring) {
+    rpc RegisterStore (stream StoreHeartbeat) returns (stream StoreMessage) {
         // Stores send the heartbeat to Master
         // Master remembers the stores
         // and broadcast to all other stores and clients
@@ -30,6 +30,9 @@ message BalanceRequest {
     string data_center = 1;
     string store_group = 2;
     uint32 store_count = 3; // 0 means to use all existing nodes. can not be more than existing stores.
+}
+
+message StoreMessage {
 }
 
 message ClientMessage {
