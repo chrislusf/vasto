@@ -33,14 +33,12 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 	ms.Unlock()
 
 	ring.Add(node)
-	ms.clientChans.notifyClients(
+	ms.clientChans.notifyStoreResourceUpdate(
 		storeHeartbeat.DataCenter,
-		&pb.ClientMessage{
-			Stores: []*pb.StoreResource{
-				storeHeartbeat.Store,
-			},
-			IsDelete: false,
+		[]*pb.StoreResource{
+			storeHeartbeat.Store,
 		},
+		false,
 	)
 
 	storeDisconnectedChan := make(chan bool, 1)
@@ -61,20 +59,16 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 		select {
 		case <-storeDisconnectedChan:
 			ring.Remove(node)
-			ms.clientChans.notifyClients(
+			ms.clientChans.notifyStoreResourceUpdate(
 				storeHeartbeat.DataCenter,
-				&pb.ClientMessage{
-					Stores: []*pb.StoreResource{
-						{
-							Id: int32(node.GetId()),
-							Location: &pb.Location{
-								DataCenter: storeHeartbeat.DataCenter,
-								Address:    node.GetHost(),
-							},
-						},
+				[]*pb.StoreResource{{
+					Id: int32(node.GetId()),
+					Location: &pb.Location{
+						DataCenter: storeHeartbeat.DataCenter,
+						Address:    node.GetHost(),
 					},
-					IsDelete: true,
-				},
+				}},
+				true,
 			)
 			return nil
 		}

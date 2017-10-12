@@ -52,7 +52,7 @@ func (c *VastoClient) registerClientAtMasterServer(msgChan chan *pb.ClientMessag
 			return fmt.Errorf("receive topology : %v", err)
 		}
 		msgChan <- msg
-		log.Printf("Received message %v", msg)
+		// log.Printf("client received message %v", msg)
 	}
 
 }

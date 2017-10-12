@@ -44,12 +44,10 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 	ring, ok := ms.rings[clientHeartbeat.Location.DataCenter]
 	ms.Unlock()
 	if ok {
-		ms.clientChans.notifyClients(
+		ms.clientChans.notifyStoreResourceUpdate(
 			clientHeartbeat.Location.DataCenter,
-			&pb.ClientMessage{
-				Stores:   topology.ToStores(ring),
-				IsDelete: false,
-			},
+			topology.ToStores(ring),
+			false,
 		)
 	}
 
@@ -71,7 +69,7 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 	for {
 		select {
 		case msg := <-ch:
-			fmt.Printf("received message %v\n", msg)
+			// fmt.Printf("master received message %v\n", msg)
 			if err := stream.Send(msg); err != nil {
 				return err
 			}

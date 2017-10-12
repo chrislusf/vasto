@@ -55,3 +55,27 @@ func (cc *clientChannels) notifyClients(dataCenter string, msg *pb.ClientMessage
 	cc.Unlock()
 	return nil
 }
+
+func (cc *clientChannels) notifyStoreResourceUpdate(dataCenter string, stores []*pb.StoreResource, isDelete bool) error {
+	return cc.notifyClients(
+		dataCenter,
+		&pb.ClientMessage{
+			Updates: &pb.ClientMessage_StoreResourceUpdate{
+				Stores:   stores,
+				IsDelete: isDelete,
+			},
+		},
+	)
+}
+
+func (cc *clientChannels) notifyClusterSize(dataCenter string, currentClusterSize, newClusterSize uint32) error {
+	return cc.notifyClients(
+		dataCenter,
+		&pb.ClientMessage{
+			Resize: &pb.ClientMessage_Resize{
+				CurrentClusterSize: currentClusterSize,
+				NewClusterSize:     newClusterSize,
+			},
+		},
+	)
+}

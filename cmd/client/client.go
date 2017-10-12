@@ -16,7 +16,10 @@ type ClientOption struct {
 
 type VastoClient struct {
 	option *ClientOption
-	ring   topology.Ring
+	// these may need to be protected by atomic
+	ring               topology.Ring
+	currentClusterSize uint32
+	nextClusterSize    uint32
 }
 
 func New(option *ClientOption) *VastoClient {
@@ -37,15 +40,28 @@ func (c *VastoClient) Start() error {
 	for {
 		select {
 		case msg := <-msgChan:
-			for _, store := range msg.Stores {
-				node := topology.NewNodeFromStore(store)
-				if msg.GetIsDelete() {
-					c.ring.Remove(node)
-				} else {
-					c.ring.Add(node)
+			if msg.GetUpdates() != nil {
+				for _, store := range msg.Updates.Stores {
+					node := topology.NewNodeFromStore(store)
+					if msg.Updates.GetIsDelete() {
+						fmt.Printf("remove node %d: %v\n", node.GetId(), node.GetHost())
+						c.ring.Remove(node)
+					} else {
+						fmt.Printf("   add node %d: %v\n", node.GetId(), node.GetHost())
+						c.ring.Add(node)
+					}
 				}
+			} else if msg.GetResize() != nil {
+				c.currentClusterSize = msg.Resize.CurrentClusterSize
+				c.nextClusterSize = msg.Resize.NewClusterSize
+				if c.nextClusterSize == 0 {
+					fmt.Printf("resized to %d\n", c.currentClusterSize)
+				} else {
+					fmt.Printf("resizing %d => %d\n", c.currentClusterSize, c.nextClusterSize)
+				}
+			} else {
+				fmt.Printf("unknown message %v\n", msg)
 			}
-			fmt.Printf("received message %v\n", msg)
 		}
 	}
 

@@ -11,19 +11,27 @@ func NewNodeFromStore(store *pb.StoreResource) Node {
 	)
 }
 
-func ToStores(ring Ring) (stores []*pb.StoreResource) {
-	for i := 0; i < ring.Size(); i++ {
-		node := ring.GetNode(i)
-		if node == nil {
-			continue
-		}
-		stores = append(stores, &pb.StoreResource{
-			Id: int32(i),
-			Location: &pb.Location{
-				DataCenter: ring.GetDataCenter(),
-				Address:    node.GetHost(),
-			},
-		})
+func ToStores(r Ring) (stores []*pb.StoreResource) {
+	if r == nil {
+		return
 	}
+	for i := 0; i < r.Size(); i++ {
+		node := r.GetNode(i)
+		address := ""
+		if node != nil {
+			address = node.GetHost()
+		}
+		stores = append(
+			stores,
+			&pb.StoreResource{
+				Id: int32(i),
+				Location: &pb.Location{
+					DataCenter: r.GetDataCenter(),
+					Address:    address,
+				},
+			},
+		)
+	}
+
 	return stores
 }

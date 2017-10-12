@@ -19,13 +19,14 @@ import (
 	"os"
 	"runtime/pprof"
 
+	a "github.com/chrislusf/vasto/cmd/admin"
 	b "github.com/chrislusf/vasto/cmd/benchmark"
 	g "github.com/chrislusf/vasto/cmd/gateway"
 	m "github.com/chrislusf/vasto/cmd/master"
 	s "github.com/chrislusf/vasto/cmd/store"
 	"github.com/chrislusf/vasto/util"
 	"github.com/chrislusf/vasto/util/on_interrupt"
-	kingpin "gopkg.in/alecthomas/kingpin.v2"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 var (
@@ -70,6 +71,13 @@ var (
 		Master:       bench.Flag("master", "master address").Default("localhost:8278").String(),
 		DataCenter:   bench.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
 	}
+
+	admin       = app.Command("admin", "Manage Cluster Size")
+	adminOption = &a.AdminOption{
+		ClusterSize: admin.Flag("newClusterSize", "change cluster to this size").Default("0").Int32(),
+		Master:      admin.Flag("master", "master address").Default("localhost:8278").String(),
+		DataCenter:  admin.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
+	}
 )
 
 func main() {
@@ -107,6 +115,9 @@ func main() {
 
 	case bench.FullCommand():
 		b.RunBenchmarker(benchmarkOption)
+
+	case admin.FullCommand():
+		a.RunAdmin(adminOption)
 
 	}
 }
