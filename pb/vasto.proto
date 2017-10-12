@@ -166,8 +166,10 @@ message ListRequest {
 }
 message ListResponse {
     string data_center = 1;
-    uint32 cluster_size = 2;
-    repeated StoreResource stores = 3;
+    uint32 current_cluster_size = 2;
+    uint32 next_cluster_size = 3;
+    repeated StoreResource stores = 4;
+    uint32 client_count = 5;
 }
 message ResizeRequest {
     string data_center = 1;

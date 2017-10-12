@@ -40,8 +40,6 @@ func (c *VastoClient) registerClientAtMasterServer(msgChan chan *pb.ClientMessag
 
 	log.Printf("register to master %s", *c.option.Master)
 
-	defer stream.CloseSend()
-
 	for {
 		msg, err := stream.Recv()
 		if err == io.EOF {

@@ -35,6 +35,8 @@ var (
 	master       = app.Command("master", "Start a master process")
 	masterOption = &m.MasterOption{
 		Address: master.Flag("address", "listening address host:port").Default(":8278").String(),
+		ClusterSize: master.Flag("initClusterSize",
+			"a cluster size to start with, can be changed by 'vasto admin'").Default("2").Int32(),
 	}
 
 	store       = app.Command("store", "Start a vasto store")

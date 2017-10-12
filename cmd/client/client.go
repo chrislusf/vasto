@@ -31,15 +31,15 @@ func New(option *ClientOption) *VastoClient {
 }
 
 func (c *VastoClient) Start() error {
-	msgChan := make(chan *pb.ClientMessage)
+	clientMessageChan := make(chan *pb.ClientMessage)
 
 	go util.RetryForever(func() error {
-		return c.registerClientAtMasterServer(msgChan)
+		return c.registerClientAtMasterServer(clientMessageChan)
 	}, 2*time.Second)
 
 	for {
 		select {
-		case msg := <-msgChan:
+		case msg := <-clientMessageChan:
 			if msg.GetUpdates() != nil {
 				for _, store := range msg.Updates.Stores {
 					node := topology.NewNodeFromStore(store)
