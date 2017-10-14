@@ -32,14 +32,26 @@ func (ss *storeServer) copyToStore(shardId int) error {
 
 	log.Printf("copying to store %s", storeLocation)
 
-	// PrefixScan the whole table
 	startTime := time.Now()
 	log.Printf("copying starts at %v", startTime)
+
+	// PrefixScan the whole table
+	for {
+		err := stream.Send(nil)
+		if err != nil {
+			return fmt.Errorf("copying key-value : %v", err)
+		}
+	}
+
+	_, err = stream.CloseAndRecv()
+	if err != nil {
+		return fmt.Errorf("copy to shard %d %s : %v", shardId, storeLocation, err)
+	}
+
 	copyDoneMessage := &pb.CopyDoneMessge{
 		Shard:           int32(shardId),
 		CopyStartTimeNs: startTime.UnixNano(),
 	}
-
 	if _, err := client.CopyDone(ctx, copyDoneMessage); err != nil {
 		log.Printf("CopyDone (%+v) = %v", copyDoneMessage, err)
 		return err
