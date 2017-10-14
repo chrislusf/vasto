@@ -1,4 +1,4 @@
-package storage
+package rocks
 
 import (
 	"math/rand"

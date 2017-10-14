@@ -26,6 +26,10 @@ service VastoMaster {
 service VastoStore {
     rpc Put (PutRequest) returns (PutResponse) {
     }
+    rpc Copy (stream KeyValue) returns (Empty) {
+    }
+    rpc CopyDone (CopyDoneMessge) returns (Empty) {
+    }
 }
 
 //////////////////////////////////////////////////
@@ -156,6 +160,14 @@ message Response {
 message KeyValue {
     bytes key = 1;
     bytes value = 2;
+}
+
+//////////////////////////////////////////////////
+//// data copying
+//////////////////////////////////////////////////
+message CopyDoneMessge {
+    int32 shard = 1;
+    int64 copy_start_time_ns = 2;
 }
 
 //////////////////////////////////////////////////
