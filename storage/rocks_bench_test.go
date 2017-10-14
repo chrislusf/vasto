@@ -22,12 +22,8 @@ func BenchmarkPutByte4096(b *testing.B) {
 }
 
 func benchPutWithSize(b *testing.B, size int) {
-	db := newDB()
-	db.setup("/tmp/rocks-test-go")
-	defer func() {
-		db.Close()
-		db.Destroy()
-	}()
+	db := setupTestDb()
+	defer cleanup(db)
 
 	key := make([]byte, size)
 	value := make([]byte, size)

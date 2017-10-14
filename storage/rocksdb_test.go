@@ -9,12 +9,8 @@ import (
 )
 
 func TestPutGet(t *testing.T) {
-	db := newDB()
-	db.setup("/tmp/rocks-test-go")
-	defer func() {
-		db.Close()
-		db.Destroy()
-	}()
+	db := setupTestDb()
+	defer cleanup(db)
 
 	key := make([]byte, 4)
 	value := make([]byte, 4)
@@ -37,12 +33,8 @@ func TestPutGet(t *testing.T) {
 
 func TestPut10Million(t *testing.T) {
 
-	db := newDB()
-	db.setup("/tmp/rocks-test-go")
-	defer func() {
-		db.Close()
-		db.Destroy()
-	}()
+	db := setupTestDb()
+	defer cleanup(db)
 
 	limit := 100000
 
@@ -74,12 +66,8 @@ func TestPut10Million(t *testing.T) {
 
 func TestRangeScan(t *testing.T) {
 
-	db := newDB()
-	db.setup("/tmp/rocks-test-go")
-	defer func() {
-		db.Close()
-		db.Destroy()
-	}()
+	db := setupTestDb()
+	defer cleanup(db)
 
 	limit := 100000
 
@@ -135,4 +123,15 @@ func TestRangeScan(t *testing.T) {
 		t.Errorf("scanning expecting %d rows, but actual %d rows", 100000, counter4)
 	}
 
+}
+
+func setupTestDb() *rocks {
+	db := newDB()
+	db.setup("/tmp/rocks-test-go")
+	return db
+}
+
+func cleanup(db *rocks) {
+	db.Close()
+	db.Destroy()
 }
