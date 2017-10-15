@@ -126,8 +126,7 @@ func TestRangeScan(t *testing.T) {
 }
 
 func setupTestDb() *rocks {
-	db := newDB()
-	db.setup("/tmp/rocks-test-go")
+	db := New("/tmp/rocks-test-go")
 	return db
 }
 

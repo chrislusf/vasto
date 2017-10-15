@@ -16,8 +16,10 @@ type rocks struct {
 	ro        *gorocksdb.ReadOptions
 }
 
-func newDB() *rocks {
-	return &rocks{}
+func New(path string) *rocks {
+	r := &rocks{}
+	r.setup(path)
+	return r
 }
 
 func (d *rocks) setup(path string) {
