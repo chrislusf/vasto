@@ -8,15 +8,18 @@ import (
 )
 
 type rocks struct {
-	path      string
-	db        *gorocksdb.DB
-	dbOptions *gorocksdb.Options
-	wo        *gorocksdb.WriteOptions
-	ro        *gorocksdb.ReadOptions
+	path             string
+	db               *gorocksdb.DB
+	dbOptions        *gorocksdb.Options
+	wo               *gorocksdb.WriteOptions
+	ro               *gorocksdb.ReadOptions
+	compactionFilter *shardingCompactionFilter
 }
 
 func New(path string) *rocks {
-	r := &rocks{}
+	r := &rocks{
+		compactionFilter: &shardingCompactionFilter{},
+	}
 	r.setup(path)
 	return r
 }
@@ -27,6 +30,7 @@ func (d *rocks) setup(path string) {
 	d.dbOptions.SetCreateIfMissing(true)
 	// Required but not avaiable for now
 	// d.dbOptions.SetAllowIngestBehind(true)
+	d.dbOptions.SetCompactionFilter(d.compactionFilter)
 
 	var err error
 	d.db, err = gorocksdb.OpenDb(d.dbOptions, d.path)

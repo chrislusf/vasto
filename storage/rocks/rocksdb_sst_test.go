@@ -45,15 +45,12 @@ func TestAddBySst(t *testing.T) {
 
 	fmt.Printf("%d messages inserted by sst in: %v\n", limit, time.Now().Sub(now))
 
-	var counter4 int
-	db.PrefixScan(nil, nil, 0, func(key, value []byte) bool {
-		counter4++
-		return true
-	})
-	if counter4 != 100000 {
-		t.Errorf("scanning expecting %d rows, but actual %d rows", 100000, counter4)
+	var counter = count(db)
+
+	if counter != 100000 {
+		t.Errorf("scanning expecting %d rows, but actual %d rows", 100000, counter)
 	}
 
-	fmt.Printf("%d messages counted %d: %v\n", limit, counter4, time.Now().Sub(now))
+	fmt.Printf("%d messages counted %d: %v\n", limit, counter, time.Now().Sub(now))
 
 }
