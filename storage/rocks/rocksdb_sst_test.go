@@ -31,6 +31,13 @@ func TestAddBySst(t *testing.T) {
 
 	now := time.Now()
 	limit := 100000
+
+	for i := 0; i < limit; i++ {
+		key := []byte(fmt.Sprintf("k%5d", i))
+		value := []byte(fmt.Sprintf("n%5d", i))
+		db.Put(key, value)
+	}
+
 	i := -1
 
 	db.addSst(func() (bool, []byte, []byte) {
@@ -44,6 +51,16 @@ func TestAddBySst(t *testing.T) {
 	})
 
 	fmt.Printf("%d messages inserted by sst in: %v\n", limit, time.Now().Sub(now))
+
+	if v, err := db.Get([]byte("k12345")); err == nil {
+		// this should be returning v12345
+		// when allow_ingest_behind is enabled
+		if string(v) == "n12345" {
+			t.Errorf("get expecting %v, actual %v", "n12345", string(v))
+		}
+	} else {
+		t.Errorf("get by key %d: %v", "k12345", err)
+	}
 
 	var counter = count(db)
 
