@@ -50,6 +50,8 @@ func (d *rocks) addSst(next func() (bool, []byte, []byte)) error {
 	ingestOpts := gorocksdb.NewDefaultIngestExternalFileOptions()
 	defer ingestOpts.Destroy()
 	ingestOpts.SetMoveFiles(true)
+	// Required but not avaiable for now
+	// ingestOpts.SetIngestionBehind(true)
 	err = d.db.IngestExternalFile([]string{filePath.Name()}, ingestOpts)
 	if err != nil {
 		return fmt.Errorf("ingest sst file: %v", err)

@@ -24,6 +24,8 @@ func (d *rocks) setup(path string) {
 	d.path = path
 	d.dbOptions = gorocksdb.NewDefaultOptions()
 	d.dbOptions.SetCreateIfMissing(true)
+	// Required but not avaiable for now
+	// d.dbOptions.SetAllowIngestBehind(true)
 
 	var err error
 	d.db, err = gorocksdb.OpenDb(d.dbOptions, d.path)
