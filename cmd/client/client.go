@@ -17,15 +17,15 @@ type ClientOption struct {
 type VastoClient struct {
 	option *ClientOption
 	// these may need to be protected by atomic
-	ring               topology.Cluster
+	cluster            *topology.ClusterRing
 	currentClusterSize uint32
 	nextClusterSize    uint32
 }
 
 func New(option *ClientOption) *VastoClient {
 	c := &VastoClient{
-		option: option,
-		ring:   topology.NewHashRing(*option.DataCenter),
+		option:  option,
+		cluster: topology.NewHashRing(*option.DataCenter),
 	}
 	return c
 }
@@ -40,15 +40,21 @@ func (c *VastoClient) Start() error {
 	for {
 		select {
 		case msg := <-clientMessageChan:
-			if msg.GetUpdates() != nil {
+			if msg.GetCluster() != nil {
+				for _, store := range msg.Cluster.Stores {
+					node := topology.NewNodeFromStore(store)
+					fmt.Printf("   add node %d: %v\n", node.GetId(), node.GetHost())
+					c.cluster.Add(node)
+				}
+			} else if msg.GetUpdates() != nil {
 				for _, store := range msg.Updates.Stores {
 					node := topology.NewNodeFromStore(store)
 					if msg.Updates.GetIsDelete() {
 						fmt.Printf("remove node %d: %v\n", node.GetId(), node.GetHost())
-						c.ring.Remove(node)
+						c.cluster.Remove(node)
 					} else {
 						fmt.Printf("   add node %d: %v\n", node.GetId(), node.GetHost())
-						c.ring.Add(node)
+						c.cluster.Add(node)
 					}
 				}
 			} else if msg.GetResize() != nil {

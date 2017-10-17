@@ -41,7 +41,7 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 	}
 
 	ms.Lock()
-	ring, ok := ms.rings[clientHeartbeat.Location.DataCenter]
+	ring, ok := ms.clusters[clientHeartbeat.Location.DataCenter]
 	ms.Unlock()
 	if ok {
 		ms.clientChans.notifyStoreResourceUpdate(

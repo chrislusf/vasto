@@ -25,10 +25,10 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 	node := topology.NewNodeFromStore(storeHeartbeat.Store)
 
 	ms.Lock()
-	ring, ok := ms.rings[storeHeartbeat.DataCenter]
+	ring, ok := ms.clusters[storeHeartbeat.DataCenter]
 	if !ok {
 		ring = topology.NewHashRing(storeHeartbeat.DataCenter)
-		ms.rings[storeHeartbeat.DataCenter] = ring
+		ms.clusters[storeHeartbeat.DataCenter] = ring
 	}
 	ms.Unlock()
 

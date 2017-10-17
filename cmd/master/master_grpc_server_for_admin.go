@@ -11,7 +11,7 @@ func (ms *masterServer) ListStores(ctx context.Context, req *pb.ListRequest) (*p
 	dc := req.DataCenter
 
 	ms.Lock()
-	r, _ := ms.rings[dc]
+	r, _ := ms.clusters[dc]
 	ms.Unlock()
 
 	stores := topology.ToStores(r)
@@ -31,7 +31,7 @@ func (ms *masterServer) ResizeCluster(req *pb.ResizeRequest, stream pb.VastoMast
 	dc := req.DataCenter
 
 	ms.Lock()
-	r, ok := ms.rings[dc]
+	r, ok := ms.clusters[dc]
 	ms.Unlock()
 
 	resp := &pb.ResizeProgress{}
