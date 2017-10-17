@@ -58,7 +58,7 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 	for {
 		select {
 		case <-storeDisconnectedChan:
-			ring.Remove(node)
+			ring.Remove(node.GetId())
 			ms.clientChans.notifyStoreResourceUpdate(
 				storeHeartbeat.DataCenter,
 				[]*pb.StoreResource{{

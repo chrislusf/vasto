@@ -4,7 +4,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 )
 
-func NewNodeFromStore(store *pb.StoreResource) *Node {
+func NewNodeFromStore(store *pb.StoreResource) Node {
 	return NewNode(
 		int(store.Id),
 		store.Address,
