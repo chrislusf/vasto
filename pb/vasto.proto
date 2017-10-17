@@ -32,6 +32,7 @@ service VastoStore {
     }
 }
 
+
 //////////////////////////////////////////////////
 // 1. master received request to balance the data
 
@@ -47,32 +48,37 @@ message StoreMessage {
 }
 
 message ClientMessage {
+
+    Cluster cluster = 1;
+
     message StoreResourceUpdate {
         repeated StoreResource stores = 1;
         bool is_delete = 2;
     }
-    StoreResourceUpdate updates = 1;
+    StoreResourceUpdate updates = 2;
 
     message Resize {
         uint32 current_cluster_size = 1;
-        uint32 new_cluster_size = 2;
+        uint32 next_cluster_size = 2;
     }
-    Resize resize = 2;
+    Resize resize = 3;
 
 }
 
 message Topology {
-    repeated Ring rings = 1;
+    map<string,Cluster> data_center_clusters = 1;
 }
 
-message Ring {
+message Cluster {
     string data_center = 1;
     repeated StoreResource stores = 2;
+    uint32 current_cluster_size = 3;
+    uint32 next_cluster_size = 4;
 }
 
 message StoreResource {
     int32 id = 1;
-    Location location = 2;
+    string address = 2;
 }
 
 message Location {

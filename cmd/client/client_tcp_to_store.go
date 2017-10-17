@@ -9,7 +9,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 )
 
-func (c *VastoClient) tcpPut() error {
+func (c *VastoClient) Put(key, value []byte) error {
 
 	address := "localhost:8279"
 

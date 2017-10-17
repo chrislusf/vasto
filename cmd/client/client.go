@@ -17,7 +17,7 @@ type ClientOption struct {
 type VastoClient struct {
 	option *ClientOption
 	// these may need to be protected by atomic
-	ring               topology.Ring
+	ring               topology.Cluster
 	currentClusterSize uint32
 	nextClusterSize    uint32
 }
@@ -53,7 +53,7 @@ func (c *VastoClient) Start() error {
 				}
 			} else if msg.GetResize() != nil {
 				c.currentClusterSize = msg.Resize.CurrentClusterSize
-				c.nextClusterSize = msg.Resize.NewClusterSize
+				c.nextClusterSize = msg.Resize.NextClusterSize
 				if c.nextClusterSize == 0 {
 					fmt.Printf("resized to %d\n", c.currentClusterSize)
 				} else {

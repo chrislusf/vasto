@@ -1,7 +1,7 @@
 package topology
 
 import (
-	jump "github.com/dgryski/go-jump"
+	"github.com/dgryski/go-jump"
 )
 
 type Node interface {
@@ -9,7 +9,7 @@ type Node interface {
 	GetHost() string
 }
 
-type Ring interface {
+type Cluster interface {
 	Add(n Node)
 	Remove(n Node)
 	GetDataCenter() string
@@ -20,7 +20,9 @@ type Ring interface {
 	FindBucketGivenSize(key uint64, size int) int
 
 	// Returns the size of the ring. Virtual nodes are included.
-	Size() int
+	CurrentSize() int
+	NextSize() int
+	NodeCount() int
 
 	// Returns a node for the given bucket number
 	GetNode(index int) Node
@@ -49,12 +51,14 @@ func NewNode(id int, host string) Node {
 }
 
 // --------------------
-//      Hash Ring
+//      Hash Cluster
 // --------------------
 
 type hashRing struct {
-	dataCenter string
-	nodes      []Node
+	dataCenter         string
+	nodes              []Node
+	currentClusterSize int
+	nextClusterSize    int
 }
 
 // adds a host (+virtual hosts to the ring)
@@ -81,11 +85,19 @@ func (h *hashRing) FindBucketGivenSize(key uint64, size int) int {
 
 // calculates a Jump hash for the key provided
 func (h *hashRing) FindBucket(key uint64) int {
-	return int(jump.Hash(key, h.Size()))
+	return int(jump.Hash(key, h.CurrentSize()))
 }
 
 // returns the size of the ring
-func (h *hashRing) Size() int {
+func (h *hashRing) CurrentSize() int {
+	return h.currentClusterSize
+}
+
+func (h *hashRing) NextSize() int {
+	return h.nextClusterSize
+}
+
+func (h *hashRing) NodeCount() int {
 	return len(h.nodes)
 }
 
@@ -99,7 +111,7 @@ func (h *hashRing) GetDataCenter() string {
 }
 
 // NewHashRing creates a new hash ring.
-func NewHashRing(dataCenter string) Ring {
+func NewHashRing(dataCenter string) Cluster {
 	return &hashRing{
 		dataCenter: dataCenter,
 		nodes:      make([]Node, 0, 16),

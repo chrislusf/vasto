@@ -54,8 +54,8 @@ func (ms *masterServer) ResizeCluster(req *pb.ResizeRequest, stream pb.VastoMast
 		return nil
 	}
 
-	if r.Size() < int(req.GetClusterSize()) {
-		resp.Error = fmt.Sprintf("cluster %s has size %d, less than requested %d", dc, r.Size(), req.GetClusterSize())
+	if r.NodeCount() < int(req.GetClusterSize()) {
+		resp.Error = fmt.Sprintf("cluster %s has size %d, less than requested %d", dc, r.NodeCount(), req.GetClusterSize())
 		if err := stream.Send(resp); err != nil {
 			return err
 		}

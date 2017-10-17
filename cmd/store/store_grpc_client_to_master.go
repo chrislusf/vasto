@@ -41,14 +41,11 @@ func (ss *storeServer) registerAtMasterServer() error {
 		DataCenter: *ss.option.DataCenter,
 		Store: &pb.StoreResource{
 			Id: *ss.option.Id,
-			Location: &pb.Location{
-				DataCenter: *ss.option.DataCenter,
-				Address: fmt.Sprintf(
-					"%s:%d",
-					*ss.option.Host,
-					int32(*ss.option.TcpPort),
-				),
-			},
+			Address: fmt.Sprintf(
+				"%s:%d",
+				*ss.option.Host,
+				int32(*ss.option.TcpPort),
+			),
 		},
 	}
 

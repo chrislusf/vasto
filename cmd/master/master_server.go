@@ -21,7 +21,7 @@ type MasterOption struct {
 type masterServer struct {
 	option      *MasterOption
 	clientChans *clientChannels
-	rings       map[string]topology.Ring
+	rings       map[string]topology.Cluster
 	sync.Mutex
 	currentClusterSize uint32
 	nextClusterSize    uint32
@@ -31,7 +31,7 @@ func RunMaster(option *MasterOption) {
 	var ms = &masterServer{
 		option:             option,
 		clientChans:        newClientChannels(),
-		rings:              make(map[string]topology.Ring),
+		rings:              make(map[string]topology.Cluster),
 		currentClusterSize: uint32(*option.ClusterSize),
 	}
 

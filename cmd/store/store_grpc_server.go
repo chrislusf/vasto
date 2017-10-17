@@ -17,7 +17,7 @@ func (ss *storeServer) serveGrpc(listener net.Listener) {
 func (ss *storeServer) Put(ctx context.Context, request *pb.PutRequest) (*pb.PutResponse, error) {
 	return &pb.PutResponse{}, nil
 }
-func (ss *storeServer) Copy(stream *pb.VastoStore_CopyServer) error {
+func (ss *storeServer) Copy(stream pb.VastoStore_CopyServer) error {
 	return nil
 }
 func (ss *storeServer) CopyDone(ctx context.Context, request *pb.CopyDoneMessge) (*pb.Empty, error) {

@@ -19,7 +19,7 @@ func TestNode(t *testing.T) {
 
 // closure function for benchmarking multiple clusters
 func baselineBenchmark(hosts int) func(b *testing.B) {
-	ring := NewHashRing()
+	ring := NewHashRing("")
 	for i := 0; i < hosts; i++ {
 		ring.Add(NewNode(i, fmt.Sprint("localhost:", 7000+i)))
 	}
@@ -55,7 +55,7 @@ func TestHashing(t *testing.T) {
 
 	var count = 500000
 	var moved, movedInRing1 int
-	ring1Size := ring1.Size()
+	ring1Size := ring1.CurrentSize()
 
 	for n := 0; n < count; n++ {
 		x := ring1.FindBucket(uint64(n))
@@ -72,14 +72,14 @@ func TestHashing(t *testing.T) {
 	printMovedStats("movedInRing1", movedInRing1, count)
 
 	actualMovedPercentage := float64(100*moved) / float64(count)
-	expectedMovePercentage := 100 * math.Abs(float64(ring2.Size()-ring1.Size())) / float64(ring2.Size())
+	expectedMovePercentage := 100 * math.Abs(float64(ring2.CurrentSize()-ring1.CurrentSize())) / float64(ring2.CurrentSize())
 	fmt.Printf("expected %f%%\n", expectedMovePercentage)
 
 	assert.True(t, actualMovedPercentage < expectedMovePercentage+0.002)
 }
 
-func createRing(hosts int) Ring {
-	ring := NewHashRing()
+func createRing(hosts int) Cluster {
+	ring := NewHashRing("")
 	for i := 0; i < hosts; i++ {
 		ring.Add(NewNode(i, fmt.Sprint("localhost:", 7000+i)))
 	}

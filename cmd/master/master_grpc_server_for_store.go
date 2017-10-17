@@ -20,7 +20,7 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 		return err
 	}
 
-	fmt.Printf("store connected %v\n", storeHeartbeat.Store.Location)
+	fmt.Printf("store connected %v\n", storeHeartbeat.Store.Address)
 
 	node := topology.NewNodeFromStore(storeHeartbeat.Store)
 
@@ -51,7 +51,7 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 				break
 			}
 		}
-		fmt.Printf("store disconnected %v: %v\n", storeHeartbeat.Store.Location, e)
+		fmt.Printf("store disconnected %v: %v\n", storeHeartbeat.Store.Address, e)
 		storeDisconnectedChan <- true
 	}()
 
@@ -62,11 +62,8 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 			ms.clientChans.notifyStoreResourceUpdate(
 				storeHeartbeat.DataCenter,
 				[]*pb.StoreResource{{
-					Id: int32(node.GetId()),
-					Location: &pb.Location{
-						DataCenter: storeHeartbeat.DataCenter,
-						Address:    node.GetHost(),
-					},
+					Id:      int32(node.GetId()),
+					Address: node.GetHost(),
 				}},
 				true,
 			)

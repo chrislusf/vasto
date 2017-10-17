@@ -68,13 +68,13 @@ func (cc *clientChannels) notifyStoreResourceUpdate(dataCenter string, stores []
 	)
 }
 
-func (cc *clientChannels) notifyClusterSize(dataCenter string, currentClusterSize, newClusterSize uint32) error {
+func (cc *clientChannels) notifyClusterSize(dataCenter string, currentClusterSize, nextClusterSize uint32) error {
 	return cc.notifyClients(
 		dataCenter,
 		&pb.ClientMessage{
 			Resize: &pb.ClientMessage_Resize{
 				CurrentClusterSize: currentClusterSize,
-				NewClusterSize:     newClusterSize,
+				NextClusterSize:    nextClusterSize,
 			},
 		},
 	)

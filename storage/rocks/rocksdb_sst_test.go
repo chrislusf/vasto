@@ -53,9 +53,9 @@ func TestAddBySst(t *testing.T) {
 	fmt.Printf("%d messages inserted by sst in: %v\n", limit, time.Now().Sub(now))
 
 	if v, err := db.Get([]byte("k12345")); err == nil {
-		// this should be returning v12345
+		// this should be returning n12345
 		// when allow_ingest_behind is enabled
-		if string(v) == "n12345" {
+		if string(v) != "n12345" {
 			t.Errorf("get expecting %v, actual %v", "n12345", string(v))
 		}
 	} else {

@@ -7,15 +7,15 @@ import (
 func NewNodeFromStore(store *pb.StoreResource) Node {
 	return NewNode(
 		int(store.Id),
-		store.Location.Address,
+		store.Address,
 	)
 }
 
-func ToStores(r Ring) (stores []*pb.StoreResource) {
+func ToStores(r Cluster) (stores []*pb.StoreResource) {
 	if r == nil {
 		return
 	}
-	for i := 0; i < r.Size(); i++ {
+	for i := 0; i < r.CurrentSize(); i++ {
 		node := r.GetNode(i)
 		address := ""
 		if node != nil {
@@ -24,11 +24,8 @@ func ToStores(r Ring) (stores []*pb.StoreResource) {
 		stores = append(
 			stores,
 			&pb.StoreResource{
-				Id: int32(i),
-				Location: &pb.Location{
-					DataCenter: r.GetDataCenter(),
-					Address:    address,
-				},
+				Id:      int32(i),
+				Address: address,
 			},
 		)
 	}

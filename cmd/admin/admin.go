@@ -56,7 +56,7 @@ func (b *administer) list() error {
 	}
 
 	for _, store := range listResponse.Stores {
-		fmt.Printf("%4d: %32v\n", store.Id, store.Location.Address)
+		fmt.Printf("%4d: %32v\n", store.Id, store.Address)
 	}
 
 	return nil
