@@ -50,12 +50,13 @@ func (b *administer) list() error {
 	)
 
 	fmt.Printf("Cluster Client Count  : %d\n", listResponse.ClientCount)
-	fmt.Printf("Cluster   View  Size  : %d\n", listResponse.CurrentClusterSize)
-	if listResponse.NextClusterSize != 0 {
-		fmt.Printf("Cluster is changing to: %d\n", listResponse.NextClusterSize)
+	cluster := listResponse.GetCluster()
+	fmt.Printf("Cluster   View  Size  : %d\n", cluster.CurrentClusterSize)
+	if cluster.NextClusterSize != 0 {
+		fmt.Printf("Cluster is changing to: %d\n", cluster.NextClusterSize)
 	}
 
-	for _, store := range listResponse.Stores {
+	for _, store := range cluster.Stores {
 		fmt.Printf("%4d: %32v\n", store.Id, store.Address)
 	}
 

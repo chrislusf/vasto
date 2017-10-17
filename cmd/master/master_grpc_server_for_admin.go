@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/topology"
 )
 
 func (ms *masterServer) ListStores(ctx context.Context, req *pb.ListRequest) (*pb.ListResponse, error) {
@@ -14,14 +13,9 @@ func (ms *masterServer) ListStores(ctx context.Context, req *pb.ListRequest) (*p
 	r, _ := ms.clusters[dc]
 	ms.Unlock()
 
-	stores := topology.ToStores(r)
-
 	resp := &pb.ListResponse{
-		DataCenter:         dc,
-		CurrentClusterSize: ms.currentClusterSize,
-		NextClusterSize:    ms.nextClusterSize,
-		Stores:             stores,
-		ClientCount:        uint32(len(ms.clientChans.clientChans)),
+		Cluster:     r.ToCluster(),
+		ClientCount: uint32(len(ms.clientChans.clientChans)),
 	}
 	return resp, nil
 }

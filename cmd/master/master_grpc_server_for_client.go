@@ -5,7 +5,6 @@ import (
 
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/topology"
 	"google.golang.org/grpc/peer"
 	"log"
 	"net"
@@ -41,13 +40,12 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 	}
 
 	ms.Lock()
-	ring, ok := ms.clusters[clientHeartbeat.Location.DataCenter]
+	clusterRing, ok := ms.clusters[clientHeartbeat.Location.DataCenter]
 	ms.Unlock()
 	if ok {
-		ms.clientChans.notifyStoreResourceUpdate(
+		ms.clientChans.notifyCluster(
 			clientHeartbeat.Location.DataCenter,
-			topology.ToStores(ring),
-			false,
+			clusterRing,
 		)
 	}
 

@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/topology"
 	"strings"
 )
 
@@ -64,6 +65,15 @@ func (cc *clientChannels) notifyStoreResourceUpdate(dataCenter string, stores []
 				Stores:   stores,
 				IsDelete: isDelete,
 			},
+		},
+	)
+}
+
+func (cc *clientChannels) notifyCluster(dataCenter string, cluster *topology.ClusterRing) error {
+	return cc.notifyClients(
+		dataCenter,
+		&pb.ClientMessage{
+			Cluster: cluster.ToCluster(),
 		},
 	)
 }

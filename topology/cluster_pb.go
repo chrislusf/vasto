@@ -11,7 +11,19 @@ func NewNodeFromStore(store *pb.StoreResource) *Node {
 	)
 }
 
-func ToStores(r *ClusterRing) (stores []*pb.StoreResource) {
+func (cluster *ClusterRing) ToCluster() *pb.Cluster {
+	if cluster == nil {
+		return &pb.Cluster{}
+	}
+	return &pb.Cluster{
+		DataCenter:         cluster.GetDataCenter(),
+		Stores:             cluster.ToStores(),
+		CurrentClusterSize: uint32(cluster.CurrentSize()),
+		NextClusterSize:    uint32(cluster.NextSize()),
+	}
+}
+
+func (r *ClusterRing) ToStores() (stores []*pb.StoreResource) {
 	if r == nil {
 		return
 	}
