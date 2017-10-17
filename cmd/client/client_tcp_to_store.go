@@ -2,56 +2,45 @@ package client
 
 import (
 	"fmt"
-	"log"
-	"net"
-	"time"
 
 	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/util"
 )
 
 func (c *VastoClient) Put(key, value []byte) error {
 
-	address := "localhost:8279"
+	n := c.cluster.GetNode(c.cluster.FindBucket(util.Hash(key)))
 
-	conn, err := net.Dial("tcp", address)
+	node, ok := n.(*nodeWithConnPool)
+
+	if !ok {
+		return fmt.Errorf("unexpected node %+v", n)
+	}
+
+	conn, err := node.GetConnection()
 	if err != nil {
-		return fmt.Errorf("Fail to dial read %s: %v", address, err)
+		return fmt.Errorf("GetConnection %+v", err)
 	}
 	defer conn.Close()
-	conn.SetDeadline(time.Time{})
-	if c, ok := conn.(*net.TCPConn); ok {
-		c.SetKeepAlive(true)
-	}
 
 	request := &pb.Request{
 		Put: &pb.PutRequest{
 			KeyValue: &pb.KeyValue{
-				Key:   []byte("asdf"),
-				Value: []byte("asdf"),
+				Key:   key,
+				Value: value,
 			},
 			TimestampNs: 0,
 			TtlMs:       0,
 		},
 	}
 
-	start := time.Now()
-	N := int64(100000)
-
-	fmt.Printf("%d tcp put test start\n", N)
-
 	requests := &pb.Requests{}
 	requests.Requests = append(requests.Requests, request)
 
-	for i := int64(0); i < N; i++ {
-		_, err = pb.SendRequest(conn, requests)
-		if err != nil {
-			log.Printf("put error: %v", err)
-			return err
-		}
+	_, err = pb.SendRequest(conn, requests)
+	if err != nil {
+		return fmt.Errorf("put error: %v", err)
 	}
-
-	taken := time.Now().Sub(start)
-	fmt.Printf("%d put average taken %v %d ns/op\n", N, taken, taken.Nanoseconds()/N)
 
 	return nil
 }

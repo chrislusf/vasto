@@ -1,7 +1,7 @@
 package rocks
 
 import (
-	"github.com/cespare/xxhash"
+	"github.com/chrislusf/vasto/util"
 	"github.com/dgryski/go-jump"
 )
 
@@ -17,7 +17,7 @@ func (m *shardingCompactionFilter) configure(shardId int32, shardCount int) {
 
 func (m *shardingCompactionFilter) Name() string { return "vasto.sharding" }
 func (m *shardingCompactionFilter) Filter(level int, key, val []byte) (bool, []byte) {
-	jumpHash := jump.Hash(xxhash.Sum64(key), m.shardCount)
+	jumpHash := jump.Hash(util.Hash(key), m.shardCount)
 	if m.shardId == jumpHash {
 		return false, val
 	}

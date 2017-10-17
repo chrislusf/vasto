@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
 	"gopkg.in/fatih/pool.v2"
+	"time"
 )
 
 type nodeWithConnPool struct {
@@ -17,7 +18,13 @@ type nodeWithConnPool struct {
 func newNodeWithConnPool(store *pb.StoreResource) *nodeWithConnPool {
 	p, _ := pool.NewChannelPool(0, 2,
 		func() (net.Conn, error) {
-			return net.Dial("tcp", store.Address)
+			conn, err := net.Dial("tcp", store.Address)
+			conn.SetDeadline(time.Time{})
+			if c, ok := conn.(*net.TCPConn); ok {
+				c.SetKeepAlive(true)
+				c.SetNoDelay(true)
+			}
+			return conn, err
 		})
 	return &nodeWithConnPool{
 		id:   int(store.Id),
