@@ -7,6 +7,7 @@ import (
 func NewNodeFromStore(store *pb.StoreResource) Node {
 	return NewNode(
 		int(store.Id),
+		store.Network,
 		store.Address,
 	)
 }
@@ -31,12 +32,13 @@ func (r *ClusterRing) ToStores() (stores []*pb.StoreResource) {
 		node := r.GetNode(i)
 		address := ""
 		if node != nil {
-			address = node.GetHost()
+			address = node.GetAddress()
 		}
 		stores = append(
 			stores,
 			&pb.StoreResource{
 				Id:      int32(i),
+				Network: node.GetNetwork(),
 				Address: address,
 			},
 		)

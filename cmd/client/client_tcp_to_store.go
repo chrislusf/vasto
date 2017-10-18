@@ -37,7 +37,7 @@ func (c *VastoClient) Put(key, value []byte) error {
 	requests := &pb.Requests{}
 	requests.Requests = append(requests.Requests, request)
 
-	_, err = pb.SendRequest(conn, requests)
+	_, err = pb.SendRequests(conn, requests)
 	if err != nil {
 		return fmt.Errorf("put error: %v", err)
 	}

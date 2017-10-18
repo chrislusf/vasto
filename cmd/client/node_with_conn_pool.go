@@ -10,15 +10,16 @@ import (
 )
 
 type nodeWithConnPool struct {
-	id   int
-	host string
-	p    pool.Pool
+	id      int
+	network string
+	address string
+	p       pool.Pool
 }
 
 func newNodeWithConnPool(store *pb.StoreResource) *nodeWithConnPool {
 	p, _ := pool.NewChannelPool(0, 2,
 		func() (net.Conn, error) {
-			conn, err := net.Dial("tcp", store.Address)
+			conn, err := net.Dial(store.Network, store.Address)
 			conn.SetDeadline(time.Time{})
 			if c, ok := conn.(*net.TCPConn); ok {
 				c.SetKeepAlive(true)
@@ -27,9 +28,10 @@ func newNodeWithConnPool(store *pb.StoreResource) *nodeWithConnPool {
 			return conn, err
 		})
 	return &nodeWithConnPool{
-		id:   int(store.Id),
-		host: store.Address,
-		p:    p,
+		id:      int(store.Id),
+		network: store.Network,
+		address: store.Address,
+		p:       p,
 	}
 }
 
@@ -37,8 +39,12 @@ func (n *nodeWithConnPool) GetId() int {
 	return n.id
 }
 
-func (n *nodeWithConnPool) GetHost() string {
-	return n.host
+func (n *nodeWithConnPool) GetNetwork() string {
+	return n.network
+}
+
+func (n *nodeWithConnPool) GetAddress() string {
+	return n.address
 }
 
 func (n *nodeWithConnPool) GetConnection() (net.Conn, error) {
@@ -48,7 +54,7 @@ func (n *nodeWithConnPool) GetConnection() (net.Conn, error) {
 func (c *VastoClient) AddNode(store *pb.StoreResource) {
 	node := newNodeWithConnPool(store)
 	c.cluster.Add(node)
-	fmt.Printf("   add node %d: %v\n", node.GetId(), node.GetHost())
+	fmt.Printf("   add node %d: %v\n", node.GetId(), node.GetAddress())
 }
 
 func (c *VastoClient) RemoveNode(store *pb.StoreResource) {

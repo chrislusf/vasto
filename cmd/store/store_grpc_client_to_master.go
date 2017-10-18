@@ -40,7 +40,8 @@ func (ss *storeServer) registerAtMasterServer() error {
 	storeHeartbeat := &pb.StoreHeartbeat{
 		DataCenter: *ss.option.DataCenter,
 		Store: &pb.StoreResource{
-			Id: *ss.option.Id,
+			Id:      *ss.option.Id,
+			Network: "tcp",
 			Address: fmt.Sprintf(
 				"%s:%d",
 				*ss.option.Host,

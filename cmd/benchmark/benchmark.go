@@ -99,7 +99,7 @@ func (b *benchmarker) startClient(hist *Histogram, op operation) error {
 
 	for i := 0; i < requestCount; i++ {
 		start := time.Now()
-		responses, err := pb.SendRequest(conn, op(r))
+		responses, err := pb.SendRequests(conn, op(r))
 		if err != nil {
 			log.Printf("put error: %v", err)
 			return err

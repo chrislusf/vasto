@@ -6,24 +6,30 @@ import (
 
 type Node interface {
 	GetId() int
-	GetHost() string
+	GetNetwork() string
+	GetAddress() string
 }
 
 type node struct {
-	id   int
-	host string
+	id      int
+	network string
+	address string
 }
 
 func (n *node) GetId() int {
 	return n.id
 }
 
-func (n *node) GetHost() string {
-	return n.host
+func (n *node) GetNetwork() string {
+	return n.address
 }
 
-func NewNode(id int, host string) Node {
-	return &node{id: id, host: host}
+func (n *node) GetAddress() string {
+	return n.address
+}
+
+func NewNode(id int, network, address string) Node {
+	return &node{id: id, network: network, address: address}
 }
 
 // --------------------
@@ -37,7 +43,7 @@ type ClusterRing struct {
 	nextClusterSize    int
 }
 
-// adds a host (+virtual hosts to the ring)
+// adds a address (+virtual hosts to the ring)
 func (h *ClusterRing) Add(n Node) {
 	if len(h.nodes) < n.GetId()+1 {
 		cap := n.GetId() + 1

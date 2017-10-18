@@ -63,7 +63,8 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 				storeHeartbeat.DataCenter,
 				[]*pb.StoreResource{{
 					Id:      int32(node.GetId()),
-					Address: node.GetHost(),
+					Network: node.GetNetwork(),
+					Address: node.GetAddress(),
 				}},
 				true,
 			)

@@ -32,7 +32,6 @@ service VastoStore {
     }
 }
 
-
 //////////////////////////////////////////////////
 // 1. master received request to balance the data
 
@@ -66,7 +65,7 @@ message ClientMessage {
 }
 
 message Topology {
-    map<string,Cluster> data_center_clusters = 1;
+    map<string, Cluster> data_center_clusters = 1;
 }
 
 message Cluster {
@@ -78,12 +77,14 @@ message Cluster {
 
 message StoreResource {
     int32 id = 1;
-    string address = 2;
+    string network = 2;
+    string address = 3;
 }
 
 message Location {
     string data_center = 1;
-    string address = 2;
+    string network = 2;
+    string address = 3;
 }
 
 //////////////////////////////////////////////////
