@@ -27,7 +27,9 @@ func New(option *ClientOption) *VastoClient {
 	return c
 }
 
-func (c *VastoClient) Start() error {
+func (c *VastoClient) Start(clientReadyChan chan bool) {
+	var clientReady bool
+
 	clientMessageChan := make(chan *pb.ClientMessage)
 
 	go util.RetryForever(func() error {
@@ -38,8 +40,14 @@ func (c *VastoClient) Start() error {
 		select {
 		case msg := <-clientMessageChan:
 			if msg.GetCluster() != nil {
+				c.cluster.SetCurrentSize(int(msg.Cluster.CurrentClusterSize))
+				c.cluster.SetNextSize(int(msg.Cluster.NextClusterSize))
 				for _, store := range msg.Cluster.Stores {
 					c.AddNode(store)
+				}
+				if !clientReady {
+					clientReady = true
+					clientReadyChan <- true
 				}
 			} else if msg.GetUpdates() != nil {
 				for _, store := range msg.Updates.Stores {
@@ -63,5 +71,4 @@ func (c *VastoClient) Start() error {
 		}
 	}
 
-	return nil
 }

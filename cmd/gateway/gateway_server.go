@@ -19,14 +19,14 @@ type GatewayOption struct {
 type gatewayServer struct {
 	option *GatewayOption
 
-	clientToMaster *client.VastoClient
+	vastoClient *client.VastoClient
 }
 
 func RunGateway(option *GatewayOption) {
 
 	var gs = &gatewayServer{
 		option: option,
-		clientToMaster: client.New(
+		vastoClient: client.New(
 			&client.ClientOption{
 				Master:     option.Master,
 				DataCenter: option.DataCenter,
@@ -43,8 +43,11 @@ func RunGateway(option *GatewayOption) {
 		go gs.serveGrpc(grpcListener)
 	}
 
-	go gs.clientToMaster.Start()
+	clientReadyChan := make(chan bool)
+	go gs.vastoClient.Start(clientReadyChan)
+	<-clientReadyChan
 
+	fmt.Printf("Vasto gateway ready\n")
 	select {}
 
 }

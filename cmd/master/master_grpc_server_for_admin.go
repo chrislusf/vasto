@@ -38,10 +38,10 @@ func (ms *masterServer) ResizeCluster(req *pb.ResizeRequest, stream pb.VastoMast
 		return nil
 	}
 
-	if ms.nextClusterSize != 0 {
+	if r.NextSize() != 0 {
 		resp.Error = fmt.Sprintf(
 			"cluster %s is resizing %d => %d in progress ...",
-			dc, ms.currentClusterSize, ms.nextClusterSize)
+			dc, r.CurrentSize(), r.NextSize())
 		if err := stream.Send(resp); err != nil {
 			return err
 		}
@@ -56,33 +56,33 @@ func (ms *masterServer) ResizeCluster(req *pb.ResizeRequest, stream pb.VastoMast
 		return nil
 	}
 
-	if ms.currentClusterSize == req.GetClusterSize() {
-		resp.Error = fmt.Sprintf("cluster %s is already size %d", dc, ms.currentClusterSize)
+	if r.CurrentSize() == int(req.GetClusterSize()) {
+		resp.Error = fmt.Sprintf("cluster %s is already size %d", dc, r.CurrentSize())
 		if err := stream.Send(resp); err != nil {
 			return err
 		}
 		return nil
-	} else if ms.currentClusterSize > req.GetClusterSize() {
+	} else if r.CurrentSize() > int(req.GetClusterSize()) {
 		resp.Error = fmt.Sprintf("cluster %s size %d => %d downsizing is not supported yet.",
-			dc, ms.currentClusterSize, req.GetClusterSize())
+			dc, r.CurrentSize(), req.GetClusterSize())
 		if err := stream.Send(resp); err != nil {
 			return err
 		}
 		return nil
 	} else {
 		resp.Progress = fmt.Sprintf("start cluster %s size %d => %d",
-			dc, ms.currentClusterSize, req.GetClusterSize())
+			dc, r.CurrentSize(), req.GetClusterSize())
 		if err := stream.Send(resp); err != nil {
 			return err
 		}
 	}
 
-	ms.nextClusterSize = req.GetClusterSize()
-	ms.clientChans.notifyClusterSize(dc, ms.currentClusterSize, ms.nextClusterSize)
+	r.SetNextSize(int(req.GetClusterSize()))
+	ms.clientChans.notifyClusterSize(dc, uint32(r.CurrentSize()), uint32(r.NextSize()))
 
-	ms.clientChans.notifyClusterSize(dc, ms.nextClusterSize, 0)
-	ms.currentClusterSize = ms.nextClusterSize
-	ms.nextClusterSize = 0
+	ms.clientChans.notifyClusterSize(dc, uint32(r.NextSize()), 0)
+	r.SetCurrentSize(r.NextSize())
+	r.SetNextSize(0)
 
 	return nil
 }

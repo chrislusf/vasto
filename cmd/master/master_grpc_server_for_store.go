@@ -6,6 +6,7 @@ import (
 
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
+	"log"
 )
 
 func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer) error {
@@ -20,7 +21,7 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 		return err
 	}
 
-	fmt.Printf("store connected %v\n", storeHeartbeat.Store.Address)
+	log.Printf("store connected %s %v\n", storeHeartbeat.Store.Network, storeHeartbeat.Store.Address)
 
 	node := topology.NewNodeFromStore(storeHeartbeat.Store)
 
@@ -28,6 +29,7 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 	ring, ok := ms.clusters[storeHeartbeat.DataCenter]
 	if !ok {
 		ring = topology.NewHashRing(storeHeartbeat.DataCenter)
+		ring.SetCurrentSize(ms.defaultClusterSize)
 		ms.clusters[storeHeartbeat.DataCenter] = ring
 	}
 	ms.Unlock()

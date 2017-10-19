@@ -32,7 +32,7 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 		return fmt.Errorf("failed to get peer address")
 	}
 
-	fmt.Printf("client connected %v\n", pr.Addr.String())
+	log.Printf("client connected %v\n", pr.Addr.String())
 
 	ch, err := ms.clientChans.addClient(clientHeartbeat.Location.DataCenter, pr.Addr.String())
 	if err != nil {

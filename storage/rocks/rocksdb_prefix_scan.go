@@ -8,7 +8,7 @@ import (
 
 // PrefixScan paginate through all entries with the prefix
 // the first scan can have empty lastKey and limit = 0
-func (d *rocks) PrefixScan(prefix, lastKey []byte, limit int, fn func(key, value []byte) bool) error {
+func (d *Rocks) PrefixScan(prefix, lastKey []byte, limit int, fn func(key, value []byte) bool) error {
 	opts := gorocksdb.NewDefaultReadOptions()
 	opts.SetFillCache(false)
 	defer opts.Destroy()
@@ -17,7 +17,7 @@ func (d *rocks) PrefixScan(prefix, lastKey []byte, limit int, fn func(key, value
 	return d.enumerate(iter, prefix, lastKey, limit, fn)
 }
 
-func (d *rocks) enumerate(iter *gorocksdb.Iterator, prefix, lastKey []byte, limit int, fn func(key, value []byte) bool) error {
+func (d *Rocks) enumerate(iter *gorocksdb.Iterator, prefix, lastKey []byte, limit int, fn func(key, value []byte) bool) error {
 
 	if len(lastKey) == 0 {
 		iter.Seek(prefix)

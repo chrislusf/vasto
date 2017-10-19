@@ -119,17 +119,17 @@ func TestRangeScan(t *testing.T) {
 
 }
 
-func setupTestDb() *rocks {
+func setupTestDb() *Rocks {
 	db := New("/tmp/rocks-test-go")
 	return db
 }
 
-func cleanup(db *rocks) {
+func cleanup(db *Rocks) {
 	db.Close()
 	db.Destroy()
 }
 
-func count(db *rocks) (count int) {
+func count(db *Rocks) (count int) {
 	db.PrefixScan(nil, nil, 0, func(key, value []byte) bool {
 		count++
 		return true

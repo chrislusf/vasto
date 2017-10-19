@@ -2,10 +2,12 @@ package store
 
 import (
 	"fmt"
-	"github.com/chrislusf/vasto/util/on_interrupt"
 	"log"
 	"net"
 	"os"
+
+	"github.com/chrislusf/vasto/storage/rocks"
+	"github.com/chrislusf/vasto/util/on_interrupt"
 )
 
 type StoreOption struct {
@@ -22,22 +24,24 @@ type StoreOption struct {
 
 type storeServer struct {
 	option *StoreOption
+	db     *rocks.Rocks
 }
 
 func RunStore(option *StoreOption) {
 
 	var ss = &storeServer{
 		option: option,
+		db:     rocks.New(option.storeFolder()),
 	}
 
-	startsStatus := "Vasto store starts on"
+	log.Printf("Vasto store starts on %s", option.storeFolder())
 
 	if *option.TcpPort != 0 {
 		tcpListener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *option.ListenHost, *option.TcpPort))
 		if err != nil {
 			log.Fatal(err)
 		}
-		startsStatus += fmt.Sprintf("\n tcp     %v:%d", *option.ListenHost, *option.TcpPort)
+		log.Printf("tcp     %v:%d", *option.ListenHost, *option.TcpPort)
 		go ss.serveTcp(tcpListener)
 	}
 
@@ -46,7 +50,7 @@ func RunStore(option *StoreOption) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		startsStatus += fmt.Sprintf("\n grpc    %v:%d", *option.ListenHost, *option.GrpcPort)
+		log.Printf("grpc    %v:%d", *option.ListenHost, *option.GrpcPort)
 		go ss.serveGrpc(grpcListener)
 	}
 
@@ -55,17 +59,19 @@ func RunStore(option *StoreOption) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		startsStatus += fmt.Sprintf("\n socket   %s", *option.UnixSocket)
+		log.Printf("socket   %s", *option.UnixSocket)
 		on_interrupt.OnInterrupt(func() {
 			os.Remove(*option.UnixSocket)
 		}, nil)
 		go ss.serveTcp(unixSocketListener)
 	}
 
-	log.Println(startsStatus)
-
 	go ss.keepConnectedToMasterServer()
 
 	select {}
 
+}
+
+func (option *StoreOption) storeFolder() string {
+	return fmt.Sprintf("%s/%d", *option.Dir, *option.Id)
 }

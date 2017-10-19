@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func (d *rocks) addSst(next func() (bool, []byte, []byte)) error {
+func (d *Rocks) addSst(next func() (bool, []byte, []byte)) error {
 	envOpts := gorocksdb.NewDefaultEnvOptions()
 	defer envOpts.Destroy()
 	opts := gorocksdb.NewDefaultOptions()

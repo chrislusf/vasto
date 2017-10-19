@@ -30,15 +30,16 @@ func (r *ClusterRing) ToStores() (stores []*pb.StoreResource) {
 	}
 	for i := 0; i < r.NodeCount(); i++ {
 		node := r.GetNode(i)
-		address := ""
+		var network, address string
 		if node != nil {
+			network = node.GetNetwork()
 			address = node.GetAddress()
 		}
 		stores = append(
 			stores,
 			&pb.StoreResource{
 				Id:      int32(i),
-				Network: node.GetNetwork(),
+				Network: network,
 				Address: address,
 			},
 		)

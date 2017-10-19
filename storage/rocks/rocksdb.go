@@ -7,7 +7,7 @@ import (
 	"github.com/tecbot/gorocksdb"
 )
 
-type rocks struct {
+type Rocks struct {
 	path             string
 	db               *gorocksdb.DB
 	dbOptions        *gorocksdb.Options
@@ -16,15 +16,15 @@ type rocks struct {
 	compactionFilter *shardingCompactionFilter
 }
 
-func New(path string) *rocks {
-	r := &rocks{
+func New(path string) *Rocks {
+	r := &Rocks{
 		compactionFilter: &shardingCompactionFilter{},
 	}
 	r.setup(path)
 	return r
 }
 
-func (d *rocks) setup(path string) {
+func (d *Rocks) setup(path string) {
 	d.path = path
 	d.dbOptions = gorocksdb.NewDefaultOptions()
 	d.dbOptions.SetCreateIfMissing(true)
@@ -43,23 +43,23 @@ func (d *rocks) setup(path string) {
 	d.ro = gorocksdb.NewDefaultReadOptions()
 }
 
-func (d *rocks) Put(key []byte, msg []byte) error {
+func (d *Rocks) Put(key []byte, msg []byte) error {
 	return d.db.Put(d.wo, key, msg)
 }
 
-func (d *rocks) Get(key []byte) ([]byte, error) {
+func (d *Rocks) Get(key []byte) ([]byte, error) {
 	return d.db.GetBytes(d.ro, key)
 }
 
-func (d *rocks) Delete(k []byte) error {
+func (d *Rocks) Delete(k []byte) error {
 	return d.db.Delete(d.wo, k)
 }
 
-func (d *rocks) Destroy() {
+func (d *Rocks) Destroy() {
 	os.RemoveAll(d.path)
 }
 
-func (d *rocks) Close() {
+func (d *Rocks) Close() {
 	d.wo.Destroy()
 	d.ro.Destroy()
 	d.dbOptions.Destroy()

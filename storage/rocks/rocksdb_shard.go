@@ -1,8 +1,8 @@
 package rocks
 
 import (
-	"github.com/chrislusf/vasto/util"
 	"github.com/dgryski/go-jump"
+	"github.com/chrislusf/vasto/util"
 )
 
 type shardingCompactionFilter struct {
@@ -24,6 +24,6 @@ func (m *shardingCompactionFilter) Filter(level int, key, val []byte) (bool, []b
 	return true, val
 }
 
-func (d *rocks) SetCompactionForShard(shardId, shardCount int) {
+func (d *Rocks) SetCompactionForShard(shardId, shardCount int) {
 	d.compactionFilter.configure(int32(shardId), shardCount)
 }

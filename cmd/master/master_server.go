@@ -1,7 +1,6 @@
 package master
 
 import (
-	"fmt"
 	"log"
 	"net"
 	//"strings"
@@ -23,8 +22,7 @@ type masterServer struct {
 	clientChans *clientChannels
 	clusters    map[string]*topology.ClusterRing
 	sync.Mutex
-	currentClusterSize uint32
-	nextClusterSize    uint32
+	defaultClusterSize int
 }
 
 func RunMaster(option *MasterOption) {
@@ -32,14 +30,14 @@ func RunMaster(option *MasterOption) {
 		option:             option,
 		clientChans:        newClientChannels(),
 		clusters:           make(map[string]*topology.ClusterRing),
-		currentClusterSize: uint32(*option.ClusterSize),
+		defaultClusterSize: int(*option.ClusterSize),
 	}
 
 	listener, err := net.Listen("tcp", *option.Address)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Vasto master starts on %s, cluster size %d\n", *option.Address, *option.ClusterSize)
+	log.Printf("Vasto master starts on %s, cluster size %d\n", *option.Address, *option.ClusterSize)
 
 	// m := cmux.New(listener)
 	// grpcListener := m.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))

@@ -93,6 +93,41 @@ func (ss *storeServer) handleRequest(reader io.Reader, writer io.Writer) error {
 }
 
 func (ss *storeServer) processRequest(command *pb.Request) *pb.Response {
+	if command.GetGet() != nil {
+		key := command.Get.Key
+		if value, err := ss.db.Get(key); err != nil {
+			return &pb.Response{
+				Get: &pb.GetResponse{
+					Status: err.Error(),
+				},
+			}
+		} else {
+			return &pb.Response{
+				Get: &pb.GetResponse{
+					Ok: true,
+					KeyValue: &pb.KeyValue{
+						Key:   key,
+						Value: value,
+					},
+				},
+			}
+		}
+	} else if command.GetPut() != nil {
+		key := command.Put.KeyValue.Key
+		value := command.Put.KeyValue.Value
+
+		resp := &pb.PutResponse{
+			Ok: true,
+		}
+		err := ss.db.Put(key, value)
+		if err != nil {
+			resp.Ok = false
+			resp.Status = err.Error()
+		}
+		return &pb.Response{
+			Put: resp,
+		}
+	}
 	return &pb.Response{
 		Put: &pb.PutResponse{
 			Ok: true,

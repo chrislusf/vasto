@@ -24,11 +24,18 @@ service VastoMaster {
 }
 
 service VastoStore {
-    rpc Put (PutRequest) returns (PutResponse) {
-    }
     rpc Copy (stream KeyValue) returns (Empty) {
     }
     rpc CopyDone (CopyDoneMessge) returns (Empty) {
+    }
+}
+
+service VastoReader {
+    rpc Get (GetRequest) returns (GetResponse) {
+    }
+}
+service VastoWriter {
+    rpc Put (PutRequest) returns (PutResponse) {
     }
 }
 
@@ -144,7 +151,8 @@ message GetRequest {
 
 message GetResponse {
     bool ok = 1;
-    KeyValue key_value = 2;
+    string status = 2;
+    KeyValue key_value = 3;
 }
 
 message RangeGetRequest {
