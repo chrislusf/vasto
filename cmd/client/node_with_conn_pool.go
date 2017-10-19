@@ -17,13 +17,13 @@ type nodeWithConnPool struct {
 	p       pool.Pool
 }
 
-func newNodeWithConnPool(store *pb.StoreResource) *nodeWithConnPool {
+func newNodeWithConnPool(id int, network, address string) *nodeWithConnPool {
 	p, _ := pool.NewChannelPool(0, 2,
 		func() (net.Conn, error) {
-			conn, err := net.Dial(store.Network, store.Address)
-			println("connecting to", store.Network, store.Address)
+			conn, err := net.Dial(network, address)
+			println("connecting to", network, address)
 			if err != nil {
-				fmt.Printf("Failed to dial %s on %s : %v", store.Network, store.Address, err)
+				fmt.Printf("Failed to dial %s on %s : %v", network, address, err)
 			}
 			conn.SetDeadline(time.Time{})
 			if c, ok := conn.(*net.TCPConn); ok {
@@ -33,9 +33,9 @@ func newNodeWithConnPool(store *pb.StoreResource) *nodeWithConnPool {
 			return conn, err
 		})
 	return &nodeWithConnPool{
-		id:      int(store.Id),
-		network: store.Network,
-		address: store.Address,
+		id:      id,
+		network: network,
+		address: address,
 		p:       p,
 	}
 }
@@ -57,7 +57,7 @@ func (n *nodeWithConnPool) GetConnection() (net.Conn, error) {
 }
 
 func (c *VastoClient) AddNode(store *pb.StoreResource) {
-	node := newNodeWithConnPool(store)
+	node := newNodeWithConnPool(int(store.Id), store.Network, store.Address)
 	c.cluster.Add(node)
 	log.Printf("+ node %2d:%s:%20s, cluster: %s", node.GetId(), node.GetNetwork(), node.GetAddress(), c.cluster)
 }

@@ -13,7 +13,7 @@ It has these top-level messages:
 	StoreMessage
 	ClientMessage
 	Topology
-	Cluster
+	FixedCluster
 	StoreResource
 	Location
 	StoreHeartbeat
@@ -865,7 +865,7 @@ func init() {
 	proto.RegisterType((*ClientMessage_StoreResourceUpdate)(nil), "pb.ClientMessage.StoreResourceUpdate")
 	proto.RegisterType((*ClientMessage_Resize)(nil), "pb.ClientMessage.Resize")
 	proto.RegisterType((*Topology)(nil), "pb.Topology")
-	proto.RegisterType((*Cluster)(nil), "pb.Cluster")
+	proto.RegisterType((*Cluster)(nil), "pb.FixedCluster")
 	proto.RegisterType((*StoreResource)(nil), "pb.StoreResource")
 	proto.RegisterType((*Location)(nil), "pb.Location")
 	proto.RegisterType((*StoreHeartbeat)(nil), "pb.StoreHeartbeat")

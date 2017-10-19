@@ -10,7 +10,9 @@ type BenchmarkOption struct {
 	// store mode options
 	StoreAddress *string
 	UnixSocket   *string
-	// cluster mode options
+	// fixed cluster mode options
+	FixedCluster *string
+	// dynamic cluster mode options
 	Master     *string
 	DataCenter *string
 	// detail options

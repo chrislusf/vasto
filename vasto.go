@@ -55,9 +55,11 @@ var (
 
 	gateway       = app.Command("gateway", "Start a vasto gateway")
 	gatewayOption = &g.GatewayOption{
-		Host:       gateway.Flag("host", "store listening host address.").Default("").String(),
-		TcpPort:    gateway.Flag("tcpPort", "gateway listening port").Default("8282").Int32(),
-		GrpcPort:   gateway.Flag("grpcPort", "store listening grpc port").Default("8283").Int32(),
+		Host:     gateway.Flag("host", "store listening host address.").Default("").String(),
+		TcpPort:  gateway.Flag("tcpPort", "gateway listening port").Default("8282").Int32(),
+		GrpcPort: gateway.Flag("grpcPort", "store listening grpc port").Default("8283").Int32(),
+		FixedCluster: gateway.Flag("fixedCluster",
+			"overwrite --master, format network:host:port[,network:host:port]*").Default("").String(),
 		Master:     gateway.Flag("master", "master address").Default("localhost:8278").String(),
 		DataCenter: gateway.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
 	}
@@ -70,11 +72,13 @@ var (
 		ClientCount:  bench.Flag("clientCount", "parallel client count").Default("8").Short('c').Int32(),
 		RequestCount: bench.Flag("requestCount", "total request count").Default("1024000").Short('n').Int32(),
 		BatchSize:    bench.Flag("batchSize", "put requests in batch").Default("1").Short('b').Int32(),
-		Master:       bench.Flag("master", "master address").Default("localhost:8278").String(),
-		DataCenter:   bench.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
+		FixedCluster: bench.Flag("fixedCluster",
+			"overwrite --master, format network:host:port[,network:host:port]*").Default("").String(),
+		Master:     bench.Flag("master", "master address").Default("localhost:8278").String(),
+		DataCenter: bench.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
 	}
 
-	admin       = app.Command("admin", "Manage Cluster Size")
+	admin       = app.Command("admin", "Manage FixedCluster Size")
 	adminOption = &a.AdminOption{
 		ClusterSize: admin.Flag("newClusterSize", "change cluster to this size").Default("0").Int32(),
 		Master:      admin.Flag("master", "master address").Default("localhost:8278").String(),

@@ -36,7 +36,7 @@ func NewNode(id int, network, address string) Node {
 }
 
 // --------------------
-//      Hash Cluster
+//      Hash FixedCluster
 // --------------------
 
 type ClusterRing struct {

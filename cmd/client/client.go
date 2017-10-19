@@ -7,11 +7,13 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
+	"strings"
 )
 
 type ClientOption struct {
-	Master     *string
-	DataCenter *string
+	FixedCluster *string
+	Master       *string
+	DataCenter   *string
 }
 
 type VastoClient struct {
@@ -27,7 +29,28 @@ func New(option *ClientOption) *VastoClient {
 	return c
 }
 
+func (c *VastoClient) startWithFixedCluster() {
+	servers := strings.Split(*c.option.FixedCluster, ",")
+	c.cluster.SetCurrentSize(int(len(servers)))
+	for id, networkHostPort := range servers {
+		parts := strings.SplitN(networkHostPort, ":", 2)
+		store := &pb.StoreResource{
+			Id:      int32(id),
+			Network: parts[0],
+			Address: parts[1],
+		}
+		c.AddNode(store)
+	}
+}
+
 func (c *VastoClient) Start(clientReadyChan chan bool) {
+
+	if *c.option.FixedCluster != "" {
+		c.startWithFixedCluster()
+		clientReadyChan <- true
+		return
+	}
+
 	var clientReady bool
 
 	clientMessageChan := make(chan *pb.ClientMessage)

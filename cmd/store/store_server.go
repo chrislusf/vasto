@@ -66,7 +66,9 @@ func RunStore(option *StoreOption) {
 		go ss.serveTcp(unixSocketListener)
 	}
 
-	go ss.keepConnectedToMasterServer()
+	if *option.Master != "" {
+		go ss.keepConnectedToMasterServer()
+	}
 
 	select {}
 

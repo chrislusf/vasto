@@ -25,8 +25,9 @@ func (b *benchmarker) runBenchmarkerOnCluster(option *BenchmarkOption) {
 func (b *benchmarker) startVastoClient(hist *Histogram, fn func(c *client.VastoClient, i int) error) error {
 
 	c := client.New(&client.ClientOption{
-		Master:     b.option.Master,
-		DataCenter: b.option.DataCenter,
+		FixedCluster: b.option.FixedCluster,
+		Master:       b.option.Master,
+		DataCenter:   b.option.DataCenter,
 	})
 
 	clientReadyChan := make(chan bool)

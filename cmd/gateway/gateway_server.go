@@ -9,9 +9,12 @@ import (
 )
 
 type GatewayOption struct {
-	Host       *string
-	TcpPort    *int32
-	GrpcPort   *int32
+	Host     *string
+	TcpPort  *int32
+	GrpcPort *int32
+	// either cluster
+	FixedCluster *string
+	// or Master with DataCenter
 	Master     *string
 	DataCenter *string
 }
@@ -28,8 +31,9 @@ func RunGateway(option *GatewayOption) {
 		option: option,
 		vastoClient: client.New(
 			&client.ClientOption{
-				Master:     option.Master,
-				DataCenter: option.DataCenter,
+				FixedCluster: option.FixedCluster,
+				Master:       option.Master,
+				DataCenter:   option.DataCenter,
 			},
 		),
 	}
