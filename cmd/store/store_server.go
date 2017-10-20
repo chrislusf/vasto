@@ -17,7 +17,7 @@ type StoreOption struct {
 	ListenHost *string
 	TcpPort    *int32
 	UnixSocket *string
-	GrpcPort   *int32
+	AdminPort  *int32
 	Master     *string
 	DataCenter *string
 }
@@ -35,23 +35,23 @@ func RunStore(option *StoreOption) {
 	}
 
 	log.Printf("Vasto store starts on %s", option.storeFolder())
-
-	if *option.TcpPort != 0 {
-		tcpListener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *option.ListenHost, *option.TcpPort))
+	if *option.AdminPort != 0 {
+		grpcListener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *option.ListenHost, *option.AdminPort))
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("tcp     %v:%d", *option.ListenHost, *option.TcpPort)
-		go ss.serveTcp(tcpListener)
+		log.Printf("store admin %s:%d", *option.ListenHost, *option.AdminPort)
+		go ss.serveGrpc(grpcListener)
 	}
 
-	if *option.GrpcPort != 0 {
-		grpcListener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *option.ListenHost, *option.GrpcPort))
+	if *option.TcpPort != 0 {
+		tcpAddress := fmt.Sprintf("%s:%d", *option.ListenHost, *option.TcpPort)
+		tcpListener, err := net.Listen("tcp", tcpAddress)
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("grpc    %v:%d", *option.ListenHost, *option.GrpcPort)
-		go ss.serveGrpc(grpcListener)
+		log.Printf("listens on tcp %v", tcpAddress)
+		go ss.serveTcp(tcpListener)
 	}
 
 	if *option.UnixSocket != "" {
@@ -59,7 +59,7 @@ func RunStore(option *StoreOption) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("socket   %s", *option.UnixSocket)
+		log.Printf("listens on socket %s", *option.UnixSocket)
 		on_interrupt.OnInterrupt(func() {
 			os.Remove(*option.UnixSocket)
 		}, nil)

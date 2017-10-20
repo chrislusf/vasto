@@ -6,12 +6,13 @@ import (
 	"net"
 
 	"github.com/chrislusf/vasto/cmd/client"
+	"github.com/chrislusf/vasto/util/on_interrupt"
+	"os"
 )
 
 type GatewayOption struct {
-	Host     *string
-	TcpPort  *int32
-	GrpcPort *int32
+	TcpAddress *string
+	UnixSocket *string
 	// either cluster
 	FixedCluster *string
 	// or Master with DataCenter
@@ -38,13 +39,26 @@ func RunGateway(option *GatewayOption) {
 		),
 	}
 
-	if *option.GrpcPort != 0 {
-		grpcListener, err := net.Listen("tcp", fmt.Sprintf("%v:%d", *option.Host, *option.GrpcPort))
+	if *option.TcpAddress != "" {
+		tcpListener, err := net.Listen("tcp", *option.TcpAddress)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("Vasto gateway starts grpc %v:%d\n", *option.Host, *option.GrpcPort)
-		go gs.serveGrpc(grpcListener)
+		fmt.Printf("Vasto gateway listens on tcp %s\n", *option.TcpAddress)
+		go gs.serveTcp(tcpListener)
+	}
+
+	if *option.UnixSocket != "" {
+		unixSocketListener, err := net.Listen("unix", *option.UnixSocket)
+		if err != nil {
+			log.Printf("Vasto gateway starts on socket %s", *option.UnixSocket)
+			log.Fatal(err)
+		}
+		log.Printf("Vasto gateway listens on socket %s", *option.UnixSocket)
+		on_interrupt.OnInterrupt(func() {
+			os.Remove(*option.UnixSocket)
+		}, nil)
+		go gs.serveTcp(unixSocketListener)
 	}
 
 	clientReadyChan := make(chan bool)

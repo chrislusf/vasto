@@ -39,8 +39,8 @@ func (b *benchmarker) runBenchmarkerOnStore(option *BenchmarkOption) {
 func (b *benchmarker) startDirectClient(hist *Histogram, op func(rand *rand.Rand) *pb.Requests) error {
 
 	network, address := "tcp", *b.option.StoreAddress
-	if *b.option.UnixSocket != "" {
-		network, address = "unix", *b.option.UnixSocket
+	if *b.option.StoreUnixSocket != "" {
+		network, address = "unix", *b.option.StoreUnixSocket
 	}
 
 	conn, err := net.Dial(network, address)

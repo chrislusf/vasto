@@ -30,15 +30,6 @@ service VastoStore {
     }
 }
 
-service VastoReader {
-    rpc Get (GetRequest) returns (GetResponse) {
-    }
-}
-service VastoWriter {
-    rpc Put (PutRequest) returns (PutResponse) {
-    }
-}
-
 //////////////////////////////////////////////////
 // 1. master received request to balance the data
 

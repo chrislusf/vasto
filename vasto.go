@@ -46,7 +46,7 @@ var (
 		Host:       store.Flag("host", "store host address").Default(util.GetLocalIP()).String(),
 		ListenHost: store.Flag("listenHost", "store listening host address").Default("").String(),
 		TcpPort:    store.Flag("tcpPort", "store listening tcp port").Default("8279").Int32(),
-		GrpcPort:   store.Flag("grpcPort", "store listening grpc port").Default("8280").Int32(),
+		AdminPort:  store.Flag("adminPort", "store listening grpc port").Default("8280").Int32(),
 		UnixSocket: store.Flag("unixSocket", "store listening unix socket").Default("").Short('s').String(),
 		Master:     store.Flag("master", "master address").Default("localhost:8278").String(),
 		DataCenter: store.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
@@ -55,10 +55,9 @@ var (
 
 	gateway       = app.Command("gateway", "Start a vasto gateway")
 	gatewayOption = &g.GatewayOption{
-		Host:     gateway.Flag("host", "store listening host address.").Default("").String(),
-		TcpPort:  gateway.Flag("tcpPort", "gateway listening port").Default("8282").Int32(),
-		GrpcPort: gateway.Flag("grpcPort", "store listening grpc port").Default("8283").Int32(),
-		FixedCluster: gateway.Flag("fixedCluster",
+		TcpAddress: gateway.Flag("address", "gateway tcp host address").Default(":8281").String(),
+		UnixSocket: gateway.Flag("unixSocket", "gateway listening unix socket").Default("").Short('s').String(),
+		FixedCluster: gateway.Flag("cluster.fixed",
 			"overwrite --master, format network:host:port[,network:host:port]*").Default("").String(),
 		Master:     gateway.Flag("master", "master address").Default("localhost:8278").String(),
 		DataCenter: gateway.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
@@ -67,15 +66,16 @@ var (
 
 	bench           = app.Command("bench", "Start a vasto benchmark")
 	benchmarkOption = &b.BenchmarkOption{
-		StoreAddress: bench.Flag("storeTcpAddress", "store listening tcp address").Default("localhost:8279").String(),
-		UnixSocket:   bench.Flag("socket", "store listening unix socket").Default("").Short('s').String(),
-		ClientCount:  bench.Flag("clientCount", "parallel client count").Default("8").Short('c').Int32(),
-		RequestCount: bench.Flag("requestCount", "total request count").Default("1024000").Short('n').Int32(),
-		BatchSize:    bench.Flag("batchSize", "put requests in batch").Default("1").Short('b').Int32(),
-		FixedCluster: bench.Flag("fixedCluster",
-			"overwrite --master, format network:host:port[,network:host:port]*").Default("").String(),
-		Master:     bench.Flag("master", "master address").Default("localhost:8278").String(),
-		DataCenter: bench.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
+		StoreAddress:    bench.Flag("store.tcpAddress", "store listening tcp address").Default("localhost:8279").String(),
+		StoreUnixSocket: bench.Flag("store.socket", "store listening unix socket").Default("").Short('s').String(),
+		ClientCount:     bench.Flag("clientCount", "parallel client count").Default("8").Short('c').Int32(),
+		RequestCount:    bench.Flag("requestCount", "total request count").Default("1024000").Short('n').Int32(),
+		BatchSize:       bench.Flag("batchSize", "put requests in batch").Default("1").Short('b').Int32(),
+		FixedCluster: bench.Flag("cluster.fixed",
+			"overwrite --cluster.master, format network:host:port[,network:host:port]*").Default("").String(),
+		Master:         bench.Flag("cluster.master", "master address").Default("localhost:8278").String(),
+		DataCenter:     bench.Flag("cluster.dataCenter", "data center name").Default("defaultDataCenter").String(),
+		GatewayAddress: bench.Flag("gateway", "gateway host:port").Default("").String(),
 	}
 
 	admin       = app.Command("admin", "Manage FixedCluster Size")

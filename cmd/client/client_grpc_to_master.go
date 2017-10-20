@@ -21,7 +21,7 @@ func (c *VastoClient) registerClientAtMasterServer(msgChan chan *pb.ClientMessag
 
 	stream, err := masterClient.RegisterClient(context.Background())
 	if err != nil {
-		log.Printf("RegisterClient error: %v", err)
+		log.Printf("register client on master %v: %v", *c.option.Master, err)
 		return err
 	}
 

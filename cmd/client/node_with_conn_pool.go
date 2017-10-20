@@ -18,7 +18,7 @@ type nodeWithConnPool struct {
 }
 
 func newNodeWithConnPool(id int, network, address string) *nodeWithConnPool {
-	p, _ := pool.NewChannelPool(0, 2,
+	p, _ := pool.NewChannelPool(0, 100,
 		func() (net.Conn, error) {
 			conn, err := net.Dial(network, address)
 			println("connecting to", network, address)
@@ -59,7 +59,7 @@ func (n *nodeWithConnPool) GetConnection() (net.Conn, error) {
 func (c *VastoClient) AddNode(store *pb.StoreResource) {
 	node := newNodeWithConnPool(int(store.Id), store.Network, store.Address)
 	c.cluster.Add(node)
-	log.Printf("+ node %2d:%s:%20s, cluster: %s", node.GetId(), node.GetNetwork(), node.GetAddress(), c.cluster)
+	log.Printf("+node %d: %s:%s, cluster: %s", node.GetId(), node.GetNetwork(), node.GetAddress(), c.cluster)
 }
 
 func (c *VastoClient) RemoveNode(store *pb.StoreResource) {
@@ -69,5 +69,5 @@ func (c *VastoClient) RemoveNode(store *pb.StoreResource) {
 			t.p.Close()
 		}
 	}
-	log.Printf("- node %2d:%20s, cluster: %s", store.GetId(), store.Address, c.cluster)
+	log.Printf("-node %d: %s, cluster: %s", store.GetId(), store.Address, c.cluster)
 }

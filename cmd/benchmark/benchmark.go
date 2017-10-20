@@ -8,13 +8,15 @@ import (
 
 type BenchmarkOption struct {
 	// store mode options
-	StoreAddress *string
-	UnixSocket   *string
+	StoreAddress    *string
+	StoreUnixSocket *string
 	// fixed cluster mode options
 	FixedCluster *string
 	// dynamic cluster mode options
 	Master     *string
 	DataCenter *string
+	// gateway mode options
+	GatewayAddress *string
 	// detail options
 	ClientCount  *int32
 	RequestCount *int32
@@ -29,9 +31,16 @@ func RunBenchmarker(option *BenchmarkOption) {
 	var b = &benchmarker{
 		option: option,
 	}
+
 	if *option.Master != "" {
+		println("benchmarking on cluster with master", *option.Master)
 		b.runBenchmarkerOnCluster(option)
 	} else {
+		if *option.StoreUnixSocket != "" {
+			println("benchmarking on single store or gateway", *option.StoreUnixSocket)
+		} else {
+			println("benchmarking on single store or gateway", *option.StoreAddress)
+		}
 		b.runBenchmarkerOnStore(option)
 	}
 }
