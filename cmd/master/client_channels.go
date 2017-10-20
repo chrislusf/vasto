@@ -22,26 +22,38 @@ func newClientChannels() *clientChannels {
 
 func (cc *clientChannels) addClient(dataCenter, server string) (chan *pb.ClientMessage, error) {
 	key := fmt.Sprintf("%s:%s", dataCenter, server)
+	cc.Lock()
+	defer cc.Unlock()
 	if _, ok := cc.clientChans[key]; ok {
 		return nil, fmt.Errorf("client key is already in use: %s", key)
 	}
-	cc.Lock()
 	ch := make(chan *pb.ClientMessage, 3)
 	cc.clientChans[key] = ch
-	cc.Unlock()
 	return ch, nil
 }
 
 func (cc *clientChannels) removeClient(dataCenter, server string) error {
 	key := fmt.Sprintf("%s:%s", dataCenter, server)
 	cc.Lock()
+	defer cc.Unlock()
 	if ch, ok := cc.clientChans[key]; !ok {
 		return fmt.Errorf("client key is not in use: %s", key)
 	} else {
 		delete(cc.clientChans, key)
 		close(ch)
 	}
-	cc.Unlock()
+	return nil
+}
+
+func (cc *clientChannels) sendClient(dataCenter string, server string, msg *pb.ClientMessage) error {
+	key := fmt.Sprintf("%s:%s", dataCenter, server)
+	cc.Lock()
+	defer cc.Unlock()
+	ch, ok := cc.clientChans[key]
+	if !ok {
+		return fmt.Errorf("client channel not found: %s", key)
+	}
+	ch <- msg
 	return nil
 }
 
@@ -69,9 +81,10 @@ func (cc *clientChannels) notifyStoreResourceUpdate(dataCenter string, stores []
 	)
 }
 
-func (cc *clientChannels) notifyCluster(dataCenter string, cluster *topology.ClusterRing) error {
-	return cc.notifyClients(
+func (cc *clientChannels) sendClientCluster(dataCenter, server string, cluster *topology.ClusterRing) error {
+	return cc.sendClient(
 		dataCenter,
+		server,
 		&pb.ClientMessage{
 			Cluster: cluster.ToCluster(),
 		},

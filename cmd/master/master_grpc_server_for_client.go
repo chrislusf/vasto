@@ -43,8 +43,9 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 	clusterRing, ok := ms.clusters[clientHeartbeat.Location.DataCenter]
 	ms.Unlock()
 	if ok {
-		ms.clientChans.notifyCluster(
+		ms.clientChans.sendClientCluster(
 			clientHeartbeat.Location.DataCenter,
+			pr.Addr.String(),
 			clusterRing,
 		)
 	}
