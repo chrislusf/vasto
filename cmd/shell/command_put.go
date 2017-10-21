@@ -28,5 +28,5 @@ func (c *CommandPut) Do(args []string) (string, error) {
 
 	err := c.client.Put(key, value)
 
-	return "\n", err
+	return "", err
 }

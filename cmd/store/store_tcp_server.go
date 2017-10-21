@@ -127,6 +127,20 @@ func (ss *storeServer) processRequest(command *pb.Request) *pb.Response {
 		return &pb.Response{
 			Put: resp,
 		}
+	} else if command.GetDelete() != nil {
+		key := command.Delete.Key
+
+		resp := &pb.DeleteResponse{
+			Ok: true,
+		}
+		err := ss.db.Delete(key)
+		if err != nil {
+			resp.Ok = false
+			resp.Status = err.Error()
+		}
+		return &pb.Response{
+			Delete: resp,
+		}
 	}
 	return &pb.Response{
 		Put: &pb.PutResponse{
