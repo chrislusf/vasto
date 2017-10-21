@@ -23,6 +23,7 @@ import (
 	b "github.com/chrislusf/vasto/cmd/benchmark"
 	g "github.com/chrislusf/vasto/cmd/gateway"
 	m "github.com/chrislusf/vasto/cmd/master"
+	sh "github.com/chrislusf/vasto/cmd/shell"
 	s "github.com/chrislusf/vasto/cmd/store"
 	"github.com/chrislusf/vasto/util"
 	"github.com/chrislusf/vasto/util/on_interrupt"
@@ -73,9 +74,16 @@ var (
 		BatchSize:       bench.Flag("batchSize", "put requests in batch").Default("1").Short('b').Int32(),
 		FixedCluster: bench.Flag("cluster.fixed",
 			"overwrite --cluster.master, format network:host:port[,network:host:port]*").Default("").String(),
-		Master:         bench.Flag("cluster.master", "master address").Default("localhost:8278").String(),
-		DataCenter:     bench.Flag("cluster.dataCenter", "data center name").Default("defaultDataCenter").String(),
-		GatewayAddress: bench.Flag("gateway", "gateway host:port").Default("").String(),
+		Master:     bench.Flag("cluster.master", "master address").Default("localhost:8278").String(),
+		DataCenter: bench.Flag("cluster.dataCenter", "data center name").Default("defaultDataCenter").String(),
+	}
+
+	shell       = app.Command("shell", "Start a vasto shell")
+	shellOption = &sh.ShellOption{
+		FixedCluster: shell.Flag("cluster.fixed",
+			"overwrite --cluster.master, format network:host:port[,network:host:port]*").Default("").String(),
+		Master:     shell.Flag("cluster.master", "master address").Default("localhost:8278").String(),
+		DataCenter: shell.Flag("cluster.dataCenter", "data center name").Default("defaultDataCenter").String(),
 	}
 
 	admin       = app.Command("admin", "Manage FixedCluster Size")
@@ -121,6 +129,9 @@ func main() {
 
 	case bench.FullCommand():
 		b.RunBenchmarker(benchmarkOption)
+
+	case shell.FullCommand():
+		sh.RunShell(shellOption)
 
 	case admin.FullCommand():
 		a.RunAdmin(adminOption)

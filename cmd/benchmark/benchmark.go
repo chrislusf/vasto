@@ -15,8 +15,6 @@ type BenchmarkOption struct {
 	// dynamic cluster mode options
 	Master     *string
 	DataCenter *string
-	// gateway mode options
-	GatewayAddress *string
 	// detail options
 	ClientCount  *int32
 	RequestCount *int32

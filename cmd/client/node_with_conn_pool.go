@@ -21,7 +21,6 @@ func newNodeWithConnPool(id int, network, address string) *nodeWithConnPool {
 	p, _ := pool.NewChannelPool(0, 100,
 		func() (net.Conn, error) {
 			conn, err := net.Dial(network, address)
-			println("connecting to", network, address)
 			if err != nil {
 				fmt.Printf("Failed to dial %s on %s : %v", network, address, err)
 			}
