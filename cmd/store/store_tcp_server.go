@@ -3,14 +3,14 @@ package store
 import (
 	"bufio"
 	"fmt"
-	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/storage/codec"
-	"github.com/chrislusf/vasto/util"
-	"github.com/golang/protobuf/proto"
 	"io"
 	"log"
 	"net"
 	"time"
+
+	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/util"
+	"github.com/golang/protobuf/proto"
 )
 
 // Run starts the heartbeating to master and starts accepting requests.
@@ -95,103 +95,20 @@ func (ss *storeServer) handleRequest(reader io.Reader, writer io.Writer) error {
 
 func (ss *storeServer) processRequest(command *pb.Request) *pb.Response {
 	if command.GetGet() != nil {
-		key := command.Get.Key
-		if b, err := ss.db.Get(key); err != nil {
-			return &pb.Response{
-				Get: &pb.GetResponse{
-					Status: err.Error(),
-				},
-			}
-		} else if len(b) == 0 {
-			return &pb.Response{
-				Get: &pb.GetResponse{
-					Ok: true,
-				},
-			}
-		} else {
-			entry := codec.FromBytes(b)
-			if entry.TtlSecond > 0 && entry.UpdatedSecond+entry.TtlSecond < uint32(time.Now().Unix()) {
-				return &pb.Response{
-					Get: &pb.GetResponse{
-						Ok:     false,
-						Status: "expired",
-					},
-				}
-			}
-			return &pb.Response{
-				Get: &pb.GetResponse{
-					Ok: true,
-					KeyValue: &pb.KeyValue{
-						Key:   key,
-						Value: entry.Value,
-					},
-				},
-			}
+		return &pb.Response{
+			Get: ss.processGet(command.Get),
 		}
 	} else if command.GetPut() != nil {
-		key := command.Put.KeyValue.Key
-		entry := &codec.Entry{
-			PartitionHash: command.Put.PartitionHash,
-			UpdatedSecond: uint32(time.Now().Unix()),
-			TtlSecond:     command.Put.TtlSecond,
-			Value:         command.Put.KeyValue.Value,
-		}
-
-		resp := &pb.PutResponse{
-			Ok: true,
-		}
-		err := ss.db.Put(key, entry.ToBytes())
-		if err != nil {
-			resp.Ok = false
-			resp.Status = err.Error()
-		}
 		return &pb.Response{
-			Put: resp,
+			Put: ss.processPut(command.Put),
 		}
 	} else if command.GetDelete() != nil {
-		key := command.Delete.Key
-
-		resp := &pb.DeleteResponse{
-			Ok: true,
-		}
-		err := ss.db.Delete(key)
-		if err != nil {
-			resp.Ok = false
-			resp.Status = err.Error()
-		}
 		return &pb.Response{
-			Delete: resp,
+			Delete: ss.processDelete(command.Delete),
 		}
 	} else if command.GetGetByPrefix() != nil {
-
-		var keyValues []*pb.KeyValue
-		resp := &pb.DeleteResponse{
-			Ok: true,
-		}
-		err := ss.db.PrefixScan(
-			command.GetByPrefix.Prefix,
-			command.GetByPrefix.LastSeenKey,
-			int(command.GetByPrefix.Limit),
-			func(key, value []byte) bool {
-				entry := codec.FromBytes(value)
-				if entry.TtlSecond == 0 || entry.UpdatedSecond+entry.TtlSecond >= uint32(time.Now().Unix()) {
-					t := make([]byte, len(key))
-					copy(t, key)
-					keyValues = append(keyValues, &pb.KeyValue{
-						Key:   t,
-						Value: entry.Value,
-					})
-				}
-				return true
-			})
-		if err != nil {
-			resp.Ok = false
-			resp.Status = err.Error()
-		}
 		return &pb.Response{
-			GetByPrefix: &pb.GetByPrefixResponse{
-				KeyValues: keyValues,
-			},
+			GetByPrefix: ss.processPrefix(command.GetByPrefix),
 		}
 	}
 	return &pb.Response{
