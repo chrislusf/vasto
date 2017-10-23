@@ -7,9 +7,14 @@ import (
 	"github.com/chrislusf/vasto/util"
 )
 
-func (c *VastoClient) Put(key, value []byte) error {
+func (c *VastoClient) Put(partitionKey, key, value []byte) error {
 
-	bucket := c.cluster.FindBucket(util.Hash(key))
+	if partitionKey == nil {
+		partitionKey = key
+	}
+	partitionHash := util.Hash(partitionKey)
+
+	bucket := c.cluster.FindBucket(partitionHash)
 
 	n := c.cluster.GetNode(bucket)
 
@@ -31,8 +36,8 @@ func (c *VastoClient) Put(key, value []byte) error {
 				Key:   key,
 				Value: value,
 			},
-			TimestampNs: 0,
-			TtlMs:       0,
+			PartitionHash: partitionHash,
+			TtlSecond:     0,
 		},
 	}
 

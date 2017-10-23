@@ -1,20 +1,20 @@
 package client
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/util"
 )
 
-var (
-	NotFoundError = errors.New("NotFound")
-)
+func (c *VastoClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, lastSeenKey []byte) ([]*pb.KeyValue, error) {
 
-func (c *VastoClient) Get(key []byte) ([]byte, error) {
+	if partitionKey == nil {
+		partitionKey = prefix
+	}
+	partitionHash := util.Hash(partitionKey)
 
-	n := c.cluster.GetNode(c.cluster.FindBucket(util.Hash(key)))
+	n := c.cluster.GetNode(c.cluster.FindBucket(partitionHash))
 
 	node, ok := n.(*nodeWithConnPool)
 
@@ -29,8 +29,10 @@ func (c *VastoClient) Get(key []byte) ([]byte, error) {
 	defer conn.Close()
 
 	request := &pb.Request{
-		Get: &pb.GetRequest{
-			Key: key,
+		GetByPrefix: &pb.GetByPrefixRequest{
+			Prefix:      prefix,
+			Limit:       limit,
+			LastSeenKey: lastSeenKey,
 		},
 	}
 
@@ -48,14 +50,5 @@ func (c *VastoClient) Get(key []byte) ([]byte, error) {
 
 	response := responses.Responses[0]
 
-	if response.Get.Status != "" {
-		return nil, fmt.Errorf(response.Get.Status)
-	}
-
-	kv := response.Get.KeyValue
-	if kv == nil {
-		return nil, NotFoundError
-	}
-
-	return kv.Value, nil
+	return response.GetByPrefix.KeyValues, nil
 }

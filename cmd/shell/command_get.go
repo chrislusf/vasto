@@ -43,6 +43,9 @@ func (c *CommandGet) Do(args []string) (string, error) {
 		}
 		var output bytes.Buffer
 		for _, keyValue := range keyValues {
+			if keyValue == nil {
+				continue
+			}
 			output.Write(keyValue.Key)
 			output.WriteString(" : ")
 			output.Write(keyValue.Value)

@@ -112,14 +112,14 @@ message Responses {
 message Request {
     PutRequest put = 1;
     GetRequest get = 2;
-    RangeGetRequest range_get = 3;
+    GetByPrefixRequest get_by_prefix = 3;
     DeleteRequest delete = 4;
 }
 
 message PutRequest {
     KeyValue key_value = 1;
-    int64 timestamp_ns = 2;
-    uint32 ttl_ms = 3;
+    uint64 partition_hash = 2;
+    uint32 ttl_second = 3;
 }
 
 message PutResponse {
@@ -146,20 +146,22 @@ message GetResponse {
     KeyValue key_value = 3;
 }
 
-message RangeGetRequest {
+message GetByPrefixRequest {
     bytes prefix = 1;
-    bytes start_key = 2;
-    uint32 limit = 3;
+    uint32 limit = 2;
+    bytes last_seen_key = 3;
 }
 
-message RangeGetResponse {
-    repeated KeyValue key_values = 1;
+message GetByPrefixResponse {
+    bool ok = 1;
+    string status = 2;
+    repeated KeyValue key_values = 3;
 }
 
 message Response {
     PutResponse put = 1;
     GetResponse get = 2;
-    RangeGetResponse range_get = 3;
+    GetByPrefixResponse get_by_prefix = 3;
     DeleteResponse delete = 4;
 }
 

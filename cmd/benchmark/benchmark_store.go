@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/util"
 )
 
 func (b *benchmarker) runBenchmarkerOnStore(option *BenchmarkOption) {
@@ -22,12 +23,12 @@ func (b *benchmarker) runBenchmarkerOnStore(option *BenchmarkOption) {
 							Key:   make([]byte, 4),
 							Value: make([]byte, 4),
 						},
-						TimestampNs: 0,
-						TtlMs:       0,
+						TtlSecond: 0,
 					},
 				}
 				Uint32toBytes(request.Put.KeyValue.Key, r.Uint32())
 				Uint32toBytes(request.Put.KeyValue.Value, r.Uint32())
+				request.Put.PartitionHash = util.Hash(request.Put.KeyValue.Key)
 				requests.Requests = append(requests.Requests, request)
 			}
 			return requests

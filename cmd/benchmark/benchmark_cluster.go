@@ -16,7 +16,7 @@ func (b *benchmarker) runBenchmarkerOnCluster(option *BenchmarkOption) {
 			key := []byte(fmt.Sprintf("k%5d", i))
 			value := []byte(fmt.Sprintf("v%5d", i))
 
-			return c.Put(key, value)
+			return c.Put(nil, key, value)
 		})
 	})
 

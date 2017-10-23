@@ -119,7 +119,7 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 		resp := &pb.PutResponse{
 			Ok: true,
 		}
-		err := ms.vastoClient.Put(key, value)
+		err := ms.vastoClient.Put(nil, key, value)
 		if err != nil {
 			resp.Ok = false
 			resp.Status = err.Error()
@@ -140,6 +140,22 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 		}
 		return &pb.Response{
 			Delete: resp,
+		}
+	} else if command.GetGetByPrefix() != nil {
+		prefix := command.GetByPrefix.Prefix
+		limit := command.GetByPrefix.Limit
+		lastSeenKey := command.GetByPrefix.LastSeenKey
+
+		resp := &pb.GetByPrefixResponse{}
+		keyValues, err := ms.vastoClient.GetByPrefix(nil, prefix, limit, lastSeenKey)
+		if err != nil {
+			resp.Ok = false
+			resp.Status = err.Error()
+		} else {
+			resp.KeyValues = keyValues
+		}
+		return &pb.Response{
+			GetByPrefix: resp,
 		}
 	}
 	return &pb.Response{
