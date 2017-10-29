@@ -15,8 +15,9 @@ func TestLogEntryCodec(t *testing.T) {
 		Key:                []byte("this is the key"),
 		Value:              []byte("this is the value"),
 	}
+	a.setCrc()
 
-	b := FromBytes(a.ToBytes())
+	b, _ := FromBytes(a.ToBytes())
 
 	if a.PartitionHash != b.PartitionHash {
 		t.Errorf("codec PartitionHash %v => %v", a.PartitionHash, b.PartitionHash)
@@ -41,12 +42,15 @@ func TestLogEntryCodec(t *testing.T) {
 	}
 
 	a.IsDelete = !a.IsDelete
-	b = FromBytes(a.ToBytes())
+	b, _ = FromBytes(a.ToBytes())
 
 	if a.IsDelete != b.IsDelete {
 		t.Errorf("codec IsDelete2 %v => %v", a.IsDelete, b.IsDelete)
 	}
 
+	if !b.IsValid() {
+		t.Errorf("Crc IsValid %v => %v", a.Crc, b.Crc)
+	}
 }
 
 func BenchmarkEncodiing(b *testing.B) {
@@ -61,6 +65,7 @@ func BenchmarkEncodiing(b *testing.B) {
 		Key:                []byte("this is the key"),
 		Value:              []byte("this is the value"),
 	}
+	a.setCrc()
 
 	b.ReportAllocs()
 	b.StartTimer()
@@ -79,9 +84,11 @@ func BenchmarkDecodiing(b *testing.B) {
 		UpdatedNanoSeconds: 2342342,
 		TtlSecond:          80908,
 		IsDelete:           true,
+		Crc:                23542345,
 		Key:                []byte("this is the key"),
 		Value:              []byte("this is the value"),
 	}
+	a.setCrc()
 
 	data := a.ToBytes()
 
