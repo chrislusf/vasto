@@ -129,6 +129,7 @@ message PutResponse {
 
 message DeleteRequest {
     bytes key = 1;
+    uint64 partition_hash = 2;
 }
 
 message DeleteResponse {

@@ -6,25 +6,29 @@ import (
 	"net"
 	"os"
 
+	"github.com/chrislusf/vasto/storage/change_log"
 	"github.com/chrislusf/vasto/storage/rocks"
 	"github.com/chrislusf/vasto/util/on_interrupt"
 )
 
 type StoreOption struct {
-	Id         *int32
-	Dir        *string
-	Host       *string
-	ListenHost *string
-	TcpPort    *int32
-	UnixSocket *string
-	AdminPort  *int32
-	Master     *string
-	DataCenter *string
+	Id            *int32
+	Dir           *string
+	Host          *string
+	ListenHost    *string
+	TcpPort       *int32
+	UnixSocket    *string
+	AdminPort     *int32
+	Master        *string
+	DataCenter    *string
+	LogFileSizeMb *int
+	LogFileCount  *int
 }
 
 type storeServer struct {
 	option *StoreOption
 	db     *rocks.Rocks
+	lm     *change_log.LogManager
 }
 
 func RunStore(option *StoreOption) {
@@ -32,6 +36,10 @@ func RunStore(option *StoreOption) {
 	var ss = &storeServer{
 		option: option,
 		db:     rocks.New(option.storeFolder()),
+	}
+	if *option.LogFileSizeMb > 0 {
+		ss.lm = change_log.NewLogManager(*option.Dir, int64(*option.LogFileSizeMb*1024*1024), *option.LogFileCount)
+		ss.lm.Initialze()
 	}
 
 	log.Printf("Vasto store starts on %s", option.storeFolder())
