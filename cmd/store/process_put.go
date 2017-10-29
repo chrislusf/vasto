@@ -10,10 +10,11 @@ import (
 
 func (ss *storeServer) processPut(putRequest *pb.PutRequest) *pb.PutResponse {
 	key := putRequest.KeyValue.Key
-	now := uint64(time.Now().UnixNano())
+	nowInNano := uint64(time.Now().UnixNano())
+	nowInSecond := uint32(time.Now().Unix())
 	entry := &codec.Entry{
 		PartitionHash: putRequest.PartitionHash,
-		UpdatedAtNs:   now,
+		UpdatedSecond: nowInSecond,
 		TtlSecond:     putRequest.TtlSecond,
 		Value:         putRequest.KeyValue.Value,
 	}
@@ -26,7 +27,7 @@ func (ss *storeServer) processPut(putRequest *pb.PutRequest) *pb.PutResponse {
 		resp.Ok = false
 		resp.Status = err.Error()
 	} else {
-		ss.logPut(putRequest, now)
+		ss.logPut(putRequest, nowInNano)
 	}
 
 	return resp
