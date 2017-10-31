@@ -28,7 +28,8 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 	ms.Lock()
 	ring, ok := ms.clusters[storeHeartbeat.DataCenter]
 	if !ok {
-		ring = topology.NewHashRing(storeHeartbeat.DataCenter)
+		t := topology.NewHashRing(storeHeartbeat.DataCenter)
+		ring = &t
 		ring.SetCurrentSize(ms.defaultClusterSize)
 		ms.clusters[storeHeartbeat.DataCenter] = ring
 	}

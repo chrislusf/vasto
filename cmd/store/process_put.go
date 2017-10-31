@@ -11,10 +11,9 @@ import (
 func (ss *storeServer) processPut(putRequest *pb.PutRequest) *pb.PutResponse {
 	key := putRequest.KeyValue.Key
 	nowInNano := uint64(time.Now().UnixNano())
-	nowInSecond := uint32(time.Now().Unix())
 	entry := &codec.Entry{
 		PartitionHash: putRequest.PartitionHash,
-		UpdatedSecond: nowInSecond,
+		UpdatedAtNs:   nowInNano,
 		TtlSecond:     putRequest.TtlSecond,
 		Value:         putRequest.KeyValue.Value,
 	}
@@ -39,7 +38,7 @@ func (ss *storeServer) logPut(putRequest *pb.PutRequest, updatedAtNs uint64) {
 		return
 	}
 
-	ss.lm.AddEntry(change_log.NewLogEntry(
+	ss.lm.AppendEntry(change_log.NewLogEntry(
 		putRequest.PartitionHash,
 		updatedAtNs,
 		putRequest.TtlSecond,

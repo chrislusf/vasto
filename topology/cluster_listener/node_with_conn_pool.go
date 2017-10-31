@@ -1,4 +1,4 @@
-package client
+package cluster_listener
 
 import (
 	"log"
@@ -10,14 +10,14 @@ import (
 	"gopkg.in/fatih/pool.v2"
 )
 
-type nodeWithConnPool struct {
+type NodeWithConnPool struct {
 	id      int
 	network string
 	address string
 	p       pool.Pool
 }
 
-func newNodeWithConnPool(id int, network, address string) *nodeWithConnPool {
+func newNodeWithConnPool(id int, network, address string) *NodeWithConnPool {
 	p, _ := pool.NewChannelPool(0, 100,
 		func() (net.Conn, error) {
 			conn, err := net.Dial(network, address)
@@ -31,7 +31,7 @@ func newNodeWithConnPool(id int, network, address string) *nodeWithConnPool {
 			}
 			return conn, err
 		})
-	return &nodeWithConnPool{
+	return &NodeWithConnPool{
 		id:      id,
 		network: network,
 		address: address,
@@ -39,34 +39,34 @@ func newNodeWithConnPool(id int, network, address string) *nodeWithConnPool {
 	}
 }
 
-func (n *nodeWithConnPool) GetId() int {
+func (n *NodeWithConnPool) GetId() int {
 	return n.id
 }
 
-func (n *nodeWithConnPool) GetNetwork() string {
+func (n *NodeWithConnPool) GetNetwork() string {
 	return n.network
 }
 
-func (n *nodeWithConnPool) GetAddress() string {
+func (n *NodeWithConnPool) GetAddress() string {
 	return n.address
 }
 
-func (n *nodeWithConnPool) GetConnection() (net.Conn, error) {
+func (n *NodeWithConnPool) GetConnection() (net.Conn, error) {
 	return n.p.Get()
 }
 
-func (c *VastoClient) AddNode(store *pb.StoreResource) {
+func (c *ClusterListener) AddNode(store *pb.StoreResource) {
 	node := newNodeWithConnPool(int(store.Id), store.Network, store.Address)
-	c.cluster.Add(node)
-	log.Printf("+node %d: %s:%s, cluster: %s", node.GetId(), node.GetNetwork(), node.GetAddress(), c.cluster)
+	c.Add(node)
+	log.Printf("+node %d: %s:%s, cluster: %s", node.GetId(), node.GetNetwork(), node.GetAddress(), c)
 }
 
-func (c *VastoClient) RemoveNode(store *pb.StoreResource) {
-	n := c.cluster.Remove(int(store.Id))
+func (c *ClusterListener) RemoveNode(store *pb.StoreResource) {
+	n := c.Remove(int(store.Id))
 	if n != nil {
-		if t, ok := n.(*nodeWithConnPool); ok {
+		if t, ok := n.(*NodeWithConnPool); ok {
 			t.p.Close()
 		}
 	}
-	log.Printf("-node %d: %s, cluster: %s", store.GetId(), store.Address, c.cluster)
+	log.Printf("-node %d: %s, cluster: %s", store.GetId(), store.Address, c)
 }

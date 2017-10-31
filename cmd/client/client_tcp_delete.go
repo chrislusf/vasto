@@ -4,24 +4,13 @@ import (
 	"fmt"
 
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/util"
 )
 
 func (c *VastoClient) Delete(key []byte) error {
 
-	bucket := c.cluster.FindBucket(util.Hash(key))
-
-	n := c.cluster.GetNode(bucket)
-
-	node, ok := n.(*nodeWithConnPool)
-
-	if !ok {
-		return fmt.Errorf("unexpected node %+v", n)
-	}
-
-	conn, err := node.GetConnection()
+	conn, err := c.clusterListener.GetConnectionByPartitionKey(key)
 	if err != nil {
-		return fmt.Errorf("GetConnection node %d %s %+v", n.GetId(), n.GetAddress(), err)
+		return err
 	}
 	defer conn.Close()
 

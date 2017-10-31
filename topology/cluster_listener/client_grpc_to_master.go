@@ -1,4 +1,4 @@
-package client
+package cluster_listener
 
 import (
 	"context"
@@ -10,10 +10,11 @@ import (
 	"google.golang.org/grpc"
 )
 
-func (c *VastoClient) registerClientAtMasterServer(msgChan chan *pb.ClientMessage) error {
-	grpcConnection, err := grpc.Dial(*c.option.Master, grpc.WithInsecure())
+func (c *ClusterListener) registerClientAtMasterServer(master string, dataCenter string,
+	msgChan chan *pb.ClientMessage) error {
+	grpcConnection, err := grpc.Dial(master, grpc.WithInsecure())
 	if err != nil {
-		return fmt.Errorf("fail to dial: %v", err)
+		return fmt.Errorf("fail to dial %s: %v", master, err)
 	}
 	defer grpcConnection.Close()
 
@@ -21,24 +22,22 @@ func (c *VastoClient) registerClientAtMasterServer(msgChan chan *pb.ClientMessag
 
 	stream, err := masterClient.RegisterClient(context.Background())
 	if err != nil {
-		log.Printf("register client on master %v: %v", *c.option.Master, err)
-		return err
+		return fmt.Errorf("register client on master %v: %v", master, err)
 	}
 
 	clientHeartbeat := &pb.ClientHeartbeat{
 		Location: &pb.Location{
-			DataCenter: *c.option.DataCenter,
+			DataCenter: dataCenter,
 		},
 	}
 
 	// log.Printf("Reporting allocated %v", as.allocatedResource)
 
 	if err := stream.Send(clientHeartbeat); err != nil {
-		log.Printf("client send heartbeat: %v", err)
-		return err
+		return fmt.Errorf("client send heartbeat: %v", err)
 	}
 
-	log.Printf("register to master %s", *c.option.Master)
+	log.Printf("register client to master %s", master)
 
 	for {
 		msg, err := stream.Recv()

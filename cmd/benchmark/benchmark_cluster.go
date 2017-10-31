@@ -30,9 +30,7 @@ func (b *benchmarker) startVastoClient(hist *Histogram, fn func(c *client.VastoC
 		DataCenter:   b.option.DataCenter,
 	})
 
-	clientReadyChan := make(chan bool)
-	go c.Start(clientReadyChan)
-	<-clientReadyChan
+	c.Start()
 
 	requestCount := int(*b.option.RequestCount / *b.option.ClientCount)
 

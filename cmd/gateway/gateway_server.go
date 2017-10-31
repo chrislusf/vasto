@@ -61,9 +61,7 @@ func RunGateway(option *GatewayOption) {
 		go gs.serveTcp(unixSocketListener)
 	}
 
-	clientReadyChan := make(chan bool)
-	go gs.vastoClient.Start(clientReadyChan)
-	<-clientReadyChan
+	gs.vastoClient.Start()
 
 	fmt.Printf("Vasto gateway ready\n")
 	select {}

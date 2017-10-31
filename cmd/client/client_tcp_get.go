@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/util"
 )
 
 var (
@@ -14,17 +13,9 @@ var (
 
 func (c *VastoClient) Get(key []byte) ([]byte, error) {
 
-	n := c.cluster.GetNode(c.cluster.FindBucket(util.Hash(key)))
-
-	node, ok := n.(*nodeWithConnPool)
-
-	if !ok {
-		return nil, fmt.Errorf("unexpected node %+v", n)
-	}
-
-	conn, err := node.GetConnection()
+	conn, err := c.clusterListener.GetConnectionByPartitionKey(key)
 	if err != nil {
-		return nil, fmt.Errorf("GetConnection node %d %s %+v", n.GetId(), n.GetAddress(), err)
+		return nil, err
 	}
 	defer conn.Close()
 

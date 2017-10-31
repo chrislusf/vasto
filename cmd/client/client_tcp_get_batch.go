@@ -17,7 +17,7 @@ func (c *VastoClient) BatchGet(keys ...[]byte) ([]*pb.KeyValue, error) {
 	bucketToRequests := make(map[int][]*pb.Request)
 
 	for _, key := range keys {
-		bucket := c.cluster.FindBucket(util.Hash(key))
+		bucket := c.clusterListener.FindBucket(util.Hash(key))
 		if _, ok := bucketToRequests[bucket]; !ok {
 			bucketToRequests[bucket] = make([]*pb.Request, 0, 4)
 		}
@@ -34,18 +34,9 @@ func (c *VastoClient) BatchGet(keys ...[]byte) ([]*pb.KeyValue, error) {
 	for bucket, requests := range bucketToRequests {
 		go func(bucket int, requestList []*pb.Request) {
 
-			n := c.cluster.GetNode(bucket)
-
-			node, ok := n.(*nodeWithConnPool)
-
-			if !ok {
-				outputChan <- &answer{err: fmt.Errorf("unexpected node %+v", n)}
-				return
-			}
-
-			conn, err := node.GetConnection()
+			conn, err := c.clusterListener.GetConnectionByBucket(bucket)
 			if err != nil {
-				outputChan <- &answer{err: fmt.Errorf("GetConnection node %d %s %+v", n.GetId(), n.GetAddress(), err)}
+				outputChan <- &answer{err: err}
 				return
 			}
 			defer conn.Close()

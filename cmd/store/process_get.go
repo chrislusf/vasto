@@ -1,8 +1,6 @@
 package store
 
 import (
-	"time"
-
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
 )
@@ -19,7 +17,7 @@ func (ss *storeServer) processGet(getRequest *pb.GetRequest) *pb.GetResponse {
 		}
 	} else {
 		entry := codec.FromBytes(b)
-		if entry.TtlSecond > 0 && entry.UpdatedSecond+entry.TtlSecond < uint32(time.Now().Unix()) {
+		if entry.IsExpired() {
 			return &pb.GetResponse{
 				Ok:     false,
 				Status: "expired",

@@ -35,7 +35,7 @@ func (ss *storeServer) registerAtMasterServer() error {
 		return err
 	}
 
-	log.Printf("register to master %s", *ss.option.Master)
+	log.Printf("register store to master %s", *ss.option.Master)
 
 	storeHeartbeat := &pb.StoreHeartbeat{
 		DataCenter: *ss.option.DataCenter,

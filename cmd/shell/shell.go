@@ -30,9 +30,7 @@ func RunShell(option *ShellOption) {
 		),
 	}
 
-	readyChan := make(chan bool)
-	go b.vastoClient.Start(readyChan)
-	<-readyChan
+	b.vastoClient.Start()
 
 	b.runShell()
 

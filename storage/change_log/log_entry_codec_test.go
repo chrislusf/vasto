@@ -2,6 +2,8 @@ package change_log
 
 import (
 	"bytes"
+	"github.com/chrislusf/vasto/pb"
+	"github.com/golang/protobuf/proto"
 	"testing"
 )
 
@@ -53,7 +55,8 @@ func TestLogEntryCodec(t *testing.T) {
 	}
 }
 
-func BenchmarkEncodiing(b *testing.B) {
+// direct encoding 298ns/op vs pb 2213ns/op
+func BenchmarkEncoding(b *testing.B) {
 
 	b.StopTimer()
 
@@ -76,7 +79,30 @@ func BenchmarkEncodiing(b *testing.B) {
 
 }
 
-func BenchmarkDecodiing(b *testing.B) {
+func BenchmarkPbEncoding(b *testing.B) {
+
+	b.StopTimer()
+
+	a := &pb.UpdateEntry{
+		PartitionHash: 12314,
+		UpdatedAtNs:   2342342,
+		TtlSecond:     80908,
+		IsDelete:      true,
+		Key:           []byte("this is the key"),
+		Value:         []byte("this is the value"),
+	}
+	a.Crc = 23412341
+
+	b.ReportAllocs()
+	b.StartTimer()
+
+	for n := 0; n < b.N; n++ {
+		proto.Marshal(a)
+	}
+
+}
+
+func BenchmarkDecoding(b *testing.B) {
 	b.StopTimer()
 
 	a := &LogEntry{
@@ -92,10 +118,40 @@ func BenchmarkDecodiing(b *testing.B) {
 
 	data := a.ToBytes()
 
+	// println("direct data size", len(data))
+
 	b.ReportAllocs()
 	b.StartTimer()
 
 	for n := 0; n < b.N; n++ {
 		FromBytes(data)
 	}
+}
+
+func BenchmarkPbDecoding(b *testing.B) {
+
+	b.StopTimer()
+
+	a := &pb.UpdateEntry{
+		PartitionHash: 12314,
+		UpdatedAtNs:   2342342,
+		TtlSecond:     80908,
+		IsDelete:      true,
+		Key:           []byte("this is the key"),
+		Value:         []byte("this is the value"),
+	}
+	a.Crc = 23412341
+
+	data, _ := proto.Marshal(a)
+
+	// println("pb data size", len(data))
+
+	b.ReportAllocs()
+	b.StartTimer()
+
+	t := &pb.UpdateEntry{}
+	for n := 0; n < b.N; n++ {
+		proto.Unmarshal(data, t)
+	}
+
 }

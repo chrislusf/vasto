@@ -8,6 +8,7 @@ import (
 
 	"github.com/chrislusf/vasto/storage/change_log"
 	"github.com/chrislusf/vasto/storage/rocks"
+	"github.com/chrislusf/vasto/topology/cluster_listener"
 	"github.com/chrislusf/vasto/util/on_interrupt"
 )
 
@@ -20,22 +21,25 @@ type StoreOption struct {
 	UnixSocket    *string
 	AdminPort     *int32
 	Master        *string
+	FixedCluster  *string
 	DataCenter    *string
 	LogFileSizeMb *int
 	LogFileCount  *int
 }
 
 type storeServer struct {
-	option *StoreOption
-	db     *rocks.Rocks
-	lm     *change_log.LogManager
+	option          *StoreOption
+	db              *rocks.Rocks
+	lm              *change_log.LogManager
+	clusterListener *cluster_listener.ClusterListener
 }
 
 func RunStore(option *StoreOption) {
 
 	var ss = &storeServer{
-		option: option,
-		db:     rocks.New(option.storeFolder()),
+		option:          option,
+		db:              rocks.New(option.storeFolder()),
+		clusterListener: cluster_listener.NewClusterClient(*option.DataCenter),
 	}
 	if *option.LogFileSizeMb > 0 {
 		ss.lm = change_log.NewLogManager(*option.Dir, int64(*option.LogFileSizeMb*1024*1024), *option.LogFileCount)
@@ -71,11 +75,15 @@ func RunStore(option *StoreOption) {
 		on_interrupt.OnInterrupt(func() {
 			os.Remove(*option.UnixSocket)
 		}, nil)
+		defer os.Remove(*option.UnixSocket)
 		go ss.serveTcp(unixSocketListener)
 	}
 
-	if *option.Master != "" {
+	if *option.FixedCluster != "" {
+		ss.clusterListener.SetNodes(*ss.option.FixedCluster)
+	} else if *option.Master != "" {
 		go ss.keepConnectedToMasterServer()
+		ss.clusterListener.Start(*ss.option.Master, *ss.option.DataCenter)
 	}
 
 	select {}

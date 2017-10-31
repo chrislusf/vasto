@@ -28,7 +28,7 @@ func (ss *storeServer) logDelete(key []byte, partitionHash uint64, updatedAtNs u
 		return
 	}
 
-	ss.lm.AddEntry(change_log.NewLogEntry(
+	ss.lm.AppendEntry(change_log.NewLogEntry(
 		partitionHash,
 		updatedAtNs,
 		0,

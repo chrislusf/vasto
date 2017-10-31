@@ -4,18 +4,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"path"
 	"strconv"
 	"strings"
 	"sync"
 )
-
-type logFile struct {
-	fullName string
-	segment  uint16
-	file     *os.File
-}
 
 type LogManager struct {
 	dir               string
@@ -23,11 +16,12 @@ type LogManager struct {
 	logFileCountLimit int
 
 	filesLock sync.RWMutex
-	files     map[uint16]*logFile
+	files     map[uint16]*logSegmentFile
 
-	lastLogFile *logFile
-	segment     uint16
-	offset      int64
+	lastLogFile  *logSegmentFile
+	segment      uint16
+	offset       int64
+	followerCond *sync.Cond
 }
 
 const (
@@ -44,7 +38,8 @@ func NewLogManager(dir string, logFileMaxSize int64, logFileCountLimit int) *Log
 		dir:               dir,
 		logFileMaxSize:    logFileMaxSize,
 		logFileCountLimit: logFileCountLimit,
-		files:             make(map[uint16]*logFile),
+		files:             make(map[uint16]*logSegmentFile),
+		followerCond:      &sync.Cond{L: &sync.Mutex{}},
 	}
 	return m
 }
@@ -60,22 +55,40 @@ func (m *LogManager) Initialze() error {
 	return nil
 }
 
-func (m *LogManager) AddEntry(entry *LogEntry) error {
-	if m.offset >= m.logFileMaxSize {
-		println("close file", m.lastLogFile.fullName)
-		m.lastLogFile.file.Close()
-		m.lastLogFile = nil
+func (m *LogManager) AppendEntry(entry *LogEntry) error {
+	if m.lastLogFile.offset >= m.logFileMaxSize {
+		m.lastLogFile.close()
+		m.followerCond.L.Lock()
+		defer m.followerCond.L.Lock()
 		m.segment++
-		m.offset = 0
 		m.maybeRemoveOldFiles()
 		m.maybePrepareCurrentFileForWrite()
+		m.followerCond.Broadcast()
 	}
 
-	data := entry.ToBytes()
-	m.lastLogFile.file.WriteAt(data, m.offset)
-	m.offset += int64(len(data))
+	return m.lastLogFile.appendEntry(entry)
 
-	return nil
+}
+
+func (m *LogManager) ReadEntries(segment uint16, offset int64,
+	limit int) (entries []*LogEntry, nextOffset int64, err error) {
+
+	// wait until the new segment is ready
+	m.followerCond.L.Lock()
+	for segment > m.segment {
+		m.followerCond.Wait()
+	}
+	m.followerCond.L.Unlock()
+
+	m.filesLock.Lock()
+	oneLogFile, ok := m.files[segment]
+	m.filesLock.Unlock()
+
+	if !ok {
+		return nil, 0, fmt.Errorf("already purged segment %d", segment)
+	}
+
+	return oneLogFile.readEntries(offset, limit)
 }
 
 func (m *LogManager) maybeRemoveOldFiles() {
@@ -83,38 +96,17 @@ func (m *LogManager) maybeRemoveOldFiles() {
 	defer m.filesLock.Unlock()
 	for segment, oneLogFile := range m.files {
 		if segment+uint16(m.logFileCountLimit) < m.segment {
-			if oneLogFile.file != nil {
-				oneLogFile.file.Close()
-			}
-			os.Remove(oneLogFile.fullName)
+			oneLogFile.purge()
 			delete(m.files, segment)
-			println("purging file", oneLogFile.fullName)
 		}
 	}
 }
 
-func (m *LogManager) maybePrepareCurrentFileForWrite() error {
+func (m *LogManager) maybePrepareCurrentFileForWrite() (err error) {
 	if m.lastLogFile == nil {
-		m.lastLogFile = &logFile{
-			fullName: m.getFileName(m.segment),
-			segment:  m.segment,
-		}
+		m.lastLogFile = newLogSegmentFile(m.getFileName(m.segment), m.segment, m.logFileMaxSize)
 	}
-	if m.lastLogFile.file == nil {
-		println("open file", m.lastLogFile.fullName)
-		if file, err := os.OpenFile(m.lastLogFile.fullName, os.O_RDWR|os.O_CREATE, 0644); err != nil {
-			return fmt.Errorf("Open file %s: %v", m.lastLogFile.fullName, err)
-		} else {
-			m.lastLogFile.file = file
-			if stat, err := m.lastLogFile.file.Stat(); err != nil {
-				return fmt.Errorf("Stat file %s: %v", m.lastLogFile.fullName, err)
-			} else {
-				m.offset = stat.Size()
-			}
-			m.lastLogFile.file.Seek(0, 2)
-		}
-	}
-	return nil
+	return m.lastLogFile.open()
 }
 
 func (m *LogManager) getFileName(segment uint16) string {
@@ -143,10 +135,7 @@ func (m *LogManager) loadFilesFromDisk() error {
 				log.Printf("Failed to parse %s", name)
 				return err
 			}
-			oneLogFile := &logFile{
-				fullName: m.getFileName(segmentNumber),
-				segment:  segmentNumber,
-			}
+			oneLogFile := newLogSegmentFile(m.getFileName(segmentNumber), segmentNumber, m.logFileMaxSize)
 			m.files[segmentNumber] = oneLogFile
 			if maxSegmentNumber < segmentNumber {
 				maxSegmentNumber = segmentNumber

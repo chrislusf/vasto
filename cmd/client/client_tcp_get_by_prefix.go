@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/util"
 )
 
 func (c *VastoClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, lastSeenKey []byte) ([]*pb.KeyValue, error) {
@@ -12,19 +11,10 @@ func (c *VastoClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, las
 	if partitionKey == nil {
 		partitionKey = prefix
 	}
-	partitionHash := util.Hash(partitionKey)
 
-	n := c.cluster.GetNode(c.cluster.FindBucket(partitionHash))
-
-	node, ok := n.(*nodeWithConnPool)
-
-	if !ok {
-		return nil, fmt.Errorf("unexpected node %+v", n)
-	}
-
-	conn, err := node.GetConnection()
+	conn, err := c.clusterListener.GetConnectionByPartitionKey(partitionKey)
 	if err != nil {
-		return nil, fmt.Errorf("GetConnection node %d %s %+v", n.GetId(), n.GetAddress(), err)
+		return nil, err
 	}
 	defer conn.Close()
 

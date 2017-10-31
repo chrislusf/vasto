@@ -13,20 +13,9 @@ func (c *VastoClient) Put(partitionKey, key, value []byte) error {
 		partitionKey = key
 	}
 	partitionHash := util.Hash(partitionKey)
-
-	bucket := c.cluster.FindBucket(partitionHash)
-
-	n := c.cluster.GetNode(bucket)
-
-	node, ok := n.(*nodeWithConnPool)
-
-	if !ok {
-		return fmt.Errorf("unexpected node %+v", n)
-	}
-
-	conn, err := node.GetConnection()
+	conn, err := c.clusterListener.GetConnectionByPartitionHash(partitionHash)
 	if err != nil {
-		return fmt.Errorf("GetConnection node %d %s %+v", n.GetId(), n.GetAddress(), err)
+		return err
 	}
 	defer conn.Close()
 

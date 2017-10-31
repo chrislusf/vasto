@@ -23,7 +23,7 @@ func TestLogManager(t *testing.T) {
 		}
 		a.setCrc()
 
-		m.AddEntry(a)
+		m.AppendEntry(a)
 
 	}
 

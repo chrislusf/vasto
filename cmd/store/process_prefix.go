@@ -3,7 +3,6 @@ package store
 import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
-	"time"
 )
 
 func (ss *storeServer) processPrefix(prefixRequest *pb.GetByPrefixRequest) *pb.GetByPrefixResponse {
@@ -17,7 +16,7 @@ func (ss *storeServer) processPrefix(prefixRequest *pb.GetByPrefixRequest) *pb.G
 		int(prefixRequest.Limit),
 		func(key, value []byte) bool {
 			entry := codec.FromBytes(value)
-			if entry.TtlSecond == 0 || entry.UpdatedSecond+entry.TtlSecond >= uint32(time.Now().Unix()) {
+			if !entry.IsExpired() {
 				t := make([]byte, len(key))
 				copy(t, key)
 				keyValues = append(keyValues, &pb.KeyValue{
