@@ -11,7 +11,7 @@ func (ss *storeServer) processDelete(deleteRequest *pb.DeleteRequest) *pb.Delete
 	resp := &pb.DeleteResponse{
 		Ok: true,
 	}
-	err := ss.db.Delete(deleteRequest.Key)
+	err := ss.nodes[0].db.Delete(deleteRequest.Key)
 	if err != nil {
 		resp.Ok = false
 		resp.Status = err.Error()
@@ -24,11 +24,11 @@ func (ss *storeServer) processDelete(deleteRequest *pb.DeleteRequest) *pb.Delete
 
 func (ss *storeServer) logDelete(key []byte, partitionHash uint64, updatedAtNs uint64) {
 
-	if ss.lm == nil {
+	if ss.nodes[0].lm == nil {
 		return
 	}
 
-	ss.lm.AppendEntry(change_log.NewLogEntry(
+	ss.nodes[0].lm.AppendEntry(change_log.NewLogEntry(
 		partitionHash,
 		updatedAtNs,
 		0,

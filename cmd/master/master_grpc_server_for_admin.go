@@ -81,6 +81,7 @@ func (ms *masterServer) ResizeCluster(req *pb.ResizeRequest, stream pb.VastoMast
 	ms.clientChans.notifyClusterSize(dc, uint32(r.CurrentSize()), uint32(r.NextSize()))
 
 	ms.clientChans.notifyClusterSize(dc, uint32(r.NextSize()), 0)
+	r.SetExpectedSize(r.NextSize())
 	r.SetCurrentSize(r.NextSize())
 	r.SetNextSize(0)
 

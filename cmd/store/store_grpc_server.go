@@ -28,7 +28,7 @@ func (ss *storeServer) PullChanges(request *pb.PullUpdateRequest, stream pb.Vast
 
 	for {
 
-		entries, nextOffset, err := ss.lm.ReadEntries(segment, offset, limit)
+		entries, nextOffset, err := ss.nodes[0].lm.ReadEntries(segment, offset, limit)
 		if err == io.EOF {
 			segment += 1
 		} else if err != nil {

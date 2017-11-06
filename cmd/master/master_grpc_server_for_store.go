@@ -21,7 +21,8 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 		return err
 	}
 
-	log.Printf("store connected %s %v\n", storeHeartbeat.Store.Network, storeHeartbeat.Store.Address)
+	log.Printf("cluster %s store connected %s %v\n",
+		storeHeartbeat.DataCenter, storeHeartbeat.Store.Network, storeHeartbeat.Store.Address)
 
 	node := topology.NewNodeFromStore(storeHeartbeat.Store)
 
@@ -30,7 +31,7 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 	if !ok {
 		t := topology.NewHashRing(storeHeartbeat.DataCenter)
 		ring = &t
-		ring.SetCurrentSize(ms.defaultClusterSize)
+		ring.SetExpectedSize(ms.defaultClusterSize)
 		ms.clusters[storeHeartbeat.DataCenter] = ring
 	}
 	ms.Unlock()

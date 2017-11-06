@@ -17,10 +17,12 @@ func (c *ClusterListener) GetConnectionByPartitionHash(partitionHash uint64) (ne
 }
 
 func (c *ClusterListener) GetConnectionByBucket(bucket int) (net.Conn, error) {
-	n := c.GetNode(bucket)
+	n, ok := c.GetNode(bucket)
+	if !ok {
+		return nil, fmt.Errorf("bucket %d not found", bucket)
+	}
 
 	node, ok := n.(*NodeWithConnPool)
-
 	if !ok {
 		return nil, fmt.Errorf("unexpected node %+v", n)
 	}

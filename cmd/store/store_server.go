@@ -6,47 +6,54 @@ import (
 	"net"
 	"os"
 
-	"github.com/chrislusf/vasto/storage/change_log"
-	"github.com/chrislusf/vasto/storage/rocks"
 	"github.com/chrislusf/vasto/topology/cluster_listener"
 	"github.com/chrislusf/vasto/util/on_interrupt"
 )
 
 type StoreOption struct {
-	Id            *int32
-	Dir           *string
-	Host          *string
-	ListenHost    *string
-	TcpPort       *int32
-	UnixSocket    *string
-	AdminPort     *int32
-	Master        *string
-	FixedCluster  *string
-	DataCenter    *string
-	LogFileSizeMb *int
-	LogFileCount  *int
+	Id                *int32
+	Dir               *string
+	Host              *string
+	ListenHost        *string
+	TcpPort           *int32
+	UnixSocket        *string
+	AdminPort         *int32
+	Master            *string
+	FixedCluster      *string
+	DataCenter        *string
+	LogFileSizeMb     *int
+	LogFileCount      *int
+	ReplicationFactor *int
 }
 
 type storeServer struct {
 	option          *StoreOption
-	db              *rocks.Rocks
-	lm              *change_log.LogManager
+	nodes           []*node
 	clusterListener *cluster_listener.ClusterListener
 }
 
 func RunStore(option *StoreOption) {
 
+	clusterListener := cluster_listener.NewClusterClient(*option.DataCenter)
+
 	var ss = &storeServer{
 		option:          option,
-		db:              rocks.New(option.storeFolder()),
-		clusterListener: cluster_listener.NewClusterClient(*option.DataCenter),
-	}
-	if *option.LogFileSizeMb > 0 {
-		ss.lm = change_log.NewLogManager(*option.Dir, int64(*option.LogFileSizeMb*1024*1024), *option.LogFileCount)
-		ss.lm.Initialze()
+		clusterListener: clusterListener,
 	}
 
-	log.Printf("Vasto store starts on %s", option.storeFolder())
+	if *option.FixedCluster != "" {
+		clusterListener.SetNodes(*ss.option.FixedCluster)
+	} else if *option.Master != "" {
+		go ss.keepConnectedToMasterServer()
+		clusterListener.Start(*ss.option.Master, *ss.option.DataCenter)
+	}
+
+	nodes, err := newNodes(option, clusterListener)
+	if err != nil {
+		log.Fatal(err)
+	}
+	ss.nodes = nodes
+
 	if *option.AdminPort != 0 {
 		grpcListener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *option.ListenHost, *option.AdminPort))
 		if err != nil {
@@ -79,17 +86,8 @@ func RunStore(option *StoreOption) {
 		go ss.serveTcp(unixSocketListener)
 	}
 
-	if *option.FixedCluster != "" {
-		ss.clusterListener.SetNodes(*ss.option.FixedCluster)
-	} else if *option.Master != "" {
-		go ss.keepConnectedToMasterServer()
-		ss.clusterListener.Start(*ss.option.Master, *ss.option.DataCenter)
-	}
+	log.Printf("Vasto store starts on %s", *option.Dir)
 
 	select {}
 
-}
-
-func (option *StoreOption) storeFolder() string {
-	return fmt.Sprintf("%s/%d", *option.Dir, *option.Id)
 }

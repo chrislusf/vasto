@@ -17,10 +17,11 @@ func (cluster *ClusterRing) ToCluster() *pb.Cluster {
 		return &pb.Cluster{}
 	}
 	return &pb.Cluster{
-		DataCenter:         cluster.GetDataCenter(),
-		Stores:             cluster.ToStores(),
-		CurrentClusterSize: uint32(cluster.CurrentSize()),
-		NextClusterSize:    uint32(cluster.NextSize()),
+		DataCenter:          cluster.GetDataCenter(),
+		Stores:              cluster.ToStores(),
+		ExpectedClusterSize: uint32(cluster.ExpectedSize()),
+		CurrentClusterSize:  uint32(cluster.CurrentSize()),
+		NextClusterSize:     uint32(cluster.NextSize()),
 	}
 }
 
@@ -29,7 +30,10 @@ func (r *ClusterRing) ToStores() (stores []*pb.StoreResource) {
 		return
 	}
 	for i := 0; i < r.NodeCount(); i++ {
-		node := r.GetNode(i)
+		node, ok := r.GetNode(i)
+		if !ok {
+			continue
+		}
 		var network, address string
 		if node != nil {
 			network = node.GetNetwork()

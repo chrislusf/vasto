@@ -33,7 +33,7 @@ const (
  * Each log file's max size should be less than 2**48 = 32TB.
  * There could be logFileCountLimit + 1 log files, with the latest one for writing.
  */
-func NewLogManager(dir string, logFileMaxSize int64, logFileCountLimit int) *LogManager {
+func NewLogManager(dir string, id int, logFileMaxSize int64, logFileCountLimit int) *LogManager {
 	m := &LogManager{
 		dir:               dir,
 		logFileMaxSize:    logFileMaxSize,
@@ -132,23 +132,23 @@ func (m *LogManager) loadFilesFromDisk() error {
 			segmentNumber16, err := strconv.ParseUint(segment, 10, 16)
 			segmentNumber := uint16(segmentNumber16)
 			if err != nil {
-				log.Printf("Failed to parse %s", name)
+				log.Printf("parse file name %s under %s", name, m.dir)
 				return err
 			}
 			oneLogFile := newLogSegmentFile(m.getFileName(segmentNumber), segmentNumber, m.logFileMaxSize)
 			m.files[segmentNumber] = oneLogFile
-			if maxSegmentNumber < segmentNumber {
+			if maxSegmentNumber <= segmentNumber {
 				maxSegmentNumber = segmentNumber
 				m.lastLogFile = oneLogFile
 			}
-			println("loading log file", oneLogFile.fullName)
+			println(m.dir, "has file", oneLogFile.fullName)
 		}
 	}
 	m.segment = maxSegmentNumber
 	if m.lastLogFile != nil {
-		println("latest log file", m.lastLogFile.fullName)
+		println(m.dir, "has the latest log file", m.lastLogFile.fullName)
 	} else {
-		println("no existing log files")
+		// println(m.dir, "has no existing log files")
 	}
 
 	return nil

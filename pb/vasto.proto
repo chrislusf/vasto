@@ -73,8 +73,9 @@ message Topology {
 message Cluster {
     string data_center = 1;
     repeated StoreResource stores = 2;
-    uint32 current_cluster_size = 3;
-    uint32 next_cluster_size = 4;
+    uint32 expected_cluster_size = 3;
+    uint32 current_cluster_size = 4;
+    uint32 next_cluster_size = 5;
 }
 
 message StoreResource {

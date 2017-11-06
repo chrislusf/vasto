@@ -8,7 +8,7 @@ import (
 
 func TestLogManager(t *testing.T) {
 
-	m := NewLogManager(os.TempDir(), 1024, 3)
+	m := NewLogManager(os.TempDir(), 2, 1024, 3)
 	m.Initialze()
 
 	for i := 0; i < 10; i++ {

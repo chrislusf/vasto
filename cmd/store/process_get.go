@@ -7,7 +7,7 @@ import (
 
 func (ss *storeServer) processGet(getRequest *pb.GetRequest) *pb.GetResponse {
 	key := getRequest.Key
-	if b, err := ss.db.Get(key); err != nil {
+	if b, err := ss.nodes[0].db.Get(key); err != nil {
 		return &pb.GetResponse{
 			Status: err.Error(),
 		}

@@ -3,41 +3,20 @@ package store
 import (
 	"context"
 	"fmt"
+
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
-	"github.com/chrislusf/vasto/util"
 	"google.golang.org/grpc"
+	"log"
 )
 
-// prev should be 1 or 2, previous node or previous previous node.
-func (ss *storeServer) syncChanges(prev int) error {
-
-	targetNode := int(*ss.option.Id) - prev
-	if targetNode < 0 {
-		targetNode += ss.clusterListener.CurrentSize()
-	}
-
-	node := ss.clusterListener.GetNode(targetNode)
-
-	grpcConnection, err := grpc.Dial(node.GetAddress(), grpc.WithInsecure())
-	if err != nil {
-		return fmt.Errorf("fail to dial: %v", err)
-	}
-	defer grpcConnection.Close()
+func (n *node) followChanges(grpcConnection *grpc.ClientConn) error {
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
-	nextSegmentKey := []byte(fmt.Sprintf("%d.next.segment", targetNode))
-	nextOffsetKey := []byte(fmt.Sprintf("%d.next.offset", targetNode))
-	nextSegment := uint32(0)
-	nextOffset := uint64(0)
-	t, err := ss.db.Get(nextSegmentKey)
-	if err == nil && len(t) > 0 {
-		nextSegment = util.BytesToUint32(t)
-	}
-	t, err = ss.db.Get(nextOffsetKey)
-	if err == nil && len(t) > 0 {
-		nextOffset = util.BytesToUint64(t)
+	nextSegment, nextOffset, err := n.getProgress()
+	if err != nil {
+		log.Printf("read node %d follow progress: %v", n.id, err)
 	}
 
 	request := &pb.PullUpdateRequest{
@@ -63,7 +42,7 @@ func (ss *storeServer) syncChanges(prev int) error {
 
 			flushCounter++
 
-			b, err := ss.db.Get(entry.Key)
+			b, err := n.db.Get(entry.Key)
 
 			// process deletes
 			if entry.IsDelete {
@@ -75,7 +54,7 @@ func (ss *storeServer) syncChanges(prev int) error {
 					if row.UpdatedAtNs > entry.UpdatedAtNs {
 						continue
 					}
-					ss.db.Delete(entry.Key)
+					n.db.Delete(entry.Key)
 				}
 				continue
 			}
@@ -88,20 +67,20 @@ func (ss *storeServer) syncChanges(prev int) error {
 				Value:         entry.Value,
 			}
 			if err != nil || len(b) == 0 {
-				ss.db.Put(entry.Key, t.ToBytes())
+				n.db.Put(entry.Key, t.ToBytes())
 				continue
 			}
 			row := codec.FromBytes(b)
 			if row.IsExpired() {
 				if !t.IsExpired() {
-					ss.db.Put(entry.Key, t.ToBytes())
+					n.db.Put(entry.Key, t.ToBytes())
 					continue
 				}
 			} else {
 				if row.UpdatedAtNs > entry.UpdatedAtNs {
 					continue
 				}
-				ss.db.Put(entry.Key, t.ToBytes())
+				n.db.Put(entry.Key, t.ToBytes())
 				continue
 			}
 
@@ -109,8 +88,10 @@ func (ss *storeServer) syncChanges(prev int) error {
 
 		if flushCounter >= 1000 {
 
-			ss.db.Put(nextSegmentKey, util.Uint32toBytes(changes.NextSegment))
-			ss.db.Put(nextOffsetKey, util.Uint64toBytes(changes.NextOffset))
+			err = n.setProgress(changes.NextSegment, changes.NextOffset)
+			if err != nil {
+				log.Printf("set node %d follow progress: %v", n.id, err)
+			}
 
 			flushCounter = 0
 		}

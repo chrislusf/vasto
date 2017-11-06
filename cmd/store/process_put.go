@@ -21,7 +21,7 @@ func (ss *storeServer) processPut(putRequest *pb.PutRequest) *pb.PutResponse {
 	resp := &pb.PutResponse{
 		Ok: true,
 	}
-	err := ss.db.Put(key, entry.ToBytes())
+	err := ss.nodes[0].db.Put(key, entry.ToBytes())
 	if err != nil {
 		resp.Ok = false
 		resp.Status = err.Error()
@@ -34,11 +34,11 @@ func (ss *storeServer) processPut(putRequest *pb.PutRequest) *pb.PutResponse {
 
 func (ss *storeServer) logPut(putRequest *pb.PutRequest, updatedAtNs uint64) {
 
-	if ss.lm == nil {
+	if ss.nodes[0].lm == nil {
 		return
 	}
 
-	ss.lm.AppendEntry(change_log.NewLogEntry(
+	ss.nodes[0].lm.AppendEntry(change_log.NewLogEntry(
 		putRequest.PartitionHash,
 		updatedAtNs,
 		putRequest.TtlSecond,

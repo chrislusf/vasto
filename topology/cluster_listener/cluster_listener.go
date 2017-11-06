@@ -35,6 +35,7 @@ func (l *ClusterListener) SetNodes(fixedCluster string) {
 		}
 		nodes = append(nodes, store)
 	}
+	l.SetExpectedSize(len(nodes))
 	l.SetCurrentSize(len(nodes))
 	for _, node := range nodes {
 		l.AddNode(node)
@@ -49,8 +50,8 @@ func (l *ClusterListener) Start(master, dataCenter string) {
 		return
 	}
 
-	var clientReady bool
-	clientReadyChan := make(chan bool)
+	var clientConnected bool
+	clientConnectedChan := make(chan bool, 1)
 
 	clientMessageChan := make(chan *pb.ClientMessage)
 
@@ -63,14 +64,15 @@ func (l *ClusterListener) Start(master, dataCenter string) {
 			select {
 			case msg := <-clientMessageChan:
 				if msg.GetCluster() != nil {
+					l.SetExpectedSize(int(msg.Cluster.ExpectedClusterSize))
 					l.SetCurrentSize(int(msg.Cluster.CurrentClusterSize))
 					l.SetNextSize(int(msg.Cluster.NextClusterSize))
 					for _, store := range msg.Cluster.Stores {
 						l.AddNode(store)
 					}
-					if !clientReady {
-						clientReady = true
-						clientReadyChan <- true
+					if !clientConnected {
+						clientConnected = true
+						clientConnectedChan <- true
 					}
 				} else if msg.GetUpdates() != nil {
 					for _, store := range msg.Updates.Stores {
@@ -81,6 +83,7 @@ func (l *ClusterListener) Start(master, dataCenter string) {
 						}
 					}
 				} else if msg.GetResize() != nil {
+					l.SetExpectedSize(int(msg.Resize.CurrentClusterSize))
 					l.SetCurrentSize(int(msg.Resize.CurrentClusterSize))
 					l.SetNextSize(int(msg.Resize.NextClusterSize))
 					if l.NextSize() == 0 {
@@ -95,8 +98,11 @@ func (l *ClusterListener) Start(master, dataCenter string) {
 		}
 	}()
 
-	<-clientReadyChan
-	close(clientReadyChan)
+	<-clientConnectedChan
+	close(clientConnectedChan)
+
+	// println("client is connected to master", master, "data center", dataCenter)
+
 	return
 
 }

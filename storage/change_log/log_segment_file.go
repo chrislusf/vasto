@@ -121,7 +121,7 @@ func (f *logSegmentFile) open() error {
 			f.offset = stat.Size()
 		}
 	}
-	println("open log segment file", f.fullName)
+	println("open log segment file", f.fullName, "to append")
 	return nil
 }
 

@@ -40,10 +40,11 @@ func NewNode(id int, network, address string) Node {
 // --------------------
 
 type ClusterRing struct {
-	dataCenter         string
-	nodes              []Node
-	currentClusterSize int
-	nextClusterSize    int
+	dataCenter          string
+	nodes               []Node
+	expectedClusterSize int
+	currentClusterSize  int
+	nextClusterSize     int
 }
 
 // adds a address (+virtual hosts to the ring)
@@ -76,12 +77,20 @@ func (h *ClusterRing) FindBucket(key uint64) int {
 	return int(jump.Hash(key, h.CurrentSize()))
 }
 
+func (h *ClusterRing) ExpectedSize() int {
+	return h.expectedClusterSize
+}
+
 func (h *ClusterRing) CurrentSize() int {
 	return h.currentClusterSize
 }
 
 func (h *ClusterRing) NextSize() int {
 	return h.nextClusterSize
+}
+
+func (h *ClusterRing) SetExpectedSize(expectedSize int) {
+	h.expectedClusterSize = expectedSize
 }
 
 func (h *ClusterRing) SetCurrentSize(currentSize int) {
@@ -103,8 +112,11 @@ func (h *ClusterRing) NodeCount() int {
 }
 
 // returns a particular index
-func (h *ClusterRing) GetNode(index int) Node {
-	return h.nodes[index]
+func (h *ClusterRing) GetNode(index int) (Node, bool) {
+	if index < 0 || index >= len(h.nodes) {
+		return nil, false
+	}
+	return h.nodes[index], true
 }
 
 func (h *ClusterRing) GetDataCenter() string {
@@ -171,7 +183,7 @@ func (h *ClusterRing) String() string {
 	}
 	output.Write([]byte{']'})
 	if h.nextClusterSize == 0 {
-		output.WriteString(fmt.Sprintf(" size %d ", h.currentClusterSize))
+		output.WriteString(fmt.Sprintf(" size %d->%d ", h.currentClusterSize, h.expectedClusterSize))
 	} else {
 		output.WriteString(fmt.Sprintf(" size %d=>%d ", h.currentClusterSize, h.nextClusterSize))
 	}

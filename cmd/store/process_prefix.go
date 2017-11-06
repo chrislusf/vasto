@@ -10,7 +10,7 @@ func (ss *storeServer) processPrefix(prefixRequest *pb.GetByPrefixRequest) *pb.G
 	resp := &pb.GetByPrefixResponse{
 		Ok: true,
 	}
-	err := ss.db.PrefixScan(
+	err := ss.nodes[0].db.PrefixScan(
 		prefixRequest.Prefix,
 		prefixRequest.LastSeenKey,
 		int(prefixRequest.Limit),

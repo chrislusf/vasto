@@ -52,9 +52,10 @@ var (
 		Master:     store.Flag("cluster.master", "master address").Default("localhost:8278").String(),
 		FixedCluster: store.Flag("cluster.fixed",
 			"overwrite --cluster.master, format network:host:port[,network:host:port]*").Default("").String(),
-		DataCenter:    store.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
-		LogFileSizeMb: store.Flag("logFileSizeMb", "log file size limit in MB").Default("1024").Int(),
-		LogFileCount:  store.Flag("logFileCount", "log file count limit").Default("3").Int(),
+		DataCenter:        store.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
+		LogFileSizeMb:     store.Flag("logFileSizeMb", "log file size limit in MB").Default("1024").Int(),
+		LogFileCount:      store.Flag("logFileCount", "log file count limit").Default("3").Int(),
+		ReplicationFactor: store.Flag("replicationFactor", "number of physical copies").Default("3").Int(),
 	}
 	storeProfile = store.Flag("cpuprofile", "cpu profile output file").Default("").String()
 
