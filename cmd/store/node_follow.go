@@ -26,6 +26,10 @@ func (n *node) doFollow() error {
 		return fmt.Errorf("node %d not found", n.id)
 	}
 
+	if node == nil {
+		return fmt.Errorf("node %d is missing", n.id)
+	}
+
 	grpcConnection, err := grpc.Dial(node.GetAddress(), grpc.WithInsecure())
 	if err != nil {
 		return fmt.Errorf("fail to dial: %v", err)

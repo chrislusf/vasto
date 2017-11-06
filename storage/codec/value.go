@@ -13,7 +13,7 @@ type Entry struct {
 }
 
 func (e *Entry) ToBytes() []byte {
-	b := make([]byte, len(e.Value)+16)
+	b := make([]byte, len(e.Value)+20)
 
 	binary.LittleEndian.PutUint64(b, e.PartitionHash)
 	binary.LittleEndian.PutUint64(b[8:], e.UpdatedAtNs)

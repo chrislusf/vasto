@@ -74,7 +74,7 @@ func (h *ClusterRing) FindBucketGivenSize(key uint64, size int) int {
 
 // calculates a Jump hash for the key provided
 func (h *ClusterRing) FindBucket(key uint64) int {
-	return int(jump.Hash(key, h.CurrentSize()))
+	return int(jump.Hash(key, h.ExpectedSize()))
 }
 
 func (h *ClusterRing) ExpectedSize() int {
