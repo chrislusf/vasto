@@ -78,7 +78,7 @@ func TestHashing(t *testing.T) {
 	assert.True(t, actualMovedPercentage < expectedMovePercentage+0.002)
 }
 
-func createRing(hosts int) *ClusterRing {
+func createRing(hosts int) ClusterRing {
 	ring := NewHashRing("")
 	for i := 0; i < hosts; i++ {
 		ring.Add(NewNode(i, "tcp", fmt.Sprint("localhost:", 7000+i)))

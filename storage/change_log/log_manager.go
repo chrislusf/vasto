@@ -59,11 +59,11 @@ func (m *LogManager) AppendEntry(entry *LogEntry) error {
 	if m.lastLogFile.offset >= m.logFileMaxSize {
 		m.lastLogFile.close()
 		m.followerCond.L.Lock()
-		defer m.followerCond.L.Lock()
 		m.segment++
 		m.maybeRemoveOldFiles()
 		m.maybePrepareCurrentFileForWrite()
 		m.followerCond.Broadcast()
+		m.followerCond.L.Unlock()
 	}
 
 	return m.lastLogFile.appendEntry(entry)
