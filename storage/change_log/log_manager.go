@@ -18,6 +18,7 @@ type LogManager struct {
 	filesLock sync.RWMutex
 	files     map[uint16]*logSegmentFile
 
+	// current actively written log file
 	lastLogFile  *logSegmentFile
 	segment      uint16
 	offset       int64
@@ -62,6 +63,7 @@ func (m *LogManager) AppendEntry(entry *LogEntry) error {
 		m.segment++
 		m.maybeRemoveOldFiles()
 		m.maybePrepareCurrentFileForWrite()
+		// println("broadcast segment condition change")
 		m.followerCond.Broadcast()
 		m.followerCond.L.Unlock()
 	}
@@ -75,7 +77,8 @@ func (m *LogManager) ReadEntries(segment uint16, offset int64,
 
 	// wait until the new segment is ready
 	m.followerCond.L.Lock()
-	for segment > m.segment {
+	for !(segment <= m.segment) {
+		// println("waiting on segment change, read entries segment1", segment, "offset", offset)
 		m.followerCond.Wait()
 	}
 	m.followerCond.L.Unlock()
@@ -85,7 +88,11 @@ func (m *LogManager) ReadEntries(segment uint16, offset int64,
 	m.filesLock.Unlock()
 
 	if !ok {
-		return nil, 0, fmt.Errorf("already purged segment %d", segment)
+		if segment == m.segment {
+			oneLogFile = m.lastLogFile
+		} else {
+			return nil, 0, fmt.Errorf("already purged segment %d", segment)
+		}
 	}
 
 	return oneLogFile.readEntries(offset, limit)
@@ -141,12 +148,12 @@ func (m *LogManager) loadFilesFromDisk() error {
 				maxSegmentNumber = segmentNumber
 				m.lastLogFile = oneLogFile
 			}
-			println(m.dir, "has file", oneLogFile.fullName)
+			// println(m.dir, "has file", oneLogFile.fullName)
 		}
 	}
 	m.segment = maxSegmentNumber
 	if m.lastLogFile != nil {
-		println(m.dir, "has the latest log file", m.lastLogFile.fullName)
+		// println(m.dir, "has the latest log file", m.lastLogFile.fullName)
 	} else {
 		// println(m.dir, "has no existing log files")
 	}

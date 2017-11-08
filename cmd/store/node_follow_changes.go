@@ -3,11 +3,17 @@ package store
 import (
 	"context"
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
+	"github.com/chrislusf/vasto/util/on_interrupt"
 	"google.golang.org/grpc"
-	"log"
+)
+
+const (
+	syncProgressFlushInterval = time.Minute
 )
 
 func (n *node) followChanges(grpcConnection *grpc.ClientConn) error {
@@ -31,14 +37,29 @@ func (n *node) followChanges(grpcConnection *grpc.ClientConn) error {
 	}
 
 	flushCounter := 0
+	flushTime := time.Now()
+
+	on_interrupt.OnInterrupt(func() {
+		if flushCounter > 0 {
+			err = n.setProgress(nextSegment, nextOffset)
+			if err != nil {
+				log.Printf("set node %d follow progress: %v", n.id, err)
+			}
+		}
+	}, nil)
 
 	for {
+
+		// println("PullChanges receive from", n.id)
+
 		changes, err := stream.Recv()
 		if err != nil {
 			return fmt.Errorf("pull changes: %v", err)
 		}
 
 		for _, entry := range changes.Entries {
+
+			// fmt.Printf("received entry: %v", entry.String())
 
 			flushCounter++
 
@@ -86,7 +107,7 @@ func (n *node) followChanges(grpcConnection *grpc.ClientConn) error {
 
 		}
 
-		if flushCounter >= 1000 {
+		if flushCounter >= 1000 || flushTime.Add(syncProgressFlushInterval).Before(time.Now()) {
 
 			err = n.setProgress(changes.NextSegment, changes.NextOffset)
 			if err != nil {
@@ -94,7 +115,11 @@ func (n *node) followChanges(grpcConnection *grpc.ClientConn) error {
 			}
 
 			flushCounter = 0
+			flushTime = time.Now()
 		}
+
+		// set the nextSegment and nextOffset for OnInterrupt()
+		nextSegment, nextOffset = changes.NextSegment, changes.NextOffset
 
 	}
 

@@ -14,7 +14,6 @@ func (n *node) follow() {
 	log.Printf("starts following node %d ...", n.id)
 
 	util.RetryForever(func() error {
-		println("connecting to node", n.id)
 		return n.doFollow()
 	}, 2*time.Second)
 }
@@ -30,11 +29,15 @@ func (n *node) doFollow() error {
 		return fmt.Errorf("node %d is missing", n.id)
 	}
 
-	grpcConnection, err := grpc.Dial(node.GetAddress(), grpc.WithInsecure())
+	log.Printf("connecting to node %d at %s", n.id, node.GetAdminAddress())
+
+	grpcConnection, err := grpc.Dial(node.GetAdminAddress(), grpc.WithInsecure())
 	if err != nil {
 		return fmt.Errorf("fail to dial: %v", err)
 	}
 	defer grpcConnection.Close()
+
+	log.Printf("connected  to node %d at %s", n.id, node.GetAdminAddress())
 
 	return n.followChanges(grpcConnection)
 

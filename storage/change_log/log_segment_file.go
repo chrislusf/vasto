@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"sync"
 )
@@ -30,8 +31,12 @@ func newLogSegmentFile(fillName string, segment uint16, logFileMaxSize int64) *l
 
 func (f *logSegmentFile) appendEntry(entry *LogEntry) (err error) {
 
+	// println("append entry1", string(entry.ToBytes()))
+
 	f.followerCond.L.Lock()
 	defer f.followerCond.L.Unlock()
+
+	// println("append entry2", string(entry.ToBytes()))
 
 	data := entry.ToBytes()
 	dataLen := len(data)
@@ -44,6 +49,7 @@ func (f *logSegmentFile) appendEntry(entry *LogEntry) (err error) {
 	f.offset += int64(dataLen + 4)
 
 	if err == nil {
+		// println("broadcast file condition change")
 		f.followerCond.Broadcast()
 	}
 	return err
@@ -60,6 +66,7 @@ func (f *logSegmentFile) readEntries(offset int64, limit int) (entries []*LogEnt
 
 	f.followerCond.L.Lock()
 	for offset >= f.offset {
+		// println("readEntries offset", offset, f.offset)
 		f.followerCond.Wait()
 	}
 	f.followerCond.L.Unlock()
@@ -93,7 +100,7 @@ func (f *logSegmentFile) readOneEntry(offset int64) (entry *LogEntry, nextOffset
 	}
 	dataLen := binary.LittleEndian.Uint32(f.sizeBuf)
 	data := make([]byte, dataLen)
-	_, err = f.file.ReadAt(data, offset)
+	_, err = f.file.ReadAt(data, offset+4)
 	if err != nil {
 		return nil, 0, fmt.Errorf("read entry data: %v", err)
 	}
@@ -121,7 +128,7 @@ func (f *logSegmentFile) open() error {
 			f.offset = stat.Size()
 		}
 	}
-	println("open log segment file", f.fullName, "to append")
+	log.Println("open log segment file", f.fullName, "to append")
 	return nil
 }
 
@@ -137,5 +144,5 @@ func (f *logSegmentFile) close() {
 func (f *logSegmentFile) purge() {
 	f.close()
 	os.Remove(f.fullName)
-	println("purge log segment file", f.fullName)
+	log.Println("purge log segment file", f.fullName)
 }

@@ -82,6 +82,7 @@ message StoreResource {
     int32 id = 1;
     string network = 2;
     string address = 3;
+    string admin_address = 4;
 }
 
 message Location {

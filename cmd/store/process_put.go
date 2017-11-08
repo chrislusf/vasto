@@ -1,6 +1,7 @@
 package store
 
 import (
+	"log"
 	"time"
 
 	"github.com/chrislusf/vasto/pb"
@@ -34,11 +35,15 @@ func (ss *storeServer) processPut(putRequest *pb.PutRequest) *pb.PutResponse {
 
 func (ss *storeServer) logPut(putRequest *pb.PutRequest, updatedAtNs uint64) {
 
+	// println("logPut1", putRequest.String())
+
 	if ss.nodes[0].lm == nil {
 		return
 	}
 
-	ss.nodes[0].lm.AppendEntry(change_log.NewLogEntry(
+	// println("logPut2", putRequest.String())
+
+	err := ss.nodes[0].lm.AppendEntry(change_log.NewLogEntry(
 		putRequest.PartitionHash,
 		updatedAtNs,
 		putRequest.TtlSecond,
@@ -46,5 +51,11 @@ func (ss *storeServer) logPut(putRequest *pb.PutRequest, updatedAtNs uint64) {
 		putRequest.KeyValue.Key,
 		putRequest.KeyValue.Value,
 	))
+
+	if err != nil {
+		log.Printf("append log entry: %v", err)
+	}
+
+	// println("logPut3", putRequest.String())
 
 }

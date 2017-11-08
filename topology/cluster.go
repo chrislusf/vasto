@@ -11,12 +11,14 @@ type Node interface {
 	GetId() int
 	GetNetwork() string
 	GetAddress() string
+	GetAdminAddress() string
 }
 
 type node struct {
-	id      int
-	network string
-	address string
+	id           int
+	network      string
+	address      string
+	adminAddress string
 }
 
 func (n *node) GetId() int {
@@ -31,8 +33,12 @@ func (n *node) GetAddress() string {
 	return n.address
 }
 
-func NewNode(id int, network, address string) Node {
-	return &node{id: id, network: network, address: address}
+func (n *node) GetAdminAddress() string {
+	return n.adminAddress
+}
+
+func NewNode(id int, network, address, adminAddress string) Node {
+	return &node{id: id, network: network, address: address, adminAddress: adminAddress}
 }
 
 // --------------------

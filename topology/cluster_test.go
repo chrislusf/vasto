@@ -10,7 +10,7 @@ import (
 // tests the GetAddress function on the Node interface
 func TestNode(t *testing.T) {
 	host := "localhost:7000"
-	n := NewNode(3, "tcp", host)
+	n := NewNode(3, "tcp", host, host)
 
 	// validate address name
 	assert.Equal(t, host, n.GetAddress())
@@ -21,7 +21,7 @@ func TestNode(t *testing.T) {
 func baselineBenchmark(hosts int) func(b *testing.B) {
 	ring := NewHashRing("")
 	for i := 0; i < hosts; i++ {
-		ring.Add(NewNode(i, "tcp", fmt.Sprint("localhost:", 7000+i)))
+		ring.Add(NewNode(i, "tcp", fmt.Sprint("localhost:", 7000+i), fmt.Sprint("localhost:", 8000+i)))
 	}
 
 	return func(b *testing.B) {
@@ -81,7 +81,7 @@ func TestHashing(t *testing.T) {
 func createRing(hosts int) ClusterRing {
 	ring := NewHashRing("")
 	for i := 0; i < hosts; i++ {
-		ring.Add(NewNode(i, "tcp", fmt.Sprint("localhost:", 7000+i)))
+		ring.Add(NewNode(i, "tcp", fmt.Sprint("localhost:", 7000+i), fmt.Sprint("localhost:", 8000+i)))
 	}
 	ring.currentClusterSize = hosts
 	return ring

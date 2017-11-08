@@ -44,6 +44,7 @@ func (d *Rocks) setup(path string) {
 }
 
 func (d *Rocks) Put(key []byte, msg []byte) error {
+	// println("put", string(key), "value", string(msg))
 	return d.db.Put(d.wo, key, msg)
 }
 
@@ -52,6 +53,7 @@ func (d *Rocks) Get(key []byte) ([]byte, error) {
 }
 
 func (d *Rocks) Delete(k []byte) error {
+	// println("del", string(k))
 	return d.db.Delete(d.wo, k)
 }
 

@@ -1,7 +1,6 @@
 package master
 
 import (
-	"fmt"
 	"io"
 
 	"github.com/chrislusf/vasto/pb"
@@ -21,8 +20,8 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 		return err
 	}
 
-	log.Printf("cluster %s store connected %s %v\n",
-		storeHeartbeat.DataCenter, storeHeartbeat.Store.Network, storeHeartbeat.Store.Address)
+	log.Printf("cluster %s store connected %s %v %v\n", storeHeartbeat.DataCenter,
+		storeHeartbeat.Store.Network, storeHeartbeat.Store.Address, storeHeartbeat.Store.AdminAddress)
 
 	node := topology.NewNodeFromStore(storeHeartbeat.Store)
 
@@ -55,7 +54,7 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 				break
 			}
 		}
-		fmt.Printf("store disconnected %v: %v\n", storeHeartbeat.Store.Address, e)
+		log.Printf("store disconnected %v: %v", storeHeartbeat.Store.Address, e)
 		storeDisconnectedChan <- true
 	}()
 

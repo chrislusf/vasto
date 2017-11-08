@@ -47,6 +47,11 @@ func (ss *storeServer) registerAtMasterServer() error {
 				*ss.option.Host,
 				int32(*ss.option.TcpPort),
 			),
+			AdminAddress: fmt.Sprintf(
+				"%s:%d",
+				*ss.option.Host,
+				int32(*ss.option.AdminPort),
+			),
 		},
 	}
 

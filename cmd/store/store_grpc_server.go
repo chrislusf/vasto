@@ -22,11 +22,16 @@ func (ss *storeServer) Copy(stream pb.VastoStore_CopyServer) error {
 }
 
 func (ss *storeServer) PullChanges(request *pb.PullUpdateRequest, stream pb.VastoStore_PullChangesServer) error {
+
 	segment := uint16(request.Segment)
 	offset := int64(request.Offset)
 	limit := int(request.Limit)
 
+	// println("PullChanges server, segment", segment, "offset", offset, "limit", limit)
+
 	for {
+
+		// println("PullChanges server reading entries, segment", segment, "offset", offset, "limit", limit)
 
 		entries, nextOffset, err := ss.nodes[0].lm.ReadEntries(segment, offset, limit)
 		if err == io.EOF {
@@ -34,6 +39,8 @@ func (ss *storeServer) PullChanges(request *pb.PullUpdateRequest, stream pb.Vast
 		} else if err != nil {
 			return fmt.Errorf("failed to read segment %d offset %d: %v", segment, offset, err)
 		}
+		// println("len(entries) =", len(entries), "next offst", nextOffset)
+
 		offset = nextOffset
 
 		t := &pb.PullUpdateResponse{

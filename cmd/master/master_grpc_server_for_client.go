@@ -61,7 +61,7 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 			}
 		}
 		ms.clientChans.removeClient(clientHeartbeat.Location.DataCenter, pr.Addr.String())
-		fmt.Printf("client disconnected %v: %v\n", pr.Addr.String(), e)
+		log.Printf("client disconnected %v: %v", pr.Addr.String(), e)
 		clientDisconnectedChan <- true
 	}()
 
