@@ -25,11 +25,17 @@ func (c *CommandGet) SetCilent(client *client.VastoClient) {
 	c.client = client
 }
 
-func (c *CommandGet) Do(args []string) (string, error) {
+func (c *CommandGet) Do(args []string, env map[string]string) (string, error) {
+	options, err := parseEnv(env)
+	if err != nil {
+		return "", err
+	}
+
+	// fmt.Printf("env: %+v\n", env)
 	if len(args) == 1 {
 		key := []byte(args[0])
 
-		value, err := c.client.Get(key)
+		value, err := c.client.Get(key, options...)
 
 		return string(value) + "\n", err
 	} else {
@@ -37,7 +43,7 @@ func (c *CommandGet) Do(args []string) (string, error) {
 		for _, arg := range args {
 			keys = append(keys, []byte(arg))
 		}
-		keyValues, err := c.client.BatchGet(keys...)
+		keyValues, err := c.client.BatchGet(keys, options...)
 		if err != nil {
 			return "", err
 		}

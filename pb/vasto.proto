@@ -123,9 +123,10 @@ message Request {
 }
 
 message PutRequest {
-    KeyValue key_value = 1;
+    uint32 replica = 1;
     uint64 partition_hash = 2;
-    uint32 ttl_second = 3;
+    KeyValue key_value = 3;
+    uint32 ttl_second = 4;
 }
 
 message PutResponse {
@@ -134,8 +135,9 @@ message PutResponse {
 }
 
 message DeleteRequest {
-    bytes key = 1;
+    uint32 replica = 1;
     uint64 partition_hash = 2;
+    bytes key = 3;
 }
 
 message DeleteResponse {
@@ -144,7 +146,8 @@ message DeleteResponse {
 }
 
 message GetRequest {
-    bytes key = 1;
+    uint32 replica = 1;
+    bytes key = 2;
 }
 
 message GetResponse {
@@ -154,9 +157,10 @@ message GetResponse {
 }
 
 message GetByPrefixRequest {
-    bytes prefix = 1;
-    uint32 limit = 2;
-    bytes last_seen_key = 3;
+    uint32 replica = 1;
+    bytes prefix = 2;
+    uint32 limit = 3;
+    bytes last_seen_key = 4;
 }
 
 message GetByPrefixResponse {

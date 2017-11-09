@@ -4,16 +4,17 @@ import (
 	"fmt"
 
 	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
 )
 
-func (c *VastoClient) Put(partitionKey, key, value []byte) error {
+func (c *VastoClient) Put(partitionKey, key, value []byte, options ...topology.AccessOption) error {
 
 	if partitionKey == nil {
 		partitionKey = key
 	}
 	partitionHash := util.Hash(partitionKey)
-	conn, err := c.clusterListener.GetConnectionByPartitionHash(partitionHash)
+	conn, replica, err := c.clusterListener.GetConnectionByPartitionHash(partitionHash, options...)
 	if err != nil {
 		return err
 	}
@@ -21,6 +22,7 @@ func (c *VastoClient) Put(partitionKey, key, value []byte) error {
 
 	request := &pb.Request{
 		Put: &pb.PutRequest{
+			Replica: uint32(replica),
 			KeyValue: &pb.KeyValue{
 				Key:   key,
 				Value: value,

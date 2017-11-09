@@ -22,11 +22,16 @@ func (c *CommandPut) SetCilent(client *client.VastoClient) {
 	c.client = client
 }
 
-func (c *CommandPut) Do(args []string) (string, error) {
+func (c *CommandPut) Do(args []string, env map[string]string) (string, error) {
+	options, err := parseEnv(env)
+	if err != nil {
+		return "", err
+	}
+
 	key := []byte(args[0])
 	value := []byte(args[1])
 
-	err := c.client.Put(nil, key, value)
+	err = c.client.Put(nil, key, value, options...)
 
 	return "", err
 }

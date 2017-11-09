@@ -26,7 +26,12 @@ func (c *CommandPrefix) SetCilent(client *client.VastoClient) {
 	c.client = client
 }
 
-func (c *CommandPrefix) Do(args []string) (string, error) {
+func (c *CommandPrefix) Do(args []string, env map[string]string) (string, error) {
+	options, err := parseEnv(env)
+	if err != nil {
+		return "", err
+	}
+
 	prefix := []byte(args[0])
 	limit := uint32(100)
 	var lastSeenKey []byte
@@ -41,7 +46,7 @@ func (c *CommandPrefix) Do(args []string) (string, error) {
 		lastSeenKey = []byte(args[2])
 	}
 
-	keyValues, err := c.client.GetByPrefix(nil, prefix, limit, lastSeenKey)
+	keyValues, err := c.client.GetByPrefix(nil, prefix, limit, lastSeenKey, options...)
 
 	if err != nil {
 		return "", err

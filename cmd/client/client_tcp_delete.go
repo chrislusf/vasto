@@ -4,11 +4,12 @@ import (
 	"fmt"
 
 	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/topology"
 )
 
-func (c *VastoClient) Delete(key []byte) error {
+func (c *VastoClient) Delete(key []byte, options ...topology.AccessOption) error {
 
-	conn, err := c.clusterListener.GetConnectionByPartitionKey(key)
+	conn, replica, err := c.clusterListener.GetConnectionByPartitionKey(key, options...)
 	if err != nil {
 		return err
 	}
@@ -16,7 +17,8 @@ func (c *VastoClient) Delete(key []byte) error {
 
 	request := &pb.Request{
 		Delete: &pb.DeleteRequest{
-			Key: key,
+			Replica: uint32(replica),
+			Key:     key,
 		},
 	}
 

@@ -19,7 +19,7 @@ func (n *node) follow() {
 }
 
 func (n *node) doFollow() error {
-	node, ok := n.clusterListener.GetNode(n.id)
+	node, _, ok := n.clusterListener.GetNode(n.id)
 
 	if !ok {
 		return fmt.Errorf("node %d not found", n.id)

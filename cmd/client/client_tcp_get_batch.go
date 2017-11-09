@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
 )
 
@@ -12,7 +13,7 @@ type answer struct {
 	err       error
 }
 
-func (c *VastoClient) BatchGet(keys ...[]byte) ([]*pb.KeyValue, error) {
+func (c *VastoClient) BatchGet(keys [][]byte, options ...topology.AccessOption) ([]*pb.KeyValue, error) {
 
 	bucketToRequests := make(map[int][]*pb.Request)
 
@@ -34,12 +35,16 @@ func (c *VastoClient) BatchGet(keys ...[]byte) ([]*pb.KeyValue, error) {
 	for bucket, requests := range bucketToRequests {
 		go func(bucket int, requestList []*pb.Request) {
 
-			conn, err := c.clusterListener.GetConnectionByBucket(bucket)
+			conn, replica, err := c.clusterListener.GetConnectionByBucket(bucket, options...)
 			if err != nil {
 				outputChan <- &answer{err: err}
 				return
 			}
 			defer conn.Close()
+
+			for _, request := range requestList {
+				request.Get.Replica = uint32(replica)
+			}
 
 			requests := &pb.Requests{}
 			requests.Requests = requestList

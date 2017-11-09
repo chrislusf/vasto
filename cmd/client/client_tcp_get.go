@@ -5,15 +5,16 @@ import (
 	"fmt"
 
 	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/topology"
 )
 
 var (
 	NotFoundError = errors.New("NotFound")
 )
 
-func (c *VastoClient) Get(key []byte) ([]byte, error) {
+func (c *VastoClient) Get(key []byte, options ...topology.AccessOption) ([]byte, error) {
 
-	conn, err := c.clusterListener.GetConnectionByPartitionKey(key)
+	conn, replica, err := c.clusterListener.GetConnectionByPartitionKey(key, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -21,7 +22,8 @@ func (c *VastoClient) Get(key []byte) ([]byte, error) {
 
 	request := &pb.Request{
 		Get: &pb.GetRequest{
-			Key: key,
+			Replica: uint32(replica),
+			Key:     key,
 		},
 	}
 

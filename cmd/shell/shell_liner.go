@@ -41,6 +41,18 @@ func (s *shell) runShell() {
 		} else {
 			line.AppendHistory(cmd)
 
+			env := make(map[string]string)
+			envIndex := 0
+			for envIndex = range cmds {
+				if strings.Contains(cmds[envIndex], "=") {
+					kv := strings.SplitN(cmds[envIndex], "=", 2)
+					env[kv[0]] = kv[1]
+				} else {
+					break
+				}
+			}
+			cmds = cmds[envIndex:]
+
 			args := make([]string, len(cmds[1:]))
 
 			for i := range args {
@@ -56,7 +68,7 @@ func (s *shell) runShell() {
 				for _, c := range commands {
 					if c.Name() == cmd {
 						c.SetCilent(s.vastoClient)
-						r, err := c.Do(args)
+						r, err := c.Do(args, env)
 						if err != nil {
 							fmt.Printf("%v\n", err)
 						} else {

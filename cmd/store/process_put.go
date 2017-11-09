@@ -4,12 +4,20 @@ import (
 	"log"
 	"time"
 
+	"fmt"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/change_log"
 	"github.com/chrislusf/vasto/storage/codec"
 )
 
 func (ss *storeServer) processPut(putRequest *pb.PutRequest) *pb.PutResponse {
+	replica := int(putRequest.Replica)
+	if replica >= len(ss.nodes) {
+		return &pb.PutResponse{
+			Status: fmt.Sprintf("replica %d not found", replica),
+		}
+	}
+
 	key := putRequest.KeyValue.Key
 	nowInNano := uint64(time.Now().UnixNano())
 	entry := &codec.Entry{
@@ -22,7 +30,7 @@ func (ss *storeServer) processPut(putRequest *pb.PutRequest) *pb.PutResponse {
 	resp := &pb.PutResponse{
 		Ok: true,
 	}
-	err := ss.nodes[0].db.Put(key, entry.ToBytes())
+	err := ss.nodes[replica].db.Put(key, entry.ToBytes())
 	if err != nil {
 		resp.Ok = false
 		resp.Status = err.Error()

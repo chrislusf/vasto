@@ -117,12 +117,21 @@ func (h *ClusterRing) NodeCount() int {
 	return 0
 }
 
-// returns a particular index
-func (h *ClusterRing) GetNode(index int) (Node, bool) {
-	if index < 0 || index >= len(h.nodes) {
-		return nil, false
+func (h *ClusterRing) GetNode(index int, options ...AccessOption) (Node, int, bool) {
+	replica := 0
+	for _, option := range options {
+		index, replica = option(index)
 	}
-	return h.nodes[index], true
+	if index < 0 {
+		index += len(h.nodes)
+	}
+	if index >= len(h.nodes) {
+		index -= len(h.nodes)
+	}
+	if index < 0 || index >= len(h.nodes) {
+		return nil, 0, false
+	}
+	return h.nodes[index], replica, true
 }
 
 func (h *ClusterRing) GetDataCenter() string {

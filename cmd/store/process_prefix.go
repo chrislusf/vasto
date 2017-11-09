@@ -1,16 +1,24 @@
 package store
 
 import (
+	"fmt"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
 )
 
 func (ss *storeServer) processPrefix(prefixRequest *pb.GetByPrefixRequest) *pb.GetByPrefixResponse {
+	replica := int(prefixRequest.Replica)
+	if replica >= len(ss.nodes) {
+		return &pb.GetByPrefixResponse{
+			Status: fmt.Sprintf("replica %d not found", replica),
+		}
+	}
+
 	var keyValues []*pb.KeyValue
 	resp := &pb.GetByPrefixResponse{
 		Ok: true,
 	}
-	err := ss.nodes[0].db.PrefixScan(
+	err := ss.nodes[replica].db.PrefixScan(
 		prefixRequest.Prefix,
 		prefixRequest.LastSeenKey,
 		int(prefixRequest.Limit),

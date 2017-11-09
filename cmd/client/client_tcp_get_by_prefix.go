@@ -4,15 +4,16 @@ import (
 	"fmt"
 
 	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/topology"
 )
 
-func (c *VastoClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, lastSeenKey []byte) ([]*pb.KeyValue, error) {
+func (c *VastoClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, lastSeenKey []byte, options ...topology.AccessOption) ([]*pb.KeyValue, error) {
 
 	if partitionKey == nil {
 		partitionKey = prefix
 	}
 
-	conn, err := c.clusterListener.GetConnectionByPartitionKey(partitionKey)
+	conn, replica, err := c.clusterListener.GetConnectionByPartitionKey(partitionKey, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -20,6 +21,7 @@ func (c *VastoClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, las
 
 	request := &pb.Request{
 		GetByPrefix: &pb.GetByPrefixRequest{
+			Replica:     uint32(replica),
 			Prefix:      prefix,
 			Limit:       limit,
 			LastSeenKey: lastSeenKey,

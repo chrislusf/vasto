@@ -22,10 +22,15 @@ func (c *CommandDelete) SetCilent(client *client.VastoClient) {
 	c.client = client
 }
 
-func (c *CommandDelete) Do(args []string) (string, error) {
+func (c *CommandDelete) Do(args []string, env map[string]string) (string, error) {
+	options, err := parseEnv(env)
+	if err != nil {
+		return "", err
+	}
+
 	key := []byte(args[0])
 
-	err := c.client.Delete(key)
+	err = c.client.Delete(key, options...)
 
 	return "", err
 }
