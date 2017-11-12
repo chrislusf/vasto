@@ -17,7 +17,7 @@ func (ss *storeServer) serveGrpc(listener net.Listener) {
 	grpcServer.Serve(listener)
 }
 
-func (ss *storeServer) Copy(stream pb.VastoStore_CopyServer) error {
+func (ss *storeServer) BootstrapCopy(stream pb.VastoStore_BootstrapCopyServer) error {
 	return nil
 }
 

@@ -24,7 +24,7 @@ func (ss *storeServer) TailBinlogFromStore(shardId int) error {
 
 	ctx := context.Background()
 
-	stream, err := client.Copy(ctx)
+	stream, err := client.BootstrapCopy(ctx)
 	if err != nil {
 		log.Printf("Copy error: %v", err)
 		return err
@@ -75,7 +75,7 @@ func (ss *storeServer) copyToStore(shardId int) error {
 
 	ctx := context.Background()
 
-	stream, err := client.Copy(ctx)
+	stream, err := client.BootstrapCopy(ctx)
 	if err != nil {
 		log.Printf("Copy error: %v", err)
 		return err
