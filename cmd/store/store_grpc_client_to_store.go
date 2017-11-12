@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func (ss *storeServer) pullChangesFromStore(shardId int) error {
+func (ss *storeServer) TailBinlogFromStore(shardId int) error {
 
 	storeLocation := "localhost:8279"
 

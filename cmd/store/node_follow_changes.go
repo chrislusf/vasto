@@ -31,9 +31,9 @@ func (n *node) followChanges(grpcConnection *grpc.ClientConn) error {
 		Limit:   1000,
 	}
 
-	stream, err := client.PullChanges(context.Background(), request)
+	stream, err := client.TailBinlog(context.Background(), request)
 	if err != nil {
-		return fmt.Errorf("client.PullChanges: %v", err)
+		return fmt.Errorf("client.TailBinlog: %v", err)
 	}
 
 	flushCounter := 0
@@ -50,7 +50,7 @@ func (n *node) followChanges(grpcConnection *grpc.ClientConn) error {
 
 	for {
 
-		// println("PullChanges receive from", n.id)
+		// println("TailBinlog receive from", n.id)
 
 		changes, err := stream.Recv()
 		if err != nil {

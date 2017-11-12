@@ -2,7 +2,7 @@ package store
 
 import (
 	"fmt"
-	"github.com/chrislusf/vasto/storage/change_log"
+	"github.com/chrislusf/vasto/storage/binlog"
 	"github.com/chrislusf/vasto/storage/rocks"
 	"github.com/chrislusf/vasto/topology/cluster_listener"
 	"log"
@@ -14,7 +14,7 @@ import (
 type node struct {
 	id              int
 	db              *rocks.Rocks
-	lm              *change_log.LogManager
+	lm              *binlog.LogManager
 	clusterListener *cluster_listener.ClusterListener
 
 	// just to avoid repeatedly create these variables
@@ -60,7 +60,7 @@ func newNode(dir string, id int, clusterListener *cluster_listener.ClusterListen
 		clusterListener: clusterListener,
 	}
 	if logFileSizeMb > 0 {
-		n.lm = change_log.NewLogManager(dir, id, int64(logFileSizeMb*1024*1024), logFileCount)
+		n.lm = binlog.NewLogManager(dir, id, int64(logFileSizeMb*1024*1024), logFileCount)
 		n.lm.Initialze()
 	}
 	n.nextSegmentKey = []byte(fmt.Sprintf("%d.next.segment", n.id))

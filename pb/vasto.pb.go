@@ -1364,7 +1364,7 @@ var _VastoMaster_serviceDesc = grpc.ServiceDesc{
 
 type VastoStoreClient interface {
 	Copy(ctx context.Context, opts ...grpc.CallOption) (VastoStore_CopyClient, error)
-	PullChanges(ctx context.Context, in *PullUpdateRequest, opts ...grpc.CallOption) (VastoStore_PullChangesClient, error)
+	TailBinlog(ctx context.Context, in *PullUpdateRequest, opts ...grpc.CallOption) (VastoStore_TailBinlogClient, error)
 	CopyDone(ctx context.Context, in *CopyDoneMessge, opts ...grpc.CallOption) (*Empty, error)
 }
 
@@ -1410,12 +1410,12 @@ func (x *vastoStoreCopyClient) CloseAndRecv() (*Empty, error) {
 	return m, nil
 }
 
-func (c *vastoStoreClient) PullChanges(ctx context.Context, in *PullUpdateRequest, opts ...grpc.CallOption) (VastoStore_PullChangesClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_VastoStore_serviceDesc.Streams[1], c.cc, "/pb.VastoStore/PullChanges", opts...)
+func (c *vastoStoreClient) TailBinlog(ctx context.Context, in *PullUpdateRequest, opts ...grpc.CallOption) (VastoStore_TailBinlogClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_VastoStore_serviceDesc.Streams[1], c.cc, "/pb.VastoStore/TailBinlog", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &vastoStorePullChangesClient{stream}
+	x := &vastoStoreTailBinlogClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -1425,16 +1425,16 @@ func (c *vastoStoreClient) PullChanges(ctx context.Context, in *PullUpdateReques
 	return x, nil
 }
 
-type VastoStore_PullChangesClient interface {
+type VastoStore_TailBinlogClient interface {
 	Recv() (*PullUpdateResponse, error)
 	grpc.ClientStream
 }
 
-type vastoStorePullChangesClient struct {
+type vastoStoreTailBinlogClient struct {
 	grpc.ClientStream
 }
 
-func (x *vastoStorePullChangesClient) Recv() (*PullUpdateResponse, error) {
+func (x *vastoStoreTailBinlogClient) Recv() (*PullUpdateResponse, error) {
 	m := new(PullUpdateResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -1455,7 +1455,7 @@ func (c *vastoStoreClient) CopyDone(ctx context.Context, in *CopyDoneMessge, opt
 
 type VastoStoreServer interface {
 	Copy(VastoStore_CopyServer) error
-	PullChanges(*PullUpdateRequest, VastoStore_PullChangesServer) error
+	TailBinlog(*PullUpdateRequest, VastoStore_TailBinlogServer) error
 	CopyDone(context.Context, *CopyDoneMessge) (*Empty, error)
 }
 
@@ -1489,24 +1489,24 @@ func (x *vastoStoreCopyServer) Recv() (*UpdateEntry, error) {
 	return m, nil
 }
 
-func _VastoStore_PullChanges_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _VastoStore_TailBinlog_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(PullUpdateRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(VastoStoreServer).PullChanges(m, &vastoStorePullChangesServer{stream})
+	return srv.(VastoStoreServer).TailBinlog(m, &vastoStoreTailBinlogServer{stream})
 }
 
-type VastoStore_PullChangesServer interface {
+type VastoStore_TailBinlogServer interface {
 	Send(*PullUpdateResponse) error
 	grpc.ServerStream
 }
 
-type vastoStorePullChangesServer struct {
+type vastoStoreTailBinlogServer struct {
 	grpc.ServerStream
 }
 
-func (x *vastoStorePullChangesServer) Send(m *PullUpdateResponse) error {
+func (x *vastoStoreTailBinlogServer) Send(m *PullUpdateResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -1544,8 +1544,8 @@ var _VastoStore_serviceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 		{
-			StreamName:    "PullChanges",
-			Handler:       _VastoStore_PullChanges_Handler,
+			StreamName:    "TailBinlog",
+			Handler:       _VastoStore_TailBinlog_Handler,
 			ServerStreams: true,
 		},
 	},

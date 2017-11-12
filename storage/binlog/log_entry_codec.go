@@ -1,4 +1,4 @@
-package change_log
+package binlog
 
 func (e *LogEntry) ToBytes() []byte {
 

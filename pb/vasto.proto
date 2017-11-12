@@ -24,10 +24,23 @@ service VastoMaster {
 }
 
 service VastoStore {
-    rpc Copy (stream UpdateEntry) returns (Empty) {
-        // client push data to server
+    rpc BootstrapCopy (stream UpdateEntry) returns (Empty) {
+        /*
+        client side
+        1. if found local is not caught up with other nodes
+            discard all local data and binlog offsets
+        2. starts to copy
+        3. stop when getting the binlog offset
+        4. switch to pull changes mode
+        5. tell master that this local node is ready
+
+        server side
+        1. get current binlog offset
+        2. starts to stream data to client
+        3. send the binlog offset from step 1
+        */
     }
-    rpc PullChanges (PullUpdateRequest) returns (stream PullUpdateResponse) {
+    rpc TailBinlog (PullUpdateRequest) returns (stream PullUpdateResponse) {
         // client pull data from server
     }
     rpc CopyDone (CopyDoneMessge) returns (Empty) {

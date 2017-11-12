@@ -6,7 +6,7 @@ import (
 
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/storage/change_log"
+	"github.com/chrislusf/vasto/storage/binlog"
 	"github.com/chrislusf/vasto/storage/codec"
 )
 
@@ -51,7 +51,7 @@ func (ss *storeServer) logPut(putRequest *pb.PutRequest, updatedAtNs uint64) {
 
 	// println("logPut2", putRequest.String())
 
-	err := ss.nodes[0].lm.AppendEntry(change_log.NewLogEntry(
+	err := ss.nodes[0].lm.AppendEntry(binlog.NewLogEntry(
 		putRequest.PartitionHash,
 		updatedAtNs,
 		putRequest.TtlSecond,

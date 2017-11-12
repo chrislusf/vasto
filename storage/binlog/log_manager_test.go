@@ -1,4 +1,4 @@
-package change_log
+package binlog
 
 import (
 	"fmt"

@@ -21,17 +21,17 @@ func (ss *storeServer) Copy(stream pb.VastoStore_CopyServer) error {
 	return nil
 }
 
-func (ss *storeServer) PullChanges(request *pb.PullUpdateRequest, stream pb.VastoStore_PullChangesServer) error {
+func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.VastoStore_TailBinlogServer) error {
 
 	segment := uint16(request.Segment)
 	offset := int64(request.Offset)
 	limit := int(request.Limit)
 
-	// println("PullChanges server, segment", segment, "offset", offset, "limit", limit)
+	// println("TailBinlog server, segment", segment, "offset", offset, "limit", limit)
 
 	for {
 
-		// println("PullChanges server reading entries, segment", segment, "offset", offset, "limit", limit)
+		// println("TailBinlog server reading entries, segment", segment, "offset", offset, "limit", limit)
 
 		entries, nextOffset, err := ss.nodes[0].lm.ReadEntries(segment, offset, limit)
 		if err == io.EOF {

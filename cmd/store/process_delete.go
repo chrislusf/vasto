@@ -3,7 +3,7 @@ package store
 import (
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/storage/change_log"
+	"github.com/chrislusf/vasto/storage/binlog"
 	"time"
 )
 
@@ -35,7 +35,7 @@ func (ss *storeServer) logDelete(key []byte, partitionHash uint64, updatedAtNs u
 		return
 	}
 
-	ss.nodes[0].lm.AppendEntry(change_log.NewLogEntry(
+	ss.nodes[0].lm.AppendEntry(binlog.NewLogEntry(
 		partitionHash,
 		updatedAtNs,
 		0,
