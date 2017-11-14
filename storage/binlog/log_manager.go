@@ -16,11 +16,11 @@ type LogManager struct {
 	logFileCountLimit int
 
 	filesLock sync.RWMutex
-	files     map[uint16]*logSegmentFile
+	files     map[uint32]*logSegmentFile
 
 	// current actively written log file
 	lastLogFile  *logSegmentFile
-	segment      uint16
+	segment      uint32
 	offset       int64
 	followerCond *sync.Cond
 }
@@ -39,7 +39,7 @@ func NewLogManager(dir string, id int, logFileMaxSize int64, logFileCountLimit i
 		dir:               dir,
 		logFileMaxSize:    logFileMaxSize,
 		logFileCountLimit: logFileCountLimit,
-		files:             make(map[uint16]*logSegmentFile),
+		files:             make(map[uint32]*logSegmentFile),
 		followerCond:      &sync.Cond{L: &sync.Mutex{}},
 	}
 	return m
@@ -72,7 +72,7 @@ func (m *LogManager) AppendEntry(entry *LogEntry) error {
 
 }
 
-func (m *LogManager) ReadEntries(segment uint16, offset int64,
+func (m *LogManager) ReadEntries(segment uint32, offset int64,
 	limit int) (entries []*LogEntry, nextOffset int64, err error) {
 
 	// wait until the new segment is ready
@@ -102,7 +102,7 @@ func (m *LogManager) maybeRemoveOldFiles() {
 	m.filesLock.Lock()
 	defer m.filesLock.Unlock()
 	for segment, oneLogFile := range m.files {
-		if segment+uint16(m.logFileCountLimit) < m.segment {
+		if segment+uint32(m.logFileCountLimit) < m.segment {
 			oneLogFile.purge()
 			delete(m.files, segment)
 		}
@@ -116,7 +116,7 @@ func (m *LogManager) maybePrepareCurrentFileForWrite() (err error) {
 	return m.lastLogFile.open()
 }
 
-func (m *LogManager) HasSegment(segment uint16) bool {
+func (m *LogManager) HasSegment(segment uint32) bool {
 	m.filesLock.Lock()
 	defer m.filesLock.Unlock()
 
@@ -125,7 +125,20 @@ func (m *LogManager) HasSegment(segment uint16) bool {
 	return ok
 }
 
-func (m *LogManager) getFileName(segment uint16) string {
+func (m *LogManager) EarliestSegment() (segment uint32) {
+	m.filesLock.Lock()
+	defer m.filesLock.Unlock()
+
+	for k, _ := range m.files {
+		if k <= segment {
+			segment = k
+		}
+	}
+
+	return segment
+}
+
+func (m *LogManager) getFileName(segment uint32) string {
 	return path.Join(m.dir, fmt.Sprintf(LogFilePrefix+"%d"+LogFileSuffix, segment))
 }
 
@@ -140,13 +153,13 @@ func (m *LogManager) loadFilesFromDisk() error {
 
 	m.filesLock.Lock()
 	defer m.filesLock.Unlock()
-	maxSegmentNumber := uint16(0)
+	maxSegmentNumber := uint32(0)
 	for _, f := range files {
 		name := f.Name()
 		if strings.HasPrefix(name, LogFilePrefix) && strings.HasSuffix(name, LogFileSuffix) {
 			segment := strings.TrimSuffix(strings.TrimPrefix(name, LogFilePrefix), LogFileSuffix)
-			segmentNumber16, err := strconv.ParseUint(segment, 10, 16)
-			segmentNumber := uint16(segmentNumber16)
+			segmentNumber32, err := strconv.ParseUint(segment, 10, 32)
+			segmentNumber := uint32(segmentNumber32)
 			if err != nil {
 				log.Printf("parse file name %s under %s", name, m.dir)
 				return err

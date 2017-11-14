@@ -1,13 +1,14 @@
 package store
 
 import (
-	"net"
-
 	"fmt"
-	"github.com/chrislusf/vasto/pb"
-	"google.golang.org/grpc"
 	"io"
 	"log"
+	"net"
+
+	"github.com/chrislusf/vasto/pb"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 func (ss *storeServer) serveGrpc(listener net.Listener) {
@@ -52,7 +53,7 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.VastoStore_TailBinlogServer) error {
 
 	replica := ss.findDbReplica(request.NodeId)
-	segment := uint16(request.Segment)
+	segment := uint32(request.Segment)
 	offset := int64(request.Offset)
 	limit := int(request.Limit)
 
@@ -87,7 +88,7 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 		offset = nextOffset
 
 		t := &pb.PullUpdateResponse{
-			NextSegment: uint32(segment),
+			NextSegment: segment,
 			NextOffset:  uint64(nextOffset),
 		}
 
@@ -113,6 +114,18 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 	}
 
 	return nil
+}
+
+func (ss *storeServer) CheckBinlog(ctx context.Context, request *pb.CheckBinlogRequest) (*pb.CheckBinlogResponse, error) {
+	replica := ss.findDbReplica(request.NodeId)
+
+	segment := ss.nodes[replica].lm.EarliestSegment()
+
+	return &pb.CheckBinlogResponse{
+		NodeId:          request.NodeId,
+		EarliestSegment: uint32(segment),
+	}, nil
+
 }
 
 func (ss *storeServer) findDbReplica(nodeId uint32) (replica int) {

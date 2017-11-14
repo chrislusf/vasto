@@ -11,7 +11,7 @@ import (
 
 type logSegmentFile struct {
 	fullName       string
-	segment        uint16
+	segment        uint32
 	file           *os.File
 	offset         int64
 	sizeBuf        []byte
@@ -19,7 +19,7 @@ type logSegmentFile struct {
 	logFileMaxSize int64
 }
 
-func newLogSegmentFile(fillName string, segment uint16, logFileMaxSize int64) *logSegmentFile {
+func newLogSegmentFile(fillName string, segment uint32, logFileMaxSize int64) *logSegmentFile {
 	return &logSegmentFile{
 		fullName:       fillName,
 		segment:        segment,

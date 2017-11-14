@@ -43,6 +43,9 @@ service VastoStore {
     rpc TailBinlog (PullUpdateRequest) returns (stream PullUpdateResponse) {
         // client pull data from server
     }
+    rpc CheckBinlog (CheckBinlogRequest) returns (CheckBinlogResponse) {
+        // client pull data from server
+    }
 
 }
 
@@ -251,6 +254,13 @@ message UpdateEntry {
     bytes value = 9;
 }
 
+message CheckBinlogRequest {
+    uint32 node_id = 1;
+}
+message CheckBinlogResponse {
+    uint32 node_id = 1;
+    uint32 earliest_segment = 2;
+}
 //////////////////////////////////////////////////
 //// admin
 //////////////////////////////////////////////////
