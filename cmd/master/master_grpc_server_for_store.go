@@ -49,10 +49,24 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 	go func() {
 		var e error
 		for {
-			_, e = stream.Recv()
+			beat, e := stream.Recv()
 			if e != nil {
 				break
 			}
+			for k, v := range storeHeartbeat.Store.NodeStatuses {
+				newNodeStatus := beat.Store.NodeStatuses[k]
+				if newNodeStatus.Status != v.Status {
+					log.Printf("node %d status %v => %v", k, v.Status, newNodeStatus.Status)
+					storeHeartbeat.Store.NodeStatuses[k] = newNodeStatus
+				}
+			}
+			ms.clientChans.notifyStoreResourceUpdate(
+				storeHeartbeat.DataCenter,
+				[]*pb.StoreResource{
+					storeHeartbeat.Store,
+				},
+				false,
+			)
 		}
 		log.Printf("store disconnected %v: %v", storeHeartbeat.Store.Address, e)
 		storeDisconnectedChan <- true

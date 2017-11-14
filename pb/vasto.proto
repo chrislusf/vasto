@@ -24,10 +24,10 @@ service VastoMaster {
 }
 
 service VastoStore {
-    rpc BootstrapCopy (stream UpdateEntry) returns (Empty) {
+    rpc BootstrapCopy (BootstrapCopyRequest) returns (stream BootstrapCopyResponse) {
         /*
         client side
-        1. if found local is not caught up with other nodes
+        1. if found local is out of sync with other nodes
             discard all local data and binlog offsets
         2. starts to copy
         3. stop when getting the binlog offset
@@ -43,8 +43,7 @@ service VastoStore {
     rpc TailBinlog (PullUpdateRequest) returns (stream PullUpdateResponse) {
         // client pull data from server
     }
-    rpc CopyDone (CopyDoneMessge) returns (Empty) {
-    }
+
 }
 
 //////////////////////////////////////////////////
@@ -91,11 +90,22 @@ message Cluster {
     uint32 next_cluster_size = 5;
 }
 
+message NodeStatus {
+    uint32 id = 1;
+    enum Status {
+        EMPTY = 0;
+        BOOTSTRAP = 1;
+        READY = 2;
+    }
+    Status status = 2;
+}
+
 message StoreResource {
     int32 id = 1;
     string network = 2;
     string address = 3;
     string admin_address = 4;
+    map<uint32, NodeStatus> node_statuses = 5;
 }
 
 message Location {
@@ -202,16 +212,33 @@ message CopyDoneMessge {
     int64 copy_start_time_ns = 2;
 }
 
+message BootstrapCopyRequest {
+    uint32 node_id = 1;
+}
+message BootstrapCopyResponse {
+
+    repeated KeyValue key_values = 1;
+
+    // this message is only sent at the end of copying
+    message BinlogTailProgress {
+        uint32 segment = 1;
+        uint64 offset = 2;
+    }
+    BinlogTailProgress binlogTailProgress = 2;
+}
+
 message PullUpdateRequest {
-    uint32 segment = 1;
-    uint64 offset = 2;
-    uint32 limit = 3;
+    uint32 node_id = 1;
+    uint32 segment = 2;
+    uint64 offset = 3;
+    uint32 limit = 4;
 }
 
 message PullUpdateResponse {
     uint32 next_segment = 1;
     uint64 next_offset = 2;
     repeated UpdateEntry entries = 3;
+    bool out_of_sync = 4;
 }
 
 message UpdateEntry {

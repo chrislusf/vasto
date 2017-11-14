@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 
+	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology/cluster_listener"
 	"github.com/chrislusf/vasto/util/on_interrupt"
 )
@@ -30,6 +31,7 @@ type storeServer struct {
 	option          *StoreOption
 	nodes           []*node
 	clusterListener *cluster_listener.ClusterListener
+	nodeStatusChan  chan *pb.NodeStatus
 }
 
 func RunStore(option *StoreOption) {
@@ -39,6 +41,7 @@ func RunStore(option *StoreOption) {
 	var ss = &storeServer{
 		option:          option,
 		clusterListener: clusterListener,
+		nodeStatusChan:  make(chan *pb.NodeStatus),
 	}
 
 	if *option.FixedCluster != "" {

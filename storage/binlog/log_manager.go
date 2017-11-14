@@ -116,6 +116,15 @@ func (m *LogManager) maybePrepareCurrentFileForWrite() (err error) {
 	return m.lastLogFile.open()
 }
 
+func (m *LogManager) HasSegment(segment uint16) bool {
+	m.filesLock.Lock()
+	defer m.filesLock.Unlock()
+
+	_, ok := m.files[segment]
+
+	return ok
+}
+
 func (m *LogManager) getFileName(segment uint16) string {
 	return path.Join(m.dir, fmt.Sprintf(LogFilePrefix+"%d"+LogFileSuffix, segment))
 }

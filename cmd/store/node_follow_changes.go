@@ -26,6 +26,7 @@ func (n *node) followChanges(grpcConnection *grpc.ClientConn) error {
 	}
 
 	request := &pb.PullUpdateRequest{
+		NodeId:  uint32(n.id),
 		Segment: nextSegment,
 		Offset:  nextOffset,
 		Limit:   1000,

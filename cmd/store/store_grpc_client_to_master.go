@@ -52,6 +52,7 @@ func (ss *storeServer) registerAtMasterServer() error {
 				*ss.option.Host,
 				int32(*ss.option.AdminPort),
 			),
+			NodeStatuses: make(map[uint32]*pb.NodeStatus),
 		},
 	}
 
@@ -62,19 +63,36 @@ func (ss *storeServer) registerAtMasterServer() error {
 		return err
 	}
 
+	finishChan := make(chan bool)
+	go func() {
+		select {
+		case nodeStatus := <-ss.nodeStatusChan:
+			log.Println("node status => ", nodeStatus)
+			storeHeartbeat.Store.NodeStatuses[nodeStatus.Id] = nodeStatus
+			if err := stream.Send(storeHeartbeat); err != nil {
+				log.Printf("send node status: %v", storeHeartbeat, err)
+				return
+			}
+		case <-finishChan:
+			return
+		}
+	}()
+
 	for {
 		msg, err := stream.Recv()
 		if err == io.EOF {
 			// read done.
+			finishChan <- true
 			return nil
 		}
 		if err != nil {
+			finishChan <- true
 			return fmt.Errorf("receive topology : %v", err)
 		}
 		ss.processStoreMessage(msg)
 	}
 
-	return nil
+	return err
 
 }
 
