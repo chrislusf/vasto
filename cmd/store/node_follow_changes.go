@@ -8,6 +8,7 @@ import (
 
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
+	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util/on_interrupt"
 	"google.golang.org/grpc"
 )
@@ -16,7 +17,7 @@ const (
 	syncProgressFlushInterval = time.Minute
 )
 
-func (n *node) followChanges(grpcConnection *grpc.ClientConn) error {
+func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn) error {
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
@@ -34,7 +35,7 @@ func (n *node) followChanges(grpcConnection *grpc.ClientConn) error {
 
 	stream, err := client.TailBinlog(context.Background(), request)
 	if err != nil {
-		return fmt.Errorf("client.TailBinlog: %v", err)
+		return fmt.Errorf("client.TailBinlog to server %d %s: %v", node.GetId(), node.GetAdminAddress(), err)
 	}
 
 	flushCounter := 0

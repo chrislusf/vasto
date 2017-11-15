@@ -12,11 +12,12 @@ import (
 )
 
 type node struct {
-	id              int
-	db              *rocks.Rocks
-	lm              *binlog.LogManager
-	clusterListener *cluster_listener.ClusterListener
-
+	id                int
+	serverId          int
+	db                *rocks.Rocks
+	lm                *binlog.LogManager
+	clusterListener   *cluster_listener.ClusterListener
+	replicationFactor int
 	// just to avoid repeatedly create these variables
 	nextSegmentKey []byte
 	nextOffsetKey  []byte
@@ -43,28 +44,39 @@ func newNodes(option *StoreOption, clusterListener *cluster_listener.ClusterList
 		if err != nil {
 			return nil, fmt.Errorf("mkdir %s: %v", dir, err)
 		}
-		node := newNode(dir, id, clusterListener, *option.LogFileSizeMb, *option.LogFileCount)
+		node := newNode(dir, int(*option.Id), id, clusterListener,
+			*option.ReplicationFactor, *option.LogFileSizeMb, *option.LogFileCount)
 		nodes = append(nodes, node)
 		if i != 0 {
-			go node.follow()
+			go node.start()
 		}
 	}
 	return nodes, nil
 }
 
-func newNode(dir string, id int, clusterListener *cluster_listener.ClusterListener,
-	logFileSizeMb int, logFileCount int) *node {
+func newNode(dir string, serverId, nodeId int, clusterListener *cluster_listener.ClusterListener,
+	replicationFactor int, logFileSizeMb int, logFileCount int) *node {
 	n := &node{
-		id:              id,
-		db:              rocks.New(dir),
-		clusterListener: clusterListener,
+		id:                nodeId,
+		serverId:          serverId,
+		db:                rocks.New(dir),
+		clusterListener:   clusterListener,
+		replicationFactor: replicationFactor,
 	}
 	if logFileSizeMb > 0 {
-		n.lm = binlog.NewLogManager(dir, id, int64(logFileSizeMb*1024*1024), logFileCount)
+		n.lm = binlog.NewLogManager(dir, nodeId, int64(logFileSizeMb*1024*1024), logFileCount)
 		n.lm.Initialze()
 	}
 	n.nextSegmentKey = []byte(fmt.Sprintf("%d.next.segment", n.id))
 	n.nextOffsetKey = []byte(fmt.Sprintf("%d.next.offset", n.id))
 
 	return n
+}
+
+func (n *node) start() {
+	err := n.bootstrap()
+	if err != nil {
+		log.Fatalf("bootstrap: %v", err)
+	}
+	n.follow()
 }

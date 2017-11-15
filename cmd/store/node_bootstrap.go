@@ -2,15 +2,14 @@ package store
 
 import (
 	"fmt"
+	"io"
+	"log"
 
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/util"
+	"github.com/chrislusf/vasto/topology"
 	"github.com/tecbot/gorocksdb"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"io"
-	"log"
-	"time"
 )
 
 /*
@@ -20,36 +19,50 @@ bootstrap ensure current node is bootstrapped and can be synced by binlog tailin
 3. starts to add changes to sstable
 4. get the new offsets
 */
-func (n *node) bootstrap() {
+func (n *node) bootstrap() error {
 
-	log.Printf("starts following node %d ...", n.id)
+	bestPeerToCopy, isNeeded := n.isBootstrapNeeded()
+	if !isNeeded {
+		return nil
+	}
 
-	util.RetryForever(func() error {
-		return n.doFollow()
-	}, 2*time.Second)
+	log.Printf("bootstrap from server %d ...", bestPeerToCopy)
+
+	return n.withConnection(bestPeerToCopy, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
+		_, ok, err := n.checkBinlogAvailable(grpcConnection)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return n.doBootstrapCopy(grpcConnection)
+		}
+		return nil
+	})
 
 }
 
-func (n *node) doBootstrapCopy() error {
-	node, _, ok := n.clusterListener.GetNode(n.id)
+func (n *node) checkBinlogAvailable(grpcConnection *grpc.ClientConn) (latestSegment uint32, isAvailable bool, err error) {
 
-	if !ok {
-		return fmt.Errorf("node %d not found", n.id)
-	}
+	segment, _, err := n.getProgress()
 
-	if node == nil {
-		return fmt.Errorf("node %d is missing", n.id)
-	}
-
-	log.Printf("connecting to node %d at %s", n.id, node.GetAdminAddress())
-
-	grpcConnection, err := grpc.Dial(node.GetAdminAddress(), grpc.WithInsecure())
 	if err != nil {
-		return fmt.Errorf("fail to dial: %v", err)
+		return 0, false, err
 	}
-	defer grpcConnection.Close()
 
-	log.Printf("connected  to node %d at %s", n.id, node.GetAdminAddress())
+	client := pb.NewVastoStoreClient(grpcConnection)
+
+	resp, err := client.CheckBinlog(context.Background(), &pb.CheckBinlogRequest{
+		NodeId: uint32(n.id),
+	})
+	if err != nil {
+		return 0, false, err
+	}
+
+	return resp.LatestSegment, resp.EarliestSegment <= segment, nil
+
+}
+
+func (n *node) doBootstrapCopy(grpcConnection *grpc.ClientConn) error {
 
 	segment, offset, err := n.writeToSst(grpcConnection)
 

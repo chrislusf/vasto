@@ -20,7 +20,8 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 		return err
 	}
 
-	log.Printf("cluster %s store connected %s %v %v\n", storeHeartbeat.DataCenter,
+	log.Printf("cluster %s store %d connected %s %v %v\n", storeHeartbeat.DataCenter,
+		storeHeartbeat.Store.Id,
 		storeHeartbeat.Store.Network, storeHeartbeat.Store.Address, storeHeartbeat.Store.AdminAddress)
 
 	node := topology.NewNodeFromStore(storeHeartbeat.Store)
@@ -68,7 +69,7 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 				false,
 			)
 		}
-		log.Printf("store disconnected %v: %v", storeHeartbeat.Store.Address, e)
+		log.Printf("store %d disconnected %v: %v", storeHeartbeat.Store.Id, storeHeartbeat.Store.Address, e)
 		storeDisconnectedChan <- true
 	}()
 

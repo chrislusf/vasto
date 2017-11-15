@@ -125,17 +125,20 @@ func (m *LogManager) HasSegment(segment uint32) bool {
 	return ok
 }
 
-func (m *LogManager) EarliestSegment() (segment uint32) {
+func (m *LogManager) GetSegmentRange() (earlistSegment, latestSegment uint32) {
 	m.filesLock.Lock()
 	defer m.filesLock.Unlock()
 
 	for k, _ := range m.files {
-		if k <= segment {
-			segment = k
+		if k <= earlistSegment {
+			earlistSegment = k
+		}
+		if k > latestSegment {
+			latestSegment = k
 		}
 	}
 
-	return segment
+	return
 }
 
 func (m *LogManager) getFileName(segment uint32) string {

@@ -119,11 +119,12 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 func (ss *storeServer) CheckBinlog(ctx context.Context, request *pb.CheckBinlogRequest) (*pb.CheckBinlogResponse, error) {
 	replica := ss.findDbReplica(request.NodeId)
 
-	segment := ss.nodes[replica].lm.EarliestSegment()
+	earliestSegment, latestSegment := ss.nodes[replica].lm.GetSegmentRange()
 
 	return &pb.CheckBinlogResponse{
 		NodeId:          request.NodeId,
-		EarliestSegment: uint32(segment),
+		EarliestSegment: earliestSegment,
+		LatestSegment:   latestSegment,
 	}, nil
 
 }

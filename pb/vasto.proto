@@ -260,6 +260,7 @@ message CheckBinlogRequest {
 message CheckBinlogResponse {
     uint32 node_id = 1;
     uint32 earliest_segment = 2;
+    uint32 latest_segment = 3;
 }
 //////////////////////////////////////////////////
 //// admin

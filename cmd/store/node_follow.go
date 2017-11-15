@@ -1,45 +1,30 @@
 package store
 
 import (
-	"fmt"
+	"time"
 
+	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
 	"google.golang.org/grpc"
-	"log"
-	"time"
 )
 
 func (n *node) follow() {
 
-	log.Printf("starts following node %d ...", n.id)
+	// log.Printf("node %d starts following ...", n.id)
+	for _, serverId := range n.findPeerServerIds() {
+		go util.RetryForever(func() error {
+			sid := serverId
+			return n.doFollow(sid)
+		}, 2*time.Second)
+	}
 
-	util.RetryForever(func() error {
-		return n.doFollow()
-	}, 2*time.Second)
 }
 
-func (n *node) doFollow() error {
-	node, _, ok := n.clusterListener.GetNode(n.id)
+func (n *node) doFollow(serverId int) error {
 
-	if !ok {
-		return fmt.Errorf("node %d not found", n.id)
-	}
-
-	if node == nil {
-		return fmt.Errorf("node %d is missing", n.id)
-	}
-
-	log.Printf("connecting to node %d at %s", n.id, node.GetAdminAddress())
-
-	grpcConnection, err := grpc.Dial(node.GetAdminAddress(), grpc.WithInsecure())
-	if err != nil {
-		return fmt.Errorf("fail to dial: %v", err)
-	}
-	defer grpcConnection.Close()
-
-	log.Printf("connected  to node %d at %s", n.id, node.GetAdminAddress())
-
-	return n.followChanges(grpcConnection)
+	return n.withConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
+		return n.followChanges(node, grpcConnection)
+	})
 
 }
 
