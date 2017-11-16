@@ -21,7 +21,7 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 
 	replica := ss.findDbReplica(request.NodeId)
 
-	segment, offset, err := ss.nodes[replica].getProgress()
+	segment, offset, _, err := ss.nodes[replica].getProgress()
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,10 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 			return err
 		}
 
-		return fmt.Errorf("out of sync client wants to read segment %d offset %d", segment, offset)
+		start, stop := ss.nodes[replica].lm.GetSegmentRange()
+
+		return fmt.Errorf("out of sync client reads segment %d offset %d, only has segment [%d,%d]",
+			segment, offset, start, stop)
 
 	}
 

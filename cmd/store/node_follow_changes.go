@@ -21,7 +21,7 @@ func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
-	nextSegment, nextOffset, err := n.getProgress()
+	nextSegment, nextOffset, _, err := n.getProgress()
 	if err != nil {
 		log.Printf("read node %d follow progress: %v", n.id, err)
 	}

@@ -18,7 +18,7 @@ func (n *node) isBootstrapNeeded() (bestPeerToCopy int, isNeeded bool) {
 	for _, serverId := range peerServerIds {
 		go n.withConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
 
-			latestSegment, ok, err := n.checkBinlogAvailable(grpcConnection)
+			latestSegment, canTailBinlog, err := n.checkBinlogAvailable(grpcConnection)
 			if err != nil {
 				isBootstrapNeededChan <- false
 				return err
@@ -27,18 +27,17 @@ func (n *node) isBootstrapNeeded() (bestPeerToCopy int, isNeeded bool) {
 				maxSegment = latestSegment
 				bestPeerToCopy = serverId
 			}
-			isBootstrapNeededChan <- ok
+			isBootstrapNeededChan <- !canTailBinlog
 			return nil
 		})
 	}
 
-	var ret bool
 	for range peerServerIds {
-		isNeeded := <-isBootstrapNeededChan
-		ret = ret || isNeeded
+		t := <-isBootstrapNeededChan
+		isNeeded = isNeeded || t
 	}
 
-	return bestPeerToCopy, ret
+	return bestPeerToCopy, isNeeded
 }
 
 func (n *node) findPeerServerIds() (serverIds []int) {

@@ -5,20 +5,22 @@ import (
 	"github.com/chrislusf/vasto/util"
 )
 
-func (n *node) getProgress() (segment uint32, offset uint64, err error) {
+func (n *node) getProgress() (segment uint32, offset uint64, hasProgress bool, err error) {
 
 	nextSegment := uint32(0)
 	nextOffset := uint64(0)
 	t, err := n.db.Get(n.nextSegmentKey)
 	if err == nil && len(t) > 0 {
+		hasProgress = true
 		nextSegment = util.BytesToUint32(t)
 	}
 	t, err = n.db.Get(n.nextOffsetKey)
 	if err == nil && len(t) > 0 {
+		hasProgress = true
 		nextOffset = util.BytesToUint64(t)
 	}
 
-	return nextSegment, nextOffset, err
+	return nextSegment, nextOffset, hasProgress, err
 }
 
 func (n *node) setProgress(segment uint32, offset uint64) (err error) {

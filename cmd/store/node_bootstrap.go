@@ -29,11 +29,11 @@ func (n *node) bootstrap() error {
 	log.Printf("bootstrap from server %d ...", bestPeerToCopy)
 
 	return n.withConnection(bestPeerToCopy, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
-		_, ok, err := n.checkBinlogAvailable(grpcConnection)
+		_, canTailBinlog, err := n.checkBinlogAvailable(grpcConnection)
 		if err != nil {
 			return err
 		}
-		if !ok {
+		if !canTailBinlog {
 			return n.doBootstrapCopy(grpcConnection)
 		}
 		return nil
@@ -41,9 +41,15 @@ func (n *node) bootstrap() error {
 
 }
 
-func (n *node) checkBinlogAvailable(grpcConnection *grpc.ClientConn) (latestSegment uint32, isAvailable bool, err error) {
+func (n *node) checkBinlogAvailable(grpcConnection *grpc.ClientConn) (latestSegment uint32, canTailBinlog bool, err error) {
 
-	segment, _, err := n.getProgress()
+	segment, _, hasProgress, err := n.getProgress()
+
+	// println("node", n.id, "segment", segment, "hasProgress", hasProgress, "err", err)
+
+	if !hasProgress {
+		return 0, false, nil
+	}
 
 	if err != nil {
 		return 0, false, err
@@ -67,7 +73,7 @@ func (n *node) doBootstrapCopy(grpcConnection *grpc.ClientConn) error {
 	segment, offset, err := n.writeToSst(grpcConnection)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("writeToSst: %v", err)
 	}
 
 	return n.setProgress(segment, offset)
@@ -95,7 +101,7 @@ func (n *node) writeToSst(grpcConnection *grpc.ClientConn) (segment uint32, offs
 
 			response, err := stream.Recv()
 			if err == io.EOF {
-				return err
+				return nil
 			}
 			if err != nil {
 				return fmt.Errorf("bootstrap copy: %v", err)
@@ -103,9 +109,11 @@ func (n *node) writeToSst(grpcConnection *grpc.ClientConn) (segment uint32, offs
 
 			for _, keyValue := range response.KeyValues {
 
+				fmt.Printf("copy keyValue: %v\n", keyValue.String())
+
 				err = w.Add(keyValue.Key, keyValue.Value)
 				if err != nil {
-					return err
+					return fmt.Errorf("add to sst: %v", err)
 				}
 
 			}
