@@ -185,3 +185,10 @@ func (m *LogManager) loadFilesFromDisk() error {
 
 	return nil
 }
+
+func (m *LogManager) GetSegmentOffset() (uint32, int64) {
+	if m.lastLogFile == nil {
+		return m.segment, 0
+	}
+	return m.segment, m.lastLogFile.offset
+}

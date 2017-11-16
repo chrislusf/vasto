@@ -20,13 +20,13 @@ func (ss *storeServer) serveGrpc(listener net.Listener) {
 func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb.VastoStore_BootstrapCopyServer) error {
 
 	replica := ss.findDbReplica(request.NodeId)
+	node := ss.nodes[replica]
 
-	segment, offset, _, err := ss.nodes[replica].getProgress()
-	if err != nil {
-		return err
-	}
+	segment, offset := node.lm.GetSegmentOffset()
 
-	err = ss.nodes[replica].db.FullScan(1024, func(rows []*pb.KeyValue) error {
+	// println("server", node.serverId, "node", node.id, "segment", segment, "offset", offset)
+
+	err := node.db.FullScan(1024, func(rows []*pb.KeyValue) error {
 
 		t := &pb.BootstrapCopyResponse{
 			KeyValues: rows,
@@ -40,7 +40,7 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 	t := &pb.BootstrapCopyResponse{
 		BinlogTailProgress: &pb.BootstrapCopyResponse_BinlogTailProgress{
 			Segment: segment,
-			Offset:  offset,
+			Offset:  uint64(offset),
 		},
 	}
 	if err := stream.Send(t); err != nil {

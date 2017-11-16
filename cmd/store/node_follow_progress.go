@@ -31,7 +31,7 @@ func (n *node) setProgress(segment uint32, offset uint64) (err error) {
 	if err != nil {
 		return fmt.Errorf("set follow progress: segment %d %d: %v", segment, offset, err)
 	}
-	n.db.Put(n.nextOffsetKey, util.Uint64toBytes(offset))
+	err = n.db.Put(n.nextOffsetKey, util.Uint64toBytes(offset))
 	if err != nil {
 		return fmt.Errorf("set follow progress: offset %d %d: %v", segment, offset, err)
 	}
