@@ -86,7 +86,7 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 		} else if err != nil {
 			return fmt.Errorf("failed to read segment %d offset %d: %v", segment, offset, err)
 		}
-		// println("len(entries) =", len(entries), "next offset", nextOffset)
+		// println("len(entries) =", len(entries), "offset", offset, "next offset", nextOffset)
 
 		offset = nextOffset
 

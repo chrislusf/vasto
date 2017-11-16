@@ -62,6 +62,7 @@ func (m *LogManager) AppendEntry(entry *LogEntry) error {
 		m.followerCond.L.Lock()
 		m.segment++
 		m.maybeRemoveOldFiles()
+		m.lastLogFile = nil
 		m.maybePrepareCurrentFileForWrite()
 		// println("broadcast segment condition change")
 		m.followerCond.Broadcast()
@@ -112,6 +113,9 @@ func (m *LogManager) maybeRemoveOldFiles() {
 func (m *LogManager) maybePrepareCurrentFileForWrite() (err error) {
 	if m.lastLogFile == nil {
 		m.lastLogFile = newLogSegmentFile(m.getFileName(m.segment), m.segment, m.logFileMaxSize)
+		m.filesLock.Lock()
+		defer m.filesLock.Unlock()
+		m.files[m.segment] = m.lastLogFile
 	}
 	return m.lastLogFile.open()
 }
@@ -168,6 +172,7 @@ func (m *LogManager) loadFilesFromDisk() error {
 				return err
 			}
 			oneLogFile := newLogSegmentFile(m.getFileName(segmentNumber), segmentNumber, m.logFileMaxSize)
+			// log.Printf("add segment %d file %s", segmentNumber, oneLogFile.fullName)
 			m.files[segmentNumber] = oneLogFile
 			if maxSegmentNumber <= segmentNumber {
 				maxSegmentNumber = segmentNumber

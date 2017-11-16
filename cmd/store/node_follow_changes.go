@@ -9,7 +9,6 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
 	"github.com/chrislusf/vasto/topology"
-	"github.com/chrislusf/vasto/util/on_interrupt"
 	"google.golang.org/grpc"
 )
 
@@ -26,6 +25,8 @@ func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn
 		log.Printf("read node %d follow progress: %v", n.id, err)
 	}
 
+	log.Printf("Starting to follow from segment %d offset %d", nextSegment, nextOffset)
+
 	request := &pb.PullUpdateRequest{
 		NodeId:  uint32(n.id),
 		Segment: nextSegment,
@@ -41,14 +42,10 @@ func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn
 	flushCounter := 0
 	flushTime := time.Now()
 
-	on_interrupt.OnInterrupt(func() {
-		if flushCounter > 0 {
-			err = n.setProgress(nextSegment, nextOffset)
-			if err != nil {
-				log.Printf("set node %d follow progress: %v", n.id, err)
-			}
-		}
-	}, nil)
+	defer func() {
+		println("on defer: saving segment", nextSegment, "offset", nextOffset)
+		n.setProgress(nextSegment, nextOffset)
+	}()
 
 	for {
 

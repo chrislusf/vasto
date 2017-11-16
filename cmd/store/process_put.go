@@ -1,10 +1,10 @@
 package store
 
 import (
+	"fmt"
 	"log"
 	"time"
 
-	"fmt"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/binlog"
 	"github.com/chrislusf/vasto/storage/codec"
@@ -30,28 +30,33 @@ func (ss *storeServer) processPut(putRequest *pb.PutRequest) *pb.PutResponse {
 	resp := &pb.PutResponse{
 		Ok: true,
 	}
-	err := ss.nodes[replica].db.Put(key, entry.ToBytes())
+
+	node := ss.nodes[replica]
+
+	fmt.Printf("node %d put keyValue: %v\n", node.id, putRequest.KeyValue.String())
+
+	err := node.db.Put(key, entry.ToBytes())
 	if err != nil {
 		resp.Ok = false
 		resp.Status = err.Error()
 	} else {
-		ss.logPut(putRequest, nowInNano)
+		node.logPut(putRequest, nowInNano)
 	}
 
 	return resp
 }
 
-func (ss *storeServer) logPut(putRequest *pb.PutRequest, updatedAtNs uint64) {
+func (n *node) logPut(putRequest *pb.PutRequest, updatedAtNs uint64) {
 
 	// println("logPut1", putRequest.String())
 
-	if ss.nodes[0].lm == nil {
+	if n.lm == nil {
 		return
 	}
 
 	// println("logPut2", putRequest.String())
 
-	err := ss.nodes[0].lm.AppendEntry(binlog.NewLogEntry(
+	err := n.lm.AppendEntry(binlog.NewLogEntry(
 		putRequest.PartitionHash,
 		updatedAtNs,
 		putRequest.TtlSecond,

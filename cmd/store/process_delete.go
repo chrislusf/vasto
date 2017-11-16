@@ -18,24 +18,26 @@ func (ss *storeServer) processDelete(deleteRequest *pb.DeleteRequest) *pb.Delete
 	resp := &pb.DeleteResponse{
 		Ok: true,
 	}
-	err := ss.nodes[replica].db.Delete(deleteRequest.Key)
+
+	node := ss.nodes[replica]
+	err := node.db.Delete(deleteRequest.Key)
 	if err != nil {
 		resp.Ok = false
 		resp.Status = err.Error()
 	} else {
-		ss.logDelete(deleteRequest.Key, deleteRequest.PartitionHash, uint64(time.Now().UnixNano()))
+		node.logDelete(deleteRequest.Key, deleteRequest.PartitionHash, uint64(time.Now().UnixNano()))
 	}
 	return resp
 
 }
 
-func (ss *storeServer) logDelete(key []byte, partitionHash uint64, updatedAtNs uint64) {
+func (n *node) logDelete(key []byte, partitionHash uint64, updatedAtNs uint64) {
 
-	if ss.nodes[0].lm == nil {
+	if n.lm == nil {
 		return
 	}
 
-	ss.nodes[0].lm.AppendEntry(binlog.NewLogEntry(
+	n.lm.AppendEntry(binlog.NewLogEntry(
 		partitionHash,
 		updatedAtNs,
 		0,

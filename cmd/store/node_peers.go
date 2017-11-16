@@ -50,7 +50,7 @@ func (n *node) findPeerServerIds() (serverIds []int) {
 			serverId -= size
 		}
 		server, _, ok := n.clusterListener.GetNode(serverId)
-		if ok && server.GetId() != n.serverId {
+		if ok && server != nil && server.GetId() != n.serverId {
 			serverIds = append(serverIds, serverId)
 		}
 	}

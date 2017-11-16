@@ -23,6 +23,7 @@ func (n *node) bootstrap() error {
 
 	bestPeerToCopy, isNeeded := n.isBootstrapNeeded()
 	if !isNeeded {
+		// log.Printf("bootstrap node %d is not needed", n.id)
 		return nil
 	}
 
@@ -93,7 +94,9 @@ func (n *node) writeToSst(grpcConnection *grpc.ClientConn) (segment uint32, offs
 		return 0, 0, fmt.Errorf("client.TailBinlog: %v", err)
 	}
 
-	err = n.db.AddSstByWriter(func(w *gorocksdb.SSTFileWriter) error {
+	err = n.db.AddSstByWriter(func(w *gorocksdb.SSTFileWriter) (int, error) {
+
+		var counter int
 
 		for {
 
@@ -101,20 +104,21 @@ func (n *node) writeToSst(grpcConnection *grpc.ClientConn) (segment uint32, offs
 
 			response, err := stream.Recv()
 			if err == io.EOF {
-				return nil
+				return counter, nil
 			}
 			if err != nil {
-				return fmt.Errorf("bootstrap copy: %v", err)
+				return counter, fmt.Errorf("bootstrap copy: %v", err)
 			}
 
 			for _, keyValue := range response.KeyValues {
 
-				fmt.Printf("copy keyValue: %v\n", keyValue.String())
+				fmt.Printf("add to sst: %v\n", keyValue.String())
 
 				err = w.Add(keyValue.Key, keyValue.Value)
 				if err != nil {
-					return fmt.Errorf("add to sst: %v", err)
+					return counter, fmt.Errorf("add to sst: %v", err)
 				}
+				counter++
 
 			}
 
