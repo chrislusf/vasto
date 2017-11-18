@@ -33,7 +33,7 @@ func (ss *storeServer) processPut(putRequest *pb.PutRequest) *pb.PutResponse {
 
 	node := ss.nodes[replica]
 
-	fmt.Printf("node %d put keyValue: %v\n", node.id, putRequest.KeyValue.String())
+	// fmt.Printf("node %d put keyValue: %v\n", node.id, putRequest.KeyValue.String())
 
 	err := node.db.Put(key, entry.ToBytes())
 	if err != nil {

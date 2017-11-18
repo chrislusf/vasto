@@ -10,47 +10,44 @@ import (
 )
 
 type logSegmentFile struct {
-	fullName       string
-	segment        uint32
-	file           *os.File
-	offset         int64
-	sizeBuf        []byte
-	followerCond   *sync.Cond
-	logFileMaxSize int64
+	fullName        string
+	segment         uint32
+	file            *os.File
+	offset          int64
+	sizeBufForWrite []byte
+	sizeBufForRead  []byte
+	followerCond    *sync.Cond
+	logFileMaxSize  int64
 }
 
 func newLogSegmentFile(fillName string, segment uint32, logFileMaxSize int64) *logSegmentFile {
 	return &logSegmentFile{
-		fullName:       fillName,
-		segment:        segment,
-		sizeBuf:        make([]byte, 4),
-		followerCond:   &sync.Cond{L: &sync.Mutex{}},
-		logFileMaxSize: logFileMaxSize,
+		fullName:        fillName,
+		segment:         segment,
+		sizeBufForWrite: make([]byte, 4),
+		sizeBufForRead:  make([]byte, 4),
+		followerCond:    &sync.Cond{L: &sync.Mutex{}},
+		logFileMaxSize:  logFileMaxSize,
 	}
 }
 
 func (f *logSegmentFile) appendEntry(entry *LogEntry) (err error) {
 
-	// println("append entry1", string(entry.ToBytes()))
+	// println("append entry1", string(entry.ToBytesForWrite()))
 
 	f.followerCond.L.Lock()
 	defer f.followerCond.L.Unlock()
 
-	// println("append entry2", string(entry.ToBytes()))
+	// println("append entry2", string(entry.ToBytesForWrite()))
 
-	data := entry.ToBytes()
-	dataLen := len(data)
-	binary.LittleEndian.PutUint32(f.sizeBuf, uint32(dataLen))
-	_, err = f.file.WriteAt(f.sizeBuf, f.offset)
-	if err != nil {
-		return fmt.Errorf("write size info: %v", err)
-	}
-	_, err = f.file.WriteAt(data, f.offset+4)
-	f.offset += int64(dataLen + 4)
+	data := entry.ToBytesForWrite()
+	binary.LittleEndian.PutUint32(data, uint32(len(data)-4))
+	_, err = f.file.WriteAt(data, f.offset)
 
 	if err == nil {
 		// println("broadcast file condition change")
 		f.followerCond.Broadcast()
+		f.offset += int64(len(data))
 	}
 	return err
 }
@@ -94,14 +91,15 @@ func (f *logSegmentFile) readEntries(offset int64, limit int) (entries []*LogEnt
 
 func (f *logSegmentFile) readOneEntry(offset int64) (entry *LogEntry, nextOffset int64, err error) {
 
-	_, err = f.file.ReadAt(f.sizeBuf, offset)
+	_, err = f.file.ReadAt(f.sizeBufForRead, offset)
 	if err != nil {
 		return nil, 0, fmt.Errorf("read size info: %v", err)
 	}
-	dataLen := binary.LittleEndian.Uint32(f.sizeBuf)
+	dataLen := binary.LittleEndian.Uint32(f.sizeBufForRead)
 	data := make([]byte, dataLen)
 	_, err = f.file.ReadAt(data, offset+4)
 	if err != nil {
+		println("reading", f.fullName, "offset", offset, "size", dataLen, err.Error())
 		return nil, 0, fmt.Errorf("read entry data: %v", err)
 	}
 	entry, err = FromBytes(data)

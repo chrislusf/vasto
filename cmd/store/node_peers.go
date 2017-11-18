@@ -15,7 +15,13 @@ func (n *node) isBootstrapNeeded() (bestPeerToCopy int, isNeeded bool) {
 	isBootstrapNeededChan := make(chan bool, len(peerServerIds))
 	maxSegment := uint32(0)
 	bestPeerToCopy = -1
+	checkedServerCount := 0
 	for _, serverId := range peerServerIds {
+		_, _, ok := n.clusterListener.GetNode(serverId)
+		if !ok {
+			continue
+		}
+		checkedServerCount++
 		go n.withConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
 
 			latestSegment, canTailBinlog, err := n.checkBinlogAvailable(grpcConnection)
@@ -32,7 +38,7 @@ func (n *node) isBootstrapNeeded() (bestPeerToCopy int, isNeeded bool) {
 		})
 	}
 
-	for range peerServerIds {
+	for i := 0; i < checkedServerCount; i++ {
 		t := <-isBootstrapNeededChan
 		isNeeded = isNeeded || t
 	}
@@ -49,10 +55,10 @@ func (n *node) findPeerServerIds() (serverIds []int) {
 		if serverId >= size {
 			serverId -= size
 		}
-		server, _, ok := n.clusterListener.GetNode(serverId)
-		if ok && server != nil && server.GetId() != n.serverId {
-			serverIds = append(serverIds, serverId)
+		if serverId == n.serverId {
+			continue
 		}
+		serverIds = append(serverIds, serverId)
 	}
 
 	// log.Printf("cluster size %d, node %d, server %d peers are: %v", n.clusterListener.ExpectedSize(), n.id, n.serverId, serverIds)

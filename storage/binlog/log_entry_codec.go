@@ -1,10 +1,12 @@
 package binlog
 
-func (e *LogEntry) ToBytes() []byte {
+func (e *LogEntry) ToBytesForWrite() []byte {
 
-	b, _ := e.Marshal(nil)
+	buf := make([]byte, 4+e.Size())
 
-	return b
+	e.Marshal(buf[4:])
+
+	return buf
 }
 
 func FromBytes(b []byte) (*LogEntry, error) {

@@ -22,8 +22,8 @@ func (d *Rocks) FullScan(batchSize int, fn func([]*pb.KeyValue) error) error {
 
 		rowCount++
 		rows = append(rows, &pb.KeyValue{
-			Key:   k.Data(),
-			Value: v.Data(),
+			Key:   []byte(string(k.Data())),
+			Value: []byte(string(v.Data())),
 		})
 		k.Free()
 		v.Free()

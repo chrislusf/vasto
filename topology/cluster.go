@@ -122,12 +122,6 @@ func (h *ClusterRing) GetNode(index int, options ...AccessOption) (Node, int, bo
 	for _, option := range options {
 		index, replica = option(index)
 	}
-	if index < 0 {
-		index += len(h.nodes)
-	}
-	if index >= len(h.nodes) {
-		index -= len(h.nodes)
-	}
 	if index < 0 || index >= len(h.nodes) {
 		return nil, 0, false
 	}

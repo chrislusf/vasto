@@ -19,7 +19,7 @@ func TestLogEntryCodec(t *testing.T) {
 	}
 	a.setCrc()
 
-	b, _ := FromBytes(a.ToBytes())
+	b, _ := FromBytes(a.ToBytesForWrite()[4:])
 
 	if a.PartitionHash != b.PartitionHash {
 		t.Errorf("codec PartitionHash %v => %v", a.PartitionHash, b.PartitionHash)
@@ -44,7 +44,7 @@ func TestLogEntryCodec(t *testing.T) {
 	}
 
 	a.IsDelete = !a.IsDelete
-	b, _ = FromBytes(a.ToBytes())
+	b, _ = FromBytes(a.ToBytesForWrite()[4:])
 
 	if a.IsDelete != b.IsDelete {
 		t.Errorf("codec IsDelete2 %v => %v", a.IsDelete, b.IsDelete)
@@ -74,7 +74,7 @@ func BenchmarkEncoding(b *testing.B) {
 	b.StartTimer()
 
 	for n := 0; n < b.N; n++ {
-		a.ToBytes()
+		a.ToBytesForWrite()
 	}
 
 }
@@ -116,7 +116,7 @@ func BenchmarkDecoding(b *testing.B) {
 	}
 	a.setCrc()
 
-	data := a.ToBytes()
+	data := a.ToBytesForWrite()
 
 	// println("direct data size", len(data))
 
@@ -124,7 +124,7 @@ func BenchmarkDecoding(b *testing.B) {
 	b.StartTimer()
 
 	for n := 0; n < b.N; n++ {
-		FromBytes(data)
+		FromBytes(data[4:])
 	}
 }
 
