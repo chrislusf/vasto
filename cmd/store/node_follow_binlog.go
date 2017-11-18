@@ -58,7 +58,7 @@ func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn
 
 		for _, entry := range changes.Entries {
 
-			// fmt.Printf("received entry: %v", entry.String())
+			// fmt.Printf("node %d follow entry: %v\n", n.id, entry.String())
 
 			flushCounter++
 
@@ -87,7 +87,6 @@ func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn
 				Value:         entry.Value,
 			}
 			if err != nil || len(b) == 0 {
-				n.db.Put(entry.Key, t.ToBytes())
 				continue
 			}
 			row := codec.FromBytes(b)
@@ -108,6 +107,7 @@ func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn
 
 		if flushCounter >= 1000 || flushTime.Add(syncProgressFlushInterval).Before(time.Now()) {
 
+			println("on flush: saving segment", nextSegment, "offset", nextOffset)
 			err = n.setProgress(changes.NextSegment, changes.NextOffset)
 			if err != nil {
 				log.Printf("set node %d follow progress: %v", n.id, err)
