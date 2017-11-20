@@ -5,32 +5,50 @@ import (
 	"log"
 	"time"
 
+	"bytes"
 	"github.com/chrislusf/vasto/cmd/client"
+	"strings"
 )
 
 func (b *benchmarker) runBenchmarkerOnCluster(option *BenchmarkOption) {
 
-	b.startThreads("put", func(hist *Histogram) {
-		b.startVastoClient(hist, func(c *client.VastoClient, i int) error {
+	b.startThreadsWithClient(*option.Tests, func(hist *Histogram, c *client.VastoClient) {
+		for _, t := range strings.Split(*option.Tests, ",") {
+			switch t {
+			case "put":
+				b.execute(hist, c, func(c *client.VastoClient, i int) error {
 
-			key := []byte(fmt.Sprintf("k%5d", i))
-			value := []byte(fmt.Sprintf("v%5d", i))
+					key := []byte(fmt.Sprintf("k%5d", i))
+					value := []byte(fmt.Sprintf("v%5d", i))
 
-			return c.Put(nil, key, value)
-		})
+					return c.Put(nil, key, value)
+				})
+			case "get":
+				b.execute(hist, c, func(c *client.VastoClient, i int) error {
+
+					key := []byte(fmt.Sprintf("k%5d", i))
+					value := []byte(fmt.Sprintf("v%5d", i))
+
+					data, err := c.Get(key)
+					if err != nil {
+						log.Printf("read %s: %v", string(key), err)
+						return err
+					}
+					if bytes.Compare(data, value) != 0 {
+						log.Printf("read %s, expected %s", string(data), string(value))
+						return nil
+					}
+
+					return nil
+
+				})
+			}
+		}
 	})
 
 }
 
-func (b *benchmarker) startVastoClient(hist *Histogram, fn func(c *client.VastoClient, i int) error) error {
-
-	c := client.New(&client.ClientOption{
-		FixedCluster: b.option.FixedCluster,
-		Master:       b.option.Master,
-		DataCenter:   b.option.DataCenter,
-	})
-
-	c.Start()
+func (b *benchmarker) execute(hist *Histogram, c *client.VastoClient, fn func(c *client.VastoClient, i int) error) error {
 
 	requestCount := int(*b.option.RequestCount / *b.option.ClientCount)
 

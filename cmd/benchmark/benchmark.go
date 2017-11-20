@@ -2,6 +2,7 @@ package benchmark
 
 import (
 	"fmt"
+	"github.com/chrislusf/vasto/cmd/client"
 	"sync"
 	"time"
 )
@@ -19,6 +20,7 @@ type BenchmarkOption struct {
 	ClientCount  *int32
 	RequestCount *int32
 	BatchSize    *int32
+	Tests        *string
 }
 
 type benchmarker struct {
@@ -67,4 +69,18 @@ func (b *benchmarker) startThreads(name string, fn func(hist *Histogram)) {
 		hist.Merge(&hists[i])
 	}
 	fmt.Printf("Microseconds per op:\n%s\n", hist.ToString())
+}
+
+func (b *benchmarker) startThreadsWithClient(name string, fn func(hist *Histogram, c *client.VastoClient)) {
+
+	b.startThreads(name, func(hist *Histogram) {
+		c := client.New(&client.ClientOption{
+			FixedCluster: b.option.FixedCluster,
+			Master:       b.option.Master,
+			DataCenter:   b.option.DataCenter,
+		})
+		c.Start()
+		fn(hist, c)
+	})
+
 }
