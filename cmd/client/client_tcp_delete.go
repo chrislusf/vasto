@@ -13,7 +13,6 @@ func (c *VastoClient) Delete(key []byte, options ...topology.AccessOption) error
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 
 	request := &pb.Request{
 		Delete: &pb.DeleteRequest{
@@ -26,6 +25,7 @@ func (c *VastoClient) Delete(key []byte, options ...topology.AccessOption) error
 	requests.Requests = append(requests.Requests, request)
 
 	_, err = pb.SendRequests(conn, requests)
+	conn.Close()
 	if err != nil {
 		return fmt.Errorf("put error: %v", err)
 	}

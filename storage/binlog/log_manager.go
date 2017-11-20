@@ -122,16 +122,16 @@ func (m *LogManager) maybePrepareCurrentFileForWrite() (err error) {
 
 func (m *LogManager) HasSegment(segment uint32) bool {
 	m.filesLock.Lock()
-	defer m.filesLock.Unlock()
 
 	_, ok := m.files[segment]
+
+	m.filesLock.Unlock()
 
 	return ok
 }
 
 func (m *LogManager) GetSegmentRange() (earlistSegment, latestSegment uint32) {
 	m.filesLock.Lock()
-	defer m.filesLock.Unlock()
 
 	for k, _ := range m.files {
 		if k <= earlistSegment {
@@ -141,6 +141,8 @@ func (m *LogManager) GetSegmentRange() (earlistSegment, latestSegment uint32) {
 			latestSegment = k
 		}
 	}
+
+	m.filesLock.Unlock()
 
 	return
 }

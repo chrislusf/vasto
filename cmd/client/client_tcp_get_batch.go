@@ -40,7 +40,6 @@ func (c *VastoClient) BatchGet(keys [][]byte, options ...topology.AccessOption) 
 				outputChan <- &answer{err: err}
 				return
 			}
-			defer conn.Close()
 
 			for _, request := range requestList {
 				request.Get.Replica = uint32(replica)
@@ -50,6 +49,7 @@ func (c *VastoClient) BatchGet(keys [][]byte, options ...topology.AccessOption) 
 			requests.Requests = requestList
 
 			responses, err := pb.SendRequests(conn, requests)
+			conn.Close()
 			if err != nil {
 				outputChan <- &answer{err: fmt.Errorf("batch get error: %v", err)}
 				return

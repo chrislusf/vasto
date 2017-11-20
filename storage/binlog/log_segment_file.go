@@ -36,7 +36,6 @@ func (f *logSegmentFile) appendEntry(entry *LogEntry) (err error) {
 	// println("append entry1", string(entry.ToBytesForWrite()))
 
 	f.followerCond.L.Lock()
-	defer f.followerCond.L.Unlock()
 
 	// println("append entry2", string(entry.ToBytesForWrite()))
 
@@ -49,6 +48,9 @@ func (f *logSegmentFile) appendEntry(entry *LogEntry) (err error) {
 		f.followerCond.Broadcast()
 		f.offset += int64(len(data))
 	}
+
+	f.followerCond.L.Unlock()
+
 	return err
 }
 

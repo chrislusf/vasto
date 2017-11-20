@@ -18,7 +18,6 @@ func (c *VastoClient) Get(key []byte, options ...topology.AccessOption) ([]byte,
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
 
 	request := &pb.Request{
 		Get: &pb.GetRequest{
@@ -31,6 +30,7 @@ func (c *VastoClient) Get(key []byte, options ...topology.AccessOption) ([]byte,
 	requests.Requests = append(requests.Requests, request)
 
 	responses, err := pb.SendRequests(conn, requests)
+	conn.Close()
 	if err != nil {
 		return nil, fmt.Errorf("get error: %v", err)
 	}

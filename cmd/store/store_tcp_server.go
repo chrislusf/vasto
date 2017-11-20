@@ -25,7 +25,6 @@ func (ss *storeServer) serveTcp(listener net.Listener) {
 		}
 		// Handle connections in a new goroutine.
 		go func() {
-			defer conn.Close()
 			if err = conn.SetDeadline(time.Time{}); err != nil {
 				fmt.Printf("Failed to set timeout: %v\n", err)
 			}
@@ -35,6 +34,7 @@ func (ss *storeServer) serveTcp(listener net.Listener) {
 				c.SetLinger(0)
 			}
 			ss.handleConnection(conn)
+			conn.Close()
 		}()
 	}
 }

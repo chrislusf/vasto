@@ -17,7 +17,6 @@ func (c *VastoClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, las
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
 
 	request := &pb.Request{
 		GetByPrefix: &pb.GetByPrefixRequest{
@@ -32,6 +31,7 @@ func (c *VastoClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, las
 	requests.Requests = append(requests.Requests, request)
 
 	responses, err := pb.SendRequests(conn, requests)
+	conn.Close()
 	if err != nil {
 		return nil, fmt.Errorf("get error: %v", err)
 	}

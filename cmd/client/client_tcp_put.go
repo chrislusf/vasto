@@ -18,7 +18,6 @@ func (c *VastoClient) Put(partitionKey, key, value []byte, options ...topology.A
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 
 	request := &pb.Request{
 		Put: &pb.PutRequest{
@@ -36,6 +35,7 @@ func (c *VastoClient) Put(partitionKey, key, value []byte, options ...topology.A
 	requests.Requests = append(requests.Requests, request)
 
 	_, err = pb.SendRequests(conn, requests)
+	conn.Close()
 	if err != nil {
 		return fmt.Errorf("put error: %v", err)
 	}
