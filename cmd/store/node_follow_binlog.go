@@ -31,7 +31,7 @@ func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn
 		NodeId:  uint32(n.id),
 		Segment: nextSegment,
 		Offset:  nextOffset,
-		Limit:   1000,
+		Limit:   8096,
 	}
 
 	stream, err := client.TailBinlog(context.Background(), request)
@@ -105,7 +105,7 @@ func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn
 
 		}
 
-		if flushCounter >= 1000 || flushTime.Add(syncProgressFlushInterval).Before(time.Now()) {
+		if flushCounter >= 8096 || flushTime.Add(syncProgressFlushInterval).Before(time.Now()) {
 
 			println("on flush: saving segment", nextSegment, "offset", nextOffset)
 			err = n.setProgress(changes.NextSegment, changes.NextOffset)
