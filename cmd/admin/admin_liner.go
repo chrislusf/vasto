@@ -1,4 +1,4 @@
-package shell
+package admin
 
 import (
 	"fmt"
@@ -11,10 +11,10 @@ import (
 
 var (
 	line        *liner.State
-	historyPath = "/tmp/vasto-shell"
+	historyPath = "/tmp/vasto-admin"
 )
 
-func (s *shell) runShell() {
+func (s *administer) runAdmin() {
 
 	line = liner.NewLiner()
 	defer line.Close()
@@ -41,18 +41,6 @@ func (s *shell) runShell() {
 		} else {
 			line.AppendHistory(cmd)
 
-			env := make(map[string]string)
-			envIndex := 0
-			for envIndex = range cmds {
-				if strings.Contains(cmds[envIndex], "=") {
-					kv := strings.SplitN(cmds[envIndex], "=", 2)
-					env[kv[0]] = kv[1]
-				} else {
-					break
-				}
-			}
-			cmds = cmds[envIndex:]
-
 			args := make([]string, len(cmds[1:]))
 
 			for i := range args {
@@ -67,12 +55,15 @@ func (s *shell) runShell() {
 			} else {
 				for _, c := range commands {
 					if c.Name() == cmd {
-						c.SetCilent(s.vastoClient)
-						r, err := c.Do(args, env)
+						c.SetMasterCilent(s.masterClient)
+						err := c.Do(args, os.Stderr)
 						if err != nil {
 							fmt.Printf("%v\n", err)
-						} else {
-							fmt.Printf("%s", r)
+							if err == InvalidArguments {
+								fmt.Println()
+								fmt.Printf("\t%s %s \n", c.Name(), c.Help())
+								fmt.Println()
+							}
 						}
 					}
 				}
@@ -84,7 +75,7 @@ func (s *shell) runShell() {
 
 func printGenericHelp() {
 	msg :=
-		`vasto shell
+		`vasto admin
 Type:	"help <command>" for help on <command>
 `
 	fmt.Print(msg)

@@ -94,9 +94,7 @@ var (
 
 	admin       = app.Command("admin", "Manage FixedCluster Size")
 	adminOption = &a.AdminOption{
-		ClusterSize: admin.Flag("newClusterSize", "change cluster to this size").Default("0").Int32(),
-		Master:      admin.Flag("master", "master address").Default("localhost:8278").String(),
-		DataCenter:  admin.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
+		Master: admin.Flag("master", "master address").Default("localhost:8278").String(),
 	}
 )
 

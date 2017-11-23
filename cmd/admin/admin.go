@@ -1,101 +1,35 @@
 package admin
 
 import (
-	"context"
-	"fmt"
 	"log"
 
 	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc"
-	"io"
 )
 
 type AdminOption struct {
-	Master      *string
-	DataCenter  *string
-	ClusterSize *int32
+	Master *string
 }
 
 type administer struct {
-	option *AdminOption
+	option       *AdminOption
+	masterClient pb.VastoMasterClient
 }
 
 func RunAdmin(option *AdminOption) {
+
+	conn, err := grpc.Dial(*option.Master, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("fail to dial %v: %v", *option.Master, err)
+	}
+	defer conn.Close()
+	masterClient := pb.NewVastoMasterClient(conn)
+
 	var a = &administer{
-		option: option,
+		option:       option,
+		masterClient: masterClient,
 	}
 
-	if *option.ClusterSize == 0 {
-		a.list()
-	} else {
-		a.resizeCluster()
-	}
+	a.runAdmin()
 
-}
-
-func (b *administer) list() error {
-
-	conn, err := grpc.Dial(*b.option.Master, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("fail to dial %v: %v", *b.option.Master, err)
-	}
-	defer conn.Close()
-	c := pb.NewVastoMasterClient(conn)
-
-	listResponse, err := c.ListStores(
-		context.Background(),
-		&pb.ListRequest{
-			DataCenter: *b.option.DataCenter,
-		},
-	)
-
-	fmt.Printf("Cluster Client Count  : %d\n", listResponse.ClientCount)
-	cluster := listResponse.GetCluster()
-	fmt.Printf("Cluster   View  Size  : %d\n", cluster.CurrentClusterSize)
-	if cluster.NextClusterSize != 0 {
-		fmt.Printf("Cluster is changing to: %d\n", cluster.NextClusterSize)
-	}
-
-	for _, store := range cluster.Stores {
-		fmt.Printf("%4d: %32v\n", store.Id, store.Address)
-	}
-
-	return nil
-}
-
-func (b *administer) resizeCluster() error {
-
-	conn, err := grpc.Dial(*b.option.Master, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("fail to dial %v: %v", *b.option.Master, err)
-	}
-	defer conn.Close()
-	c := pb.NewVastoMasterClient(conn)
-
-	stream, err := c.ResizeCluster(
-		context.Background(),
-		&pb.ResizeRequest{
-			DataCenter:  *b.option.DataCenter,
-			ClusterSize: uint32(*b.option.ClusterSize),
-		},
-	)
-
-	for {
-		resizeProgress, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Fatalf("resize cluster error: %v", err)
-		}
-		if resizeProgress.Error != "" {
-			log.Printf("Resize Error: %v", resizeProgress.Error)
-			break
-		}
-		if resizeProgress.Progress != "" {
-			log.Printf("Resize: %v", resizeProgress.Progress)
-		}
-	}
-
-	return nil
 }
