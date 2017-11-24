@@ -49,7 +49,6 @@ type ClusterRing struct {
 	dataCenter          string
 	nodes               []Node
 	expectedClusterSize int
-	currentClusterSize  int
 	nextClusterSize     int
 }
 
@@ -87,10 +86,6 @@ func (h *ClusterRing) ExpectedSize() int {
 	return h.expectedClusterSize
 }
 
-func (h *ClusterRing) CurrentSize() int {
-	return h.currentClusterSize
-}
-
 func (h *ClusterRing) NextSize() int {
 	return h.nextClusterSize
 }
@@ -99,15 +94,11 @@ func (h *ClusterRing) SetExpectedSize(expectedSize int) {
 	h.expectedClusterSize = expectedSize
 }
 
-func (h *ClusterRing) SetCurrentSize(currentSize int) {
-	h.currentClusterSize = currentSize
-}
-
 func (h *ClusterRing) SetNextSize(nextSize int) {
 	h.nextClusterSize = nextSize
 }
 
-func (h *ClusterRing) NodeCount() int {
+func (h *ClusterRing) CurrentSize() int {
 	for i := len(h.nodes); i > 0; i-- {
 		if h.nodes[i-1] == nil || h.nodes[i-1].GetAddress() == "" {
 			continue
@@ -134,8 +125,9 @@ func (h *ClusterRing) GetDataCenter() string {
 
 func (h *ClusterRing) MissingAndFreeNodeIds() (missingList, freeList []int) {
 	max := len(h.nodes)
-	if max < h.currentClusterSize {
-		max = h.currentClusterSize
+	currentClusterSize := h.CurrentSize()
+	if max < currentClusterSize {
+		max = currentClusterSize
 	}
 	for i := 0; i < max; i++ {
 		var n Node
@@ -143,11 +135,11 @@ func (h *ClusterRing) MissingAndFreeNodeIds() (missingList, freeList []int) {
 			n = h.nodes[i]
 		}
 		if n == nil || n.GetAddress() == "" {
-			if i < h.currentClusterSize {
+			if i < currentClusterSize {
 				missingList = append(missingList, i)
 			}
 		} else {
-			if i >= h.currentClusterSize {
+			if i >= currentClusterSize {
 				freeList = append(freeList, i)
 			}
 		}
@@ -166,10 +158,10 @@ func NewHashRing(dataCenter string) ClusterRing {
 func (h *ClusterRing) String() string {
 	var output bytes.Buffer
 	output.Write([]byte{'['})
-	nodeCount := h.NodeCount()
+	nodeCount := h.CurrentSize()
 	max := len(h.nodes)
-	if max < h.currentClusterSize {
-		max = h.currentClusterSize
+	if max < h.expectedClusterSize {
+		max = h.expectedClusterSize
 	}
 	for i := 0; i < max; i++ {
 		var n Node
@@ -177,7 +169,7 @@ func (h *ClusterRing) String() string {
 			n = h.nodes[i]
 		}
 		if n == nil || n.GetAddress() == "" {
-			if i < h.currentClusterSize || i < nodeCount {
+			if i < h.expectedClusterSize || i < nodeCount {
 				if i != 0 {
 					output.Write([]byte{' '})
 				}
@@ -192,9 +184,9 @@ func (h *ClusterRing) String() string {
 	}
 	output.Write([]byte{']'})
 	if h.nextClusterSize == 0 {
-		output.WriteString(fmt.Sprintf(" size %d->%d ", h.currentClusterSize, h.expectedClusterSize))
+		output.WriteString(fmt.Sprintf(" size %d->%d ", h.CurrentSize(), h.expectedClusterSize))
 	} else {
-		output.WriteString(fmt.Sprintf(" size %d=>%d ", h.currentClusterSize, h.nextClusterSize))
+		output.WriteString(fmt.Sprintf(" size %d=>%d ", h.CurrentSize(), h.nextClusterSize))
 	}
 
 	missingList, freeList := h.MissingAndFreeNodeIds()

@@ -30,7 +30,7 @@ func (r *ClusterRing) ToStores() (stores []*pb.StoreResource) {
 	if r == nil {
 		return
 	}
-	for i := 0; i < r.NodeCount(); i++ {
+	for i := 0; i < r.CurrentSize(); i++ {
 		node, _, ok := r.GetNode(i)
 		if !ok {
 			continue

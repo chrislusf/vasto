@@ -83,7 +83,6 @@ func createRing(hosts int) ClusterRing {
 	for i := 0; i < hosts; i++ {
 		ring.Add(NewNode(i, "tcp", fmt.Sprint("localhost:", 7000+i), fmt.Sprint("localhost:", 8000+i)))
 	}
-	ring.currentClusterSize = hosts
 	return ring
 }
 

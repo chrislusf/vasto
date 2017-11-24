@@ -36,7 +36,6 @@ func (l *ClusterListener) SetNodes(fixedCluster string) {
 		nodes = append(nodes, store)
 	}
 	l.SetExpectedSize(len(nodes))
-	l.SetCurrentSize(len(nodes))
 	for _, node := range nodes {
 		l.AddNode(node)
 	}
@@ -65,7 +64,6 @@ func (l *ClusterListener) Start(master, dataCenter string) {
 			case msg := <-clientMessageChan:
 				if msg.GetCluster() != nil {
 					l.SetExpectedSize(int(msg.Cluster.ExpectedClusterSize))
-					l.SetCurrentSize(int(msg.Cluster.CurrentClusterSize))
 					l.SetNextSize(int(msg.Cluster.NextClusterSize))
 					for _, store := range msg.Cluster.Stores {
 						l.AddNode(store)
@@ -84,12 +82,11 @@ func (l *ClusterListener) Start(master, dataCenter string) {
 					}
 				} else if msg.GetResize() != nil {
 					l.SetExpectedSize(int(msg.Resize.CurrentClusterSize))
-					l.SetCurrentSize(int(msg.Resize.CurrentClusterSize))
 					l.SetNextSize(int(msg.Resize.NextClusterSize))
 					if l.NextSize() == 0 {
 						fmt.Printf("resized to %d\n", l.CurrentSize())
 					} else {
-						fmt.Printf("resizing %d => %d\n", l.CurrentSize(), l.NextSize())
+						fmt.Printf("resizing %d => %d\n", l.ExpectedSize(), l.NextSize())
 					}
 				} else {
 					fmt.Printf("unknown message %v\n", msg)
