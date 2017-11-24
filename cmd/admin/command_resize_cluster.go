@@ -68,7 +68,7 @@ func (c *CommandResizeCluster) Do(args []string, out io.Writer) (err error) {
 			return fmt.Errorf("Resize Error: %v", resizeProgress.Error)
 		}
 		if resizeProgress.Progress != "" {
-			fmt.Fprintf(out, "Resize: %v", resizeProgress.Progress)
+			fmt.Fprintf(out, "Resize: %v\n", resizeProgress.Progress)
 		}
 	}
 

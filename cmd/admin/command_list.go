@@ -46,9 +46,10 @@ func (c *CommandList) Do(args []string, out io.Writer) error {
 		return err
 	}
 
-	fmt.Fprintf(out, "Cluster Client Count  : %d\n", listResponse.ClientCount)
+	fmt.Fprintf(out, "Cluster Client Count : %d\n", listResponse.ClientCount)
 	cluster := listResponse.GetCluster()
-	fmt.Fprintf(out, "Cluster   View  Size  : %d\n", cluster.CurrentClusterSize)
+	fmt.Fprintf(out, "Cluster Expected Size: %d\n", cluster.ExpectedClusterSize)
+	fmt.Fprintf(out, "Cluster Current  Size: %d\n", cluster.CurrentClusterSize)
 	if cluster.NextClusterSize != 0 {
 		fmt.Fprintf(out, "Cluster is changing to: %d\n", cluster.NextClusterSize)
 	}
