@@ -18,7 +18,7 @@ func (c *VastoClient) BatchGet(keys [][]byte, options ...topology.AccessOption) 
 	bucketToRequests := make(map[int][]*pb.Request)
 
 	for _, key := range keys {
-		bucket := c.clusterListener.FindBucket(util.Hash(key))
+		bucket := c.ClusterListener.FindBucket(util.Hash(key))
 		if _, ok := bucketToRequests[bucket]; !ok {
 			bucketToRequests[bucket] = make([]*pb.Request, 0, 4)
 		}
@@ -35,7 +35,7 @@ func (c *VastoClient) BatchGet(keys [][]byte, options ...topology.AccessOption) 
 	for bucket, requests := range bucketToRequests {
 		go func(bucket int, requestList []*pb.Request) {
 
-			conn, replica, err := c.clusterListener.GetConnectionByBucket(bucket, options...)
+			conn, replica, err := c.ClusterListener.GetConnectionByBucket(bucket, options...)
 			if err != nil {
 				outputChan <- &answer{err: err}
 				return

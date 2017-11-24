@@ -13,7 +13,7 @@ func (c *VastoClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, las
 		partitionKey = prefix
 	}
 
-	conn, replica, err := c.clusterListener.GetConnectionByPartitionKey(partitionKey, options...)
+	conn, replica, err := c.ClusterListener.GetConnectionByPartitionKey(partitionKey, options...)
 	if err != nil {
 		return nil, err
 	}

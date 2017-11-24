@@ -14,7 +14,7 @@ func (c *VastoClient) Put(partitionKey, key, value []byte, options ...topology.A
 		partitionKey = key
 	}
 	partitionHash := util.Hash(partitionKey)
-	conn, replica, err := c.clusterListener.GetConnectionByPartitionHash(partitionHash, options...)
+	conn, replica, err := c.ClusterListener.GetConnectionByPartitionHash(partitionHash, options...)
 	if err != nil {
 		return err
 	}

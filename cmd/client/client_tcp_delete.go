@@ -9,7 +9,7 @@ import (
 
 func (c *VastoClient) Delete(key []byte, options ...topology.AccessOption) error {
 
-	conn, replica, err := c.clusterListener.GetConnectionByPartitionKey(key, options...)
+	conn, replica, err := c.ClusterListener.GetConnectionByPartitionKey(key, options...)
 	if err != nil {
 		return err
 	}

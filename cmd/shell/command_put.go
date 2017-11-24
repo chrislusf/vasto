@@ -1,6 +1,11 @@
 package shell
 
-import "github.com/chrislusf/vasto/cmd/client"
+import (
+	"fmt"
+	"io"
+
+	"github.com/chrislusf/vasto/cmd/client"
+)
 
 func init() {
 	commands = append(commands, &CommandPut{})
@@ -22,10 +27,10 @@ func (c *CommandPut) SetCilent(client *client.VastoClient) {
 	c.client = client
 }
 
-func (c *CommandPut) Do(args []string, env map[string]string) (string, error) {
+func (c *CommandPut) Do(args []string, env map[string]string, writer io.Writer) error {
 	options, err := parseEnv(env)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	key := []byte(args[0])
@@ -33,5 +38,7 @@ func (c *CommandPut) Do(args []string, env map[string]string) (string, error) {
 
 	err = c.client.Put(nil, key, value, options...)
 
-	return "", err
+	fmt.Fprintln(writer)
+
+	return err
 }

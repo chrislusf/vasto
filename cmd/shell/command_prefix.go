@@ -1,9 +1,11 @@
 package shell
 
 import (
-	"bytes"
-	"github.com/chrislusf/vasto/cmd/client"
+	"fmt"
+	"io"
 	"strconv"
+
+	"github.com/chrislusf/vasto/cmd/client"
 )
 
 func init() {
@@ -26,10 +28,10 @@ func (c *CommandPrefix) SetCilent(client *client.VastoClient) {
 	c.client = client
 }
 
-func (c *CommandPrefix) Do(args []string, env map[string]string) (string, error) {
+func (c *CommandPrefix) Do(args []string, env map[string]string, writer io.Writer) error {
 	options, err := parseEnv(env)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	prefix := []byte(args[0])
@@ -38,7 +40,7 @@ func (c *CommandPrefix) Do(args []string, env map[string]string) (string, error)
 	if len(args) >= 2 {
 		t, err := strconv.ParseUint(args[1], 10, 32)
 		if err != nil {
-			return "", err
+			return err
 		}
 		limit = uint32(t)
 	}
@@ -49,14 +51,10 @@ func (c *CommandPrefix) Do(args []string, env map[string]string) (string, error)
 	keyValues, err := c.client.GetByPrefix(nil, prefix, limit, lastSeenKey, options...)
 
 	if err != nil {
-		return "", err
+		return err
 	}
-	var output bytes.Buffer
 	for _, keyValue := range keyValues {
-		output.Write(keyValue.Key)
-		output.WriteString(" : ")
-		output.Write(keyValue.Value)
-		output.WriteString("\n")
+		fmt.Fprintf(writer, "%s : %s\n", string(keyValue.Key), string(keyValue.Value))
 	}
-	return output.String(), nil
+	return nil
 }

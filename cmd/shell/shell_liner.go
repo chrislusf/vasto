@@ -68,11 +68,13 @@ func (s *shell) runShell() {
 				for _, c := range commands {
 					if c.Name() == cmd {
 						c.SetCilent(s.vastoClient)
-						r, err := c.Do(args, env)
-						if err != nil {
-							fmt.Printf("%v\n", err)
-						} else {
-							fmt.Printf("%s", r)
+						if err := c.Do(args, env, os.Stderr); err != nil {
+							fmt.Fprintf(os.Stderr, "e: %v\n", err)
+							if err == InvalidArguments {
+								fmt.Println()
+								fmt.Printf("\t%s %s \n", c.Name(), c.Help())
+								fmt.Println()
+							}
 						}
 					}
 				}

@@ -1,7 +1,9 @@
 package shell
 
 import (
-	"bytes"
+	"fmt"
+	"io"
+
 	"github.com/chrislusf/vasto/cmd/client"
 )
 
@@ -25,10 +27,10 @@ func (c *CommandGet) SetCilent(client *client.VastoClient) {
 	c.client = client
 }
 
-func (c *CommandGet) Do(args []string, env map[string]string) (string, error) {
+func (c *CommandGet) Do(args []string, env map[string]string, writer io.Writer) error {
 	options, err := parseEnv(env)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	// fmt.Printf("env: %+v\n", env)
@@ -37,7 +39,11 @@ func (c *CommandGet) Do(args []string, env map[string]string) (string, error) {
 
 		value, err := c.client.Get(key, options...)
 
-		return string(value) + "\n", err
+		if err == nil {
+			fmt.Fprintf(writer, "%s\n", string(value))
+		}
+
+		return err
 	} else {
 		var keys [][]byte
 		for _, arg := range args {
@@ -45,18 +51,14 @@ func (c *CommandGet) Do(args []string, env map[string]string) (string, error) {
 		}
 		keyValues, err := c.client.BatchGet(keys, options...)
 		if err != nil {
-			return "", err
+			return err
 		}
-		var output bytes.Buffer
 		for _, keyValue := range keyValues {
 			if keyValue == nil {
 				continue
 			}
-			output.Write(keyValue.Key)
-			output.WriteString(" : ")
-			output.Write(keyValue.Value)
-			output.WriteString("\n")
+			fmt.Fprintf(writer, "%s : %s\n", string(keyValue.Key), string(keyValue.Value))
 		}
-		return output.String(), nil
+		return nil
 	}
 }

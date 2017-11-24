@@ -21,7 +21,7 @@ func (n *node) follow() {
 
 func (n *node) doFollow(serverId int) error {
 
-	return n.withConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
+	return n.clusterListener.WithConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
 		return n.followChanges(node, grpcConnection)
 	})
 

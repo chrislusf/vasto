@@ -2,11 +2,11 @@ package master
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
-	"strings"
 )
 
 type clientChannels struct {

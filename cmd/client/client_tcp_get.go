@@ -14,7 +14,7 @@ var (
 
 func (c *VastoClient) Get(key []byte, options ...topology.AccessOption) ([]byte, error) {
 
-	conn, replica, err := c.clusterListener.GetConnectionByPartitionKey(key, options...)
+	conn, replica, err := c.ClusterListener.GetConnectionByPartitionKey(key, options...)
 	if err != nil {
 		return nil, err
 	}
