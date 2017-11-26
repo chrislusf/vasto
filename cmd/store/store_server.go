@@ -57,12 +57,16 @@ func RunStore(option *StoreOption) {
 	}
 	ss.nodes = nodes
 
-	if *option.AdminPort != 0 {
-		grpcListener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *option.ListenHost, *option.AdminPort))
+	if *option.TcpPort != 0 || *option.AdminPort != 0 {
+		if *option.AdminPort == 0 {
+			*option.AdminPort = *option.TcpPort + 10000
+		}
+		grpcAddress := fmt.Sprintf("%s:%d", *option.ListenHost, *option.AdminPort)
+		grpcListener, err := net.Listen("tcp", grpcAddress)
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("store admin %s:%d", *option.ListenHost, *option.AdminPort)
+		log.Printf("store admin %s", grpcAddress)
 		go ss.serveGrpc(grpcListener)
 	}
 
