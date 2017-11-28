@@ -62,7 +62,7 @@ func (l *ClusterListener) SetNodes(keyspace string, fixedCluster string) {
 
 // if master is not empty, return when client is connected to the master and
 // fetched the initial cluster information.
-func (l *ClusterListener) Start(master, keyspace, dataCenter string) {
+func (l *ClusterListener) StartListener(master, keyspace, dataCenter string) {
 
 	if master == "" {
 		return

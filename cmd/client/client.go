@@ -36,6 +36,6 @@ func (c *VastoClient) Start() {
 		return
 	}
 
-	c.ClusterListener.Start(*c.Option.Master, *c.Option.Keyspace, *c.Option.DataCenter)
+	c.ClusterListener.StartListener(*c.Option.Master, *c.Option.Keyspace, *c.Option.DataCenter)
 
 }

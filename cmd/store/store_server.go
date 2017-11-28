@@ -56,7 +56,7 @@ func RunStore(option *StoreOption) {
 		clusterListener.SetNodes(*option.Keyspace, *ss.option.FixedCluster)
 	} else if *option.Master != "" {
 		go ss.keepConnectedToMasterServer()
-		clusterListener.Start(*ss.option.Master, *ss.option.Keyspace, *ss.option.DataCenter)
+		clusterListener.StartListener(*ss.option.Master, *ss.option.Keyspace, *ss.option.DataCenter)
 	}
 
 	nodes, err := newNodes(option, clusterListener)
