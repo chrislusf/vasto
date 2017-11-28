@@ -89,10 +89,9 @@ func (k *keyspace) doGetOrCreateCluster(keyspaceName, dataCenterName string) (
 	cluster *topology.ClusterRing, isNew bool) {
 	cluster, found := k.getCluster(keyspaceName, dataCenterName)
 	if !found {
-		t := topology.NewHashRing(string(k.name), dataCenterName)
-		cluster = &t
+		cluster = topology.NewHashRing(string(k.name), dataCenterName)
 		k.Lock()
-		k.clusters[data_center_name(dataCenterName)] = &t
+		k.clusters[data_center_name(dataCenterName)] = cluster
 		k.Unlock()
 		isNew = true
 	}

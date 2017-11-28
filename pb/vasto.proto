@@ -70,12 +70,14 @@ message ClientMessage {
     message StoreResourceUpdate {
         repeated ClusterNode nodes = 1;
         bool is_delete = 2;
+        string keyspace = 3;
     }
     StoreResourceUpdate updates = 2;
 
     message Resize {
         uint32 current_cluster_size = 1;
         uint32 next_cluster_size = 2;
+        string keyspace = 3;
     }
     Resize resize = 3;
 

@@ -8,13 +8,13 @@ import (
 	"github.com/chrislusf/vasto/util"
 )
 
-func (c *VastoClient) Put(partitionKey, key, value []byte, options ...topology.AccessOption) error {
+func (c *VastoClient) Put(keyspace string, partitionKey, key, value []byte, options ...topology.AccessOption) error {
 
 	if partitionKey == nil {
 		partitionKey = key
 	}
 	partitionHash := util.Hash(partitionKey)
-	conn, replica, err := c.ClusterListener.GetConnectionByPartitionHash(partitionHash, options...)
+	conn, replica, err := c.ClusterListener.GetConnectionByPartitionHash(keyspace, partitionHash, options...)
 	if err != nil {
 		return err
 	}

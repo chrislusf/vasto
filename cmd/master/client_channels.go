@@ -77,6 +77,7 @@ func (cc *clientChannels) notifyStoreResourceUpdate(keyspace, dataCenter string,
 			Updates: &pb.ClientMessage_StoreResourceUpdate{
 				Nodes:    nodes,
 				IsDelete: isDelete,
+				Keyspace: keyspace,
 			},
 		},
 	)
@@ -101,6 +102,7 @@ func (cc *clientChannels) notifyClusterSize(keyspace, dataCenter string, current
 			Resize: &pb.ClientMessage_Resize{
 				CurrentClusterSize: currentClusterSize,
 				NextClusterSize:    nextClusterSize,
+				Keyspace:           keyspace,
 			},
 		},
 	)

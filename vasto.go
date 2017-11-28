@@ -85,7 +85,7 @@ var (
 			"overwrite --cluster.master, format network:host:port[,network:host:port]*").Default("").String(),
 		Master:     bench.Flag("cluster.master", "master address").Default("localhost:8278").String(),
 		DataCenter: bench.Flag("cluster.dataCenter", "data center name").Default("defaultDataCenter").String(),
-		Keyspace:   bench.Flag("cluster.keyspace", "keyspace name").Default("").String(),
+		Keyspace:   bench.Flag("cluster.keyspace", "keyspace name").Default("benchmark").String(),
 		Tests:      bench.Flag("tests", "[put|get]").Default("put,get").Short('t').String(),
 	}
 

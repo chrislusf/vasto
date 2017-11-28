@@ -7,19 +7,22 @@ import (
 	"net"
 )
 
-func (c *ClusterListener) GetConnectionByPartitionKey(partitionKey []byte, options ...topology.AccessOption) (net.Conn, int, error) {
+func (c *ClusterListener) GetConnectionByPartitionKey(keyspace string, partitionKey []byte, options ...topology.AccessOption) (net.Conn, int, error) {
 	partitionHash := util.Hash(partitionKey)
-	return c.GetConnectionByPartitionHash(partitionHash, options...)
+	return c.GetConnectionByPartitionHash(keyspace, partitionHash, options...)
 }
 
-func (c *ClusterListener) GetConnectionByPartitionHash(partitionHash uint64, options ...topology.AccessOption) (net.Conn, int, error) {
-	bucket := c.FindBucket(partitionHash)
-	return c.GetConnectionByBucket(bucket, options...)
+func (c *ClusterListener) GetConnectionByPartitionHash(keyspace string, partitionHash uint64, options ...topology.AccessOption) (net.Conn, int, error) {
+	r := c.GetClusterRing(keyspace)
+	bucket := r.FindBucket(partitionHash)
+	return c.GetConnectionByBucket(keyspace, bucket, options...)
 }
 
-func (c *ClusterListener) GetConnectionByBucket(bucket int, options ...topology.AccessOption) (net.Conn, int, error) {
+func (c *ClusterListener) GetConnectionByBucket(keyspace string, bucket int, options ...topology.AccessOption) (net.Conn, int, error) {
 
-	n, replica, ok := c.GetNode(bucket, options...)
+	r := c.GetClusterRing(keyspace)
+
+	n, replica, ok := r.GetNode(bucket, options...)
 	if !ok {
 		return nil, 0, fmt.Errorf("bucket %d not found", bucket)
 	}

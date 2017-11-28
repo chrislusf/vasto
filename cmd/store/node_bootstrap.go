@@ -29,7 +29,7 @@ func (n *node) bootstrap() error {
 
 	log.Printf("bootstrap from server %d ...", bestPeerToCopy)
 
-	return n.clusterListener.WithConnection(bestPeerToCopy, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
+	return n.clusterRing.WithConnection(bestPeerToCopy, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
 		_, canTailBinlog, err := n.checkBinlogAvailable(grpcConnection)
 		if err != nil {
 			return err

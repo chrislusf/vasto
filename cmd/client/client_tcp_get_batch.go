@@ -13,12 +13,13 @@ type answer struct {
 	err       error
 }
 
-func (c *VastoClient) BatchGet(keys [][]byte, options ...topology.AccessOption) ([]*pb.KeyValue, error) {
+func (c *VastoClient) BatchGet(keyspace string, keys [][]byte, options ...topology.AccessOption) ([]*pb.KeyValue, error) {
 
 	bucketToRequests := make(map[int][]*pb.Request)
 
+	r := c.ClusterListener.GetClusterRing(keyspace)
 	for _, key := range keys {
-		bucket := c.ClusterListener.FindBucket(util.Hash(key))
+		bucket := r.FindBucket(util.Hash(key))
 		if _, ok := bucketToRequests[bucket]; !ok {
 			bucketToRequests[bucket] = make([]*pb.Request, 0, 4)
 		}
@@ -35,7 +36,7 @@ func (c *VastoClient) BatchGet(keys [][]byte, options ...topology.AccessOption) 
 	for bucket, requests := range bucketToRequests {
 		go func(bucket int, requestList []*pb.Request) {
 
-			conn, replica, err := c.ClusterListener.GetConnectionByBucket(bucket, options...)
+			conn, replica, err := c.ClusterListener.GetConnectionByBucket(keyspace, bucket, options...)
 			if err != nil {
 				outputChan <- &answer{err: err}
 				return

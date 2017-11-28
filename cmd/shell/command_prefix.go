@@ -48,7 +48,7 @@ func (c *CommandPrefix) Do(args []string, env map[string]string, writer io.Write
 		lastSeenKey = []byte(args[2])
 	}
 
-	keyValues, err := c.client.GetByPrefix(nil, prefix, limit, lastSeenKey, options...)
+	keyValues, err := c.client.GetByPrefix(*c.client.Option.Keyspace, nil, prefix, limit, lastSeenKey, options...)
 
 	if err != nil {
 		return err

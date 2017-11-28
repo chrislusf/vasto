@@ -37,7 +37,7 @@ func (c *CommandGet) Do(args []string, env map[string]string, writer io.Writer) 
 	if len(args) == 1 {
 		key := []byte(args[0])
 
-		value, err := c.client.Get(key, options...)
+		value, err := c.client.Get(*c.client.Option.Keyspace, key, options...)
 
 		if err == nil {
 			fmt.Fprintf(writer, "%s\n", string(value))
@@ -49,7 +49,7 @@ func (c *CommandGet) Do(args []string, env map[string]string, writer io.Writer) 
 		for _, arg := range args {
 			keys = append(keys, []byte(arg))
 		}
-		keyValues, err := c.client.BatchGet(keys, options...)
+		keyValues, err := c.client.BatchGet(*c.client.Option.Keyspace, keys, options...)
 		if err != nil {
 			return err
 		}

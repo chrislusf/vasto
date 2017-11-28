@@ -61,18 +61,20 @@ func (n *NodeWithConnPool) GetConnection() (net.Conn, error) {
 	return n.p.Get()
 }
 
-func (c *ClusterListener) AddNode(n *pb.ClusterNode) {
+func (c *ClusterListener) AddNode(keyspace string, n *pb.ClusterNode) {
+	r := c.GetClusterRing(keyspace)
 	node := newNodeWithConnPool(int(n.ShardId), n.Network, n.Address, n.AdminAddress)
-	c.Add(node)
-	log.Printf("+node %d: %s:%s, cluster: %s", node.GetId(), node.GetNetwork(), node.GetAddress(), c)
+	r.Add(node)
+	log.Printf("+node %d: %s:%s, cluster: %s", node.GetId(), node.GetNetwork(), node.GetAddress(), r)
 }
 
-func (c *ClusterListener) RemoveNode(n *pb.ClusterNode) {
-	node := c.Remove(int(n.ShardId))
+func (c *ClusterListener) RemoveNode(keyspace string, n *pb.ClusterNode) {
+	r := c.GetClusterRing(keyspace)
+	node := r.Remove(int(n.ShardId))
 	if n != nil {
 		if t, ok := node.(*NodeWithConnPool); ok {
 			t.p.Close()
 		}
 	}
-	log.Printf("-node %d: %s, cluster: %s", node.GetId(), node.GetAddress(), c)
+	log.Printf("-node %d: %s, cluster: %s", node.GetId(), node.GetAddress(), r)
 }

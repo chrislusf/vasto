@@ -145,8 +145,8 @@ func (h *ClusterRing) MissingAndFreeNodeIds() (missingList, freeList []int) {
 }
 
 // NewHashRing creates a new hash ring.
-func NewHashRing(keyspace, dataCenter string) ClusterRing {
-	return ClusterRing{
+func NewHashRing(keyspace, dataCenter string) *ClusterRing {
+	return &ClusterRing{
 		keyspace:   keyspace,
 		dataCenter: dataCenter,
 		nodes:      make([]Node, 0, 16),

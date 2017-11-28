@@ -34,7 +34,7 @@ func (c *CommandDelete) Do(args []string, env map[string]string, writer io.Write
 
 	key := []byte(args[0])
 
-	err = c.client.Delete(key, options...)
+	err = c.client.Delete(*c.client.Option.Keyspace, key, options...)
 
 	return err
 }

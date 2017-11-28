@@ -36,7 +36,7 @@ func (c *CommandPut) Do(args []string, env map[string]string, writer io.Writer) 
 	key := []byte(args[0])
 	value := []byte(args[1])
 
-	err = c.client.Put(nil, key, value, options...)
+	err = c.client.Put(*c.client.Option.Keyspace, nil, key, value, options...)
 
 	fmt.Fprintln(writer)
 

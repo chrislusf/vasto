@@ -12,9 +12,9 @@ var (
 	NotFoundError = errors.New("NotFound")
 )
 
-func (c *VastoClient) Get(key []byte, options ...topology.AccessOption) ([]byte, error) {
+func (c *VastoClient) Get(keyspace string, key []byte, options ...topology.AccessOption) ([]byte, error) {
 
-	conn, replica, err := c.ClusterListener.GetConnectionByPartitionKey(key, options...)
+	conn, replica, err := c.ClusterListener.GetConnectionByPartitionKey(keyspace, key, options...)
 	if err != nil {
 		return nil, err
 	}

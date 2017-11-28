@@ -95,7 +95,7 @@ func (ms *gatewayServer) handleRequest(reader io.Reader, writer io.Writer) error
 func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 	if command.GetGet() != nil {
 		key := command.Get.Key
-		if value, err := ms.vastoClient.Get(key); err != nil {
+		if value, err := ms.vastoClient.Get(*ms.option.Keyspace, key); err != nil {
 			return &pb.Response{
 				Get: &pb.GetResponse{
 					Status: err.Error(),
@@ -119,7 +119,7 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 		resp := &pb.PutResponse{
 			Ok: true,
 		}
-		err := ms.vastoClient.Put(nil, key, value)
+		err := ms.vastoClient.Put(*ms.option.Keyspace, nil, key, value)
 		if err != nil {
 			resp.Ok = false
 			resp.Status = err.Error()
@@ -133,7 +133,7 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 		resp := &pb.DeleteResponse{
 			Ok: true,
 		}
-		err := ms.vastoClient.Delete(key)
+		err := ms.vastoClient.Delete(*ms.option.Keyspace, key)
 		if err != nil {
 			resp.Ok = false
 			resp.Status = err.Error()
@@ -147,7 +147,7 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 		lastSeenKey := command.GetByPrefix.LastSeenKey
 
 		resp := &pb.GetByPrefixResponse{}
-		keyValues, err := ms.vastoClient.GetByPrefix(nil, prefix, limit, lastSeenKey)
+		keyValues, err := ms.vastoClient.GetByPrefix(*ms.option.Keyspace, nil, prefix, limit, lastSeenKey)
 		if err != nil {
 			resp.Ok = false
 			resp.Status = err.Error()

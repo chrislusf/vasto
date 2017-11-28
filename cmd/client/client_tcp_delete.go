@@ -7,9 +7,9 @@ import (
 	"github.com/chrislusf/vasto/topology"
 )
 
-func (c *VastoClient) Delete(key []byte, options ...topology.AccessOption) error {
+func (c *VastoClient) Delete(keyspace string, key []byte, options ...topology.AccessOption) error {
 
-	conn, replica, err := c.ClusterListener.GetConnectionByPartitionKey(key, options...)
+	conn, replica, err := c.ClusterListener.GetConnectionByPartitionKey(keyspace, key, options...)
 	if err != nil {
 		return err
 	}

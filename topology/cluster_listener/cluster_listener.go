@@ -8,22 +8,40 @@ import (
 	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
 	"strings"
+	"sync"
 )
 
+type keyspace_name string
 type ClusterListener struct {
-	topology.ClusterRing
+	sync.RWMutex
+	clusters   map[keyspace_name]*topology.ClusterRing
+	dataCenter string
 }
 
-func NewClusterClient(keyspace, dataCenter string) *ClusterListener {
+func NewClusterClient(dataCenter string) *ClusterListener {
 	return &ClusterListener{
-		ClusterRing: topology.NewHashRing(keyspace, dataCenter),
+		clusters:   make(map[keyspace_name]*topology.ClusterRing),
+		dataCenter: dataCenter,
 	}
+}
+
+func (l *ClusterListener) ListenFor(keyspace string) {
+	l.Lock()
+	l.clusters[keyspace_name(keyspace)] = topology.NewHashRing(keyspace, l.dataCenter)
+	l.Unlock()
+}
+
+func (l *ClusterListener) GetClusterRing(keyspace string) *topology.ClusterRing {
+	l.Lock()
+	t := l.clusters[keyspace_name(keyspace)]
+	l.Unlock()
+	return t
 }
 
 // SetNodes initialize the cluster to a comma-separated node list,
 // where each node has the format of network:host:port
 // The network is either tcp or socket
-func (l *ClusterListener) SetNodes(fixedCluster string) {
+func (l *ClusterListener) SetNodes(keyspace string, fixedCluster string) {
 	servers := strings.Split(fixedCluster, ",")
 	var nodes []*pb.ClusterNode
 	for id, networkHostPort := range servers {
@@ -35,9 +53,10 @@ func (l *ClusterListener) SetNodes(fixedCluster string) {
 		}
 		nodes = append(nodes, node)
 	}
-	l.SetExpectedSize(len(nodes))
+	r := l.GetClusterRing(keyspace)
+	r.SetExpectedSize(len(nodes))
 	for _, node := range nodes {
-		l.AddNode(node)
+		l.AddNode(keyspace, node)
 	}
 }
 
@@ -63,10 +82,11 @@ func (l *ClusterListener) Start(master, keyspace, dataCenter string) {
 			select {
 			case msg := <-clientMessageChan:
 				if msg.GetCluster() != nil {
-					l.SetExpectedSize(int(msg.Cluster.ExpectedClusterSize))
-					l.SetNextSize(int(msg.Cluster.NextClusterSize))
+					r := l.GetClusterRing(msg.Cluster.Keyspace)
+					r.SetExpectedSize(int(msg.Cluster.ExpectedClusterSize))
+					r.SetNextSize(int(msg.Cluster.NextClusterSize))
 					for _, store := range msg.Cluster.Nodes {
-						l.AddNode(store)
+						l.AddNode(msg.Cluster.Keyspace, store)
 					}
 					if !clientConnected {
 						clientConnected = true
@@ -75,18 +95,19 @@ func (l *ClusterListener) Start(master, keyspace, dataCenter string) {
 				} else if msg.GetUpdates() != nil {
 					for _, store := range msg.Updates.Nodes {
 						if msg.Updates.GetIsDelete() {
-							l.RemoveNode(store)
+							l.RemoveNode(msg.Updates.Keyspace, store)
 						} else {
-							l.AddNode(store)
+							l.AddNode(msg.Updates.Keyspace, store)
 						}
 					}
 				} else if msg.GetResize() != nil {
-					l.SetExpectedSize(int(msg.Resize.CurrentClusterSize))
-					l.SetNextSize(int(msg.Resize.NextClusterSize))
-					if l.NextSize() == 0 {
-						fmt.Printf("resized to %d\n", l.CurrentSize())
+					r := l.GetClusterRing(msg.Resize.Keyspace)
+					r.SetExpectedSize(int(msg.Resize.CurrentClusterSize))
+					r.SetNextSize(int(msg.Resize.NextClusterSize))
+					if r.NextSize() == 0 {
+						fmt.Printf("keyspace %s dc %s resized to %d\n", msg.Resize.Keyspace, l.dataCenter, r.CurrentSize())
 					} else {
-						fmt.Printf("resizing %d => %d\n", l.ExpectedSize(), l.NextSize())
+						fmt.Printf("keyspace %s dc %s resizing %d => %d\n", msg.Resize.Keyspace, l.dataCenter, r.ExpectedSize(), r.NextSize())
 					}
 				} else {
 					fmt.Printf("unknown message %v\n", msg)

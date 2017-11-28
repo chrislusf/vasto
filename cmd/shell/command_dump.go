@@ -35,11 +35,13 @@ func (c *CommandDump) SetCilent(client *client.VastoClient) {
 
 func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer) error {
 
-	chans := make([]chan *pb.KeyValue, c.client.ClusterListener.ExpectedSize())
+	r := c.client.ClusterListener.GetClusterRing(*c.client.Option.Keyspace)
 
-	for i := 0; i < c.client.ClusterListener.ExpectedSize(); i++ {
+	chans := make([]chan *pb.KeyValue, r.ExpectedSize())
 
-		n, _, ok := c.client.ClusterListener.GetNode(i)
+	for i := 0; i < r.ExpectedSize(); i++ {
+
+		n, _, ok := r.GetNode(i)
 		if !ok {
 			continue
 		}
@@ -47,7 +49,7 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 		ch := make(chan *pb.KeyValue)
 		chans[i] = ch
 
-		go c.client.ClusterListener.WithConnection(i, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
+		go r.WithConnection(i, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
 
 			client := pb.NewVastoStoreClient(grpcConnection)
 
@@ -88,9 +90,9 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 
 	}
 
-	pq := make(priorityQueue, c.client.ClusterListener.ExpectedSize())
+	pq := make(priorityQueue, r.ExpectedSize())
 
-	for i := 0; i < c.client.ClusterListener.ExpectedSize(); i++ {
+	for i := 0; i < r.ExpectedSize(); i++ {
 		if chans[i] == nil {
 			continue
 		}

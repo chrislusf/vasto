@@ -14,12 +14,12 @@ func (n *node) isBootstrapNeeded() (bestPeerToCopy int, isNeeded bool) {
 	bestPeerToCopy = -1
 	checkedServerCount := 0
 	for _, serverId := range peerServerIds {
-		_, _, ok := n.clusterListener.GetNode(serverId)
+		_, _, ok := n.clusterRing.GetNode(serverId)
 		if !ok {
 			continue
 		}
 		checkedServerCount++
-		go n.clusterListener.WithConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
+		go n.clusterRing.WithConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
 
 			latestSegment, canTailBinlog, err := n.checkBinlogAvailable(grpcConnection)
 			if err != nil {
@@ -45,7 +45,7 @@ func (n *node) isBootstrapNeeded() (bestPeerToCopy int, isNeeded bool) {
 
 func (n *node) findPeerServerIds() (serverIds []int) {
 
-	size := n.clusterListener.ExpectedSize()
+	size := n.clusterRing.ExpectedSize()
 
 	for i := 0; i < n.replicationFactor && i < size; i++ {
 		serverId := n.id + i

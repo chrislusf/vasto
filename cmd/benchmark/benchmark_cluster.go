@@ -21,7 +21,7 @@ func (b *benchmarker) runBenchmarkerOnCluster(option *BenchmarkOption) {
 					key := []byte(fmt.Sprintf("k%5d", i))
 					value := []byte(fmt.Sprintf("v%5d", i))
 
-					return c.Put(nil, key, value)
+					return c.Put(*b.option.Keyspace, nil, key, value)
 				})
 			case "get":
 				b.execute(hist, c, func(c *client.VastoClient, i int) error {
@@ -29,7 +29,7 @@ func (b *benchmarker) runBenchmarkerOnCluster(option *BenchmarkOption) {
 					key := []byte(fmt.Sprintf("k%5d", i))
 					value := []byte(fmt.Sprintf("v%5d", i))
 
-					data, err := c.Get(key)
+					data, err := c.Get(*b.option.Keyspace, key)
 					if err != nil {
 						log.Printf("read %s: %v", string(key), err)
 						return err

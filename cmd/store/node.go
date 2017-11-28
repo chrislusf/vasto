@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/chrislusf/vasto/storage/binlog"
 	"github.com/chrislusf/vasto/storage/rocks"
+	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/topology/cluster_listener"
 	"log"
 	"os"
@@ -14,7 +15,7 @@ type node struct {
 	serverId          int
 	db                *rocks.Rocks
 	lm                *binlog.LogManager
-	clusterListener   *cluster_listener.ClusterListener
+	clusterRing       *topology.ClusterRing
 	replicationFactor int
 	// just to avoid repeatedly create these variables
 	nextSegmentKey []byte
@@ -22,10 +23,11 @@ type node struct {
 }
 
 func newNodes(option *StoreOption, clusterListener *cluster_listener.ClusterListener) (nodes []*node, err error) {
+	cluster := clusterListener.GetClusterRing(*option.Keyspace)
 	for i := 0; i < *option.ReplicationFactor; i++ {
 		id := int(*option.Id) - i
 		if id < 0 {
-			id += clusterListener.ExpectedSize()
+			id += cluster.ExpectedSize()
 		}
 		if i != 0 && id == int(*option.Id) {
 			break
@@ -35,7 +37,7 @@ func newNodes(option *StoreOption, clusterListener *cluster_listener.ClusterList
 		if err != nil {
 			return nil, fmt.Errorf("mkdir %s: %v", dir, err)
 		}
-		node := newNode(dir, int(*option.Id), id, clusterListener,
+		node := newNode(dir, int(*option.Id), id, cluster,
 			*option.ReplicationFactor, *option.LogFileSizeMb, *option.LogFileCount)
 		nodes = append(nodes, node)
 		if i != 0 {
@@ -45,13 +47,13 @@ func newNodes(option *StoreOption, clusterListener *cluster_listener.ClusterList
 	return nodes, nil
 }
 
-func newNode(dir string, serverId, nodeId int, clusterListener *cluster_listener.ClusterListener,
+func newNode(dir string, serverId, nodeId int, cluster *topology.ClusterRing,
 	replicationFactor int, logFileSizeMb int, logFileCount int) *node {
 	n := &node{
 		id:                nodeId,
 		serverId:          serverId,
 		db:                rocks.New(dir),
-		clusterListener:   clusterListener,
+		clusterRing:       cluster,
 		replicationFactor: replicationFactor,
 	}
 	if logFileSizeMb > 0 {
