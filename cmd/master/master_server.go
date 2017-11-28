@@ -6,10 +6,8 @@ import (
 	//"strings"
 
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/topology"
 	//"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
-	"sync"
 )
 
 type MasterOption struct {
@@ -18,10 +16,8 @@ type MasterOption struct {
 }
 
 type masterServer struct {
-	option      *MasterOption
-	clientChans *clientChannels
-	clusters    map[string]*topology.ClusterRing
-	sync.Mutex
+	option             *MasterOption
+	clientChans        *clientChannels
 	defaultClusterSize int
 	topo               *masterTopology
 }

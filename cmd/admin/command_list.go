@@ -9,53 +9,64 @@ import (
 )
 
 func init() {
-	commands = append(commands, &CommandList{})
+	commands = append(commands, &CommandDesc{})
 }
 
-type CommandList struct {
+type CommandDesc struct {
 	masterClient pb.VastoMasterClient
 }
 
-func (c *CommandList) Name() string {
-	return "list"
+func (c *CommandDesc) Name() string {
+	return "desc"
 }
 
-func (c *CommandList) Help() string {
-	return "list all nodes in the cluster"
+func (c *CommandDesc) Help() string {
+	return "[keyspaces|data_centers|<keyspace> <data center>]"
 }
 
-func (c *CommandList) SetMasterCilent(masterClient pb.VastoMasterClient) {
+func (c *CommandDesc) SetMasterCilent(masterClient pb.VastoMasterClient) {
 	c.masterClient = masterClient
 }
 
-func (c *CommandList) Do(args []string, out io.Writer) error {
+func (c *CommandDesc) Do(args []string, out io.Writer) error {
 
-	dc := "defaultDataCenter"
+	param := "keyspaces"
 	if len(args) > 0 {
-		dc = args[0]
+		param = args[0]
 	}
+	if param == "keyspaces" {
 
-	listResponse, err := c.masterClient.ListStores(
-		context.Background(),
-		&pb.ListRequest{
-			DataCenter: dc,
-		},
-	)
+	} else if param == "data_centers" {
 
-	if err != nil {
-		return err
-	}
+	} else if len(args) == 2 {
+		descResponse, err := c.masterClient.Describe(
+			context.Background(),
+			&pb.DescribeRequest{
+				DescCluster: &pb.DescribeRequest_DescCluster{
+					Keyspace:   param,
+					DataCenter: args[1],
+				},
+			},
+		)
 
-	fmt.Fprintf(out, "Cluster Client Count : %d\n", listResponse.ClientCount)
-	cluster := listResponse.GetCluster()
-	fmt.Fprintf(out, "Cluster Expected Size: %d\n", cluster.ExpectedClusterSize)
-	fmt.Fprintf(out, "Cluster Current  Size: %d\n", cluster.CurrentClusterSize)
-	if cluster.NextClusterSize != 0 {
-		fmt.Fprintf(out, "Cluster is changing to: %d\n", cluster.NextClusterSize)
-	}
+		if err != nil {
+			return err
+		}
 
-	for _, node := range cluster.Nodes {
-		fmt.Fprintf(out, "%4d: %32v\n", node.GetShardId(), node.GetAddress())
+		fmt.Fprintf(out, "Cluster Client Count : %d\n", descResponse.ClientCount)
+		cluster := descResponse.GetCluster()
+		if cluster != nil {
+			fmt.Fprintf(out, "Cluster Expected Size: %d\n", cluster.ExpectedClusterSize)
+			fmt.Fprintf(out, "Cluster Current  Size: %d\n", cluster.CurrentClusterSize)
+			if cluster.NextClusterSize != 0 {
+				fmt.Fprintf(out, "Cluster is changing to: %d\n", cluster.NextClusterSize)
+			}
+
+			for _, node := range cluster.Nodes {
+				fmt.Fprintf(out, "%4d: %32v\n", node.GetShardId(), node.GetAddress())
+			}
+		}
+
 	}
 
 	return nil

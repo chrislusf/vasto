@@ -6,17 +6,22 @@ import (
 	"github.com/chrislusf/vasto/pb"
 )
 
-func (ms *masterServer) ListStores(ctx context.Context, req *pb.ListRequest) (*pb.ListResponse, error) {
-	dc := req.DataCenter
+func (ms *masterServer) Describe(ctx context.Context, req *pb.DescribeRequest) (*pb.DescribeResponse, error) {
 
-	ms.Lock()
-	r, _ := ms.clusters[dc]
-	ms.Unlock()
-
-	resp := &pb.ListResponse{
-		Cluster:     r.ToCluster(),
+	resp := &pb.DescribeResponse{
 		ClientCount: uint32(len(ms.clientChans.clientChans)),
 	}
+
+	if req.GetDescCluster() != nil {
+		keyspace, found := ms.topo.keyspaces.getKeyspace(req.DescCluster.Keyspace)
+		if found {
+			cluster, found := keyspace.getCluster(req.DescCluster.DataCenter)
+			if found {
+				resp.Cluster = cluster.ToCluster()
+			}
+		}
+	}
+
 	return resp, nil
 }
 
@@ -24,7 +29,7 @@ func (ms *masterServer) ResizeCluster(req *pb.ResizeRequest, stream pb.VastoMast
 
 	keyspace, dc := req.Keyspace, req.DataCenter
 
-	r, found := ms.topo.keyspaces.getOrCreateKeyspace(keyspace).getCluster(keyspace, dc)
+	r, found := ms.topo.keyspaces.getOrCreateKeyspace(keyspace).getCluster(dc)
 
 	resp := &pb.ResizeProgress{}
 

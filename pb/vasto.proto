@@ -15,7 +15,7 @@ service VastoMaster {
         // and broadcast to all other stores and clients
     }
 
-    rpc ListStores (ListRequest) returns (ListResponse) {
+    rpc Describe (DescribeRequest) returns (DescribeResponse) {
     }
 
     rpc ResizeCluster (ResizeRequest) returns (stream ResizeProgress) {
@@ -275,10 +275,28 @@ message CheckBinlogResponse {
 //////////////////////////////////////////////////
 //// admin
 //////////////////////////////////////////////////
-message ListRequest {
-    string data_center = 1;
+message DescribeRequest {
+
+    message DescDataCenters {
+    }
+    DescDataCenters desc_data_centers = 1;
+
+    message DescKeyspaces {
+    }
+    DescKeyspaces desc_keyspaces = 2;
+
+    message DescCluster {
+        string keyspace = 1;
+        string data_center = 2;
+    }
+    DescCluster desc_cluster = 3;
+
+    message DescClients {
+    }
+    DescClients desc_clients = 4;
+
 }
-message ListResponse {
+message DescribeResponse {
     Cluster cluster = 1;
     uint32 client_count = 2;
 }

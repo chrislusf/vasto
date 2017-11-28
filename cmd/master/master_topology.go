@@ -77,17 +77,23 @@ func (ks *keyspaces) getOrCreateKeyspace(keyspaceName string) *keyspace {
 	return k
 }
 
-func (k *keyspace) getCluster(keyspaceName, dataCenterName string) (
-	cluster *topology.ClusterRing, found bool) {
+func (ks *keyspaces) getKeyspace(keyspaceName string) (k *keyspace, found bool) {
+	ks.RLock()
+	k, found = ks.keyspaces[keyspace_name(keyspaceName)]
+	ks.RUnlock()
+	return
+}
+
+func (k *keyspace) getCluster(dataCenterName string) (cluster *topology.ClusterRing, found bool) {
 	k.RLock()
 	cluster, found = k.clusters[data_center_name(dataCenterName)]
 	k.RUnlock()
 	return
 }
 
-func (k *keyspace) doGetOrCreateCluster(keyspaceName, dataCenterName string) (
+func (k *keyspace) doGetOrCreateCluster(dataCenterName string) (
 	cluster *topology.ClusterRing, isNew bool) {
-	cluster, found := k.getCluster(keyspaceName, dataCenterName)
+	cluster, found := k.getCluster(dataCenterName)
 	if !found {
 		cluster = topology.NewHashRing(string(k.name), dataCenterName)
 		k.Lock()
@@ -101,7 +107,7 @@ func (k *keyspace) doGetOrCreateCluster(keyspaceName, dataCenterName string) (
 
 func (k *keyspace) getOrCreateCluster(storeResource *pb.StoreResource, storeStatusInCluster *pb.StoreStatusInCluster) (
 	*topology.ClusterRing, error) {
-	cluster, isNew := k.doGetOrCreateCluster(string(k.name), storeResource.DataCenter)
+	cluster, isNew := k.doGetOrCreateCluster(storeResource.DataCenter)
 	if isNew {
 		cluster.SetExpectedSize(int(storeStatusInCluster.ClusterSize))
 	} else if cluster.ExpectedSize() != int(storeStatusInCluster.ClusterSize) {

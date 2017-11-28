@@ -33,7 +33,6 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 	}
 
 	clusterRing, found := ms.topo.keyspaces.getOrCreateKeyspace(clientHeartbeat.Keyspace).getCluster(
-		clientHeartbeat.Keyspace,
 		clientHeartbeat.DataCenter,
 	)
 
