@@ -16,7 +16,7 @@ type VastoClient struct {
 	ClusterListener *cluster_listener.ClusterListener
 }
 
-func New(option *ClientOption) *VastoClient {
+func NewClient(option *ClientOption) *VastoClient {
 	c := &VastoClient{
 		Option:          option,
 		ClusterListener: cluster_listener.NewClusterClient(*option.DataCenter),
@@ -29,7 +29,7 @@ func (c *VastoClient) startWithFixedCluster() {
 	c.ClusterListener.SetNodes(*c.Option.Keyspace, *c.Option.FixedCluster)
 }
 
-func (c *VastoClient) Start() {
+func (c *VastoClient) StartClient() {
 
 	if *c.Option.FixedCluster != "" {
 		c.startWithFixedCluster()

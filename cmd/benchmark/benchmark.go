@@ -75,13 +75,13 @@ func (b *benchmarker) startThreads(name string, fn func(hist *Histogram)) {
 func (b *benchmarker) startThreadsWithClient(name string, fn func(hist *Histogram, c *client.VastoClient)) {
 
 	b.startThreads(name, func(hist *Histogram) {
-		c := client.New(&client.ClientOption{
+		c := client.NewClient(&client.ClientOption{
 			FixedCluster: b.option.FixedCluster,
 			Master:       b.option.Master,
 			DataCenter:   b.option.DataCenter,
 			Keyspace:     b.option.Keyspace,
 		})
-		c.Start()
+		c.StartClient()
 		fn(hist, c)
 	})
 

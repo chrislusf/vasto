@@ -22,7 +22,7 @@ type shell struct {
 func RunShell(option *ShellOption) {
 	var b = &shell{
 		option: option,
-		vastoClient: client.New(
+		vastoClient: client.NewClient(
 			&client.ClientOption{
 				FixedCluster: option.FixedCluster,
 				Master:       option.Master,
@@ -32,7 +32,7 @@ func RunShell(option *ShellOption) {
 		),
 	}
 
-	b.vastoClient.Start()
+	b.vastoClient.StartClient()
 
 	b.runShell()
 

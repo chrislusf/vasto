@@ -32,9 +32,9 @@ func (l *ClusterListener) ListenFor(keyspace string) {
 }
 
 func (l *ClusterListener) GetClusterRing(keyspace string) *topology.ClusterRing {
-	l.Lock()
+	l.RLock()
 	t := l.clusters[keyspace_name(keyspace)]
-	l.Unlock()
+	l.RUnlock()
 	return t
 }
 

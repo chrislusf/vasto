@@ -31,7 +31,7 @@ func RunGateway(option *GatewayOption) {
 
 	var gs = &gatewayServer{
 		option: option,
-		vastoClient: client.New(
+		vastoClient: client.NewClient(
 			&client.ClientOption{
 				FixedCluster: option.FixedCluster,
 				Master:       option.Master,
@@ -63,7 +63,7 @@ func RunGateway(option *GatewayOption) {
 		go gs.serveTcp(unixSocketListener)
 	}
 
-	gs.vastoClient.Start()
+	gs.vastoClient.StartClient()
 
 	fmt.Printf("Vasto gateway ready\n")
 	select {}
