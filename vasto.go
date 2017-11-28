@@ -28,6 +28,8 @@ import (
 	"github.com/chrislusf/vasto/util"
 	"github.com/chrislusf/vasto/util/on_interrupt"
 	"gopkg.in/alecthomas/kingpin.v2"
+	"os/user"
+	"strings"
 )
 
 var (
@@ -47,12 +49,13 @@ var (
 		Host:       store.Flag("host", "store host address").Default(util.GetLocalIP()).String(),
 		ListenHost: store.Flag("listenHost", "store listening host address").Default("").String(),
 		TcpPort:    store.Flag("port", "store listening tcp port").Default("8279").Int32(),
-		// AdminPort:  store.Flag("adminPort", "store listening grpc port, default to tcp port + 10000").Default("0").Int32(),
+		AdminPort:  store.Flag("adminPort", "store listening grpc port, default to tcp port + 10000").Default("0").Int32(),
 		UnixSocket: store.Flag("unixSocket", "store listening unix socket").Default("").Short('s').String(),
 		Master:     store.Flag("cluster.master", "master address").Default("localhost:8278").String(),
 		FixedCluster: store.Flag("cluster.fixed",
 			"overwrite --cluster.master, format network:host:port[,network:host:port]*").Default("").String(),
 		DataCenter:        store.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
+		Keyspace:          store.Flag("keyspace", "keyspace name").Default("").String(),
 		LogFileSizeMb:     store.Flag("logFileSizeMb", "log file size limit in MB").Default("1024").Int(),
 		LogFileCount:      store.Flag("logFileCount", "log file count limit").Default("3").Int(),
 		ReplicationFactor: store.Flag("replicationFactor", "number of physical copies").Default("3").Int(),
@@ -67,6 +70,7 @@ var (
 			"overwrite --master, format network:host:port[,network:host:port]*").Default("").String(),
 		Master:     gateway.Flag("master", "master address").Default("localhost:8278").String(),
 		DataCenter: gateway.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
+		Keyspace:   gateway.Flag("keyspace", "keyspace name").Default("").String(),
 	}
 	gatewayProfile = gateway.Flag("cpuprofile", "cpu profile output file").Default("").String()
 
@@ -81,6 +85,7 @@ var (
 			"overwrite --cluster.master, format network:host:port[,network:host:port]*").Default("").String(),
 		Master:     bench.Flag("cluster.master", "master address").Default("localhost:8278").String(),
 		DataCenter: bench.Flag("cluster.dataCenter", "data center name").Default("defaultDataCenter").String(),
+		Keyspace:   bench.Flag("cluster.keyspace", "keyspace name").Default("").String(),
 		Tests:      bench.Flag("tests", "[put|get]").Default("put,get").Short('t').String(),
 	}
 
@@ -90,6 +95,7 @@ var (
 			"overwrite --cluster.master, format network:host:port[,network:host:port]*").Default("").String(),
 		Master:     shell.Flag("cluster.master", "master address").Default("localhost:8278").String(),
 		DataCenter: shell.Flag("cluster.dataCenter", "data center name").Default("defaultDataCenter").String(),
+		Keyspace:   shell.Flag("cluster.keyspace", "keyspace name").Default("").String(),
 	}
 
 	admin       = app.Command("admin", "Manage FixedCluster Size")
@@ -126,6 +132,15 @@ func main() {
 		m.RunMaster(masterOption)
 
 	case store.FullCommand():
+		dir := *storeOption.Dir
+		if strings.HasPrefix(dir, "~") {
+			usr, err := user.Current()
+			if err != nil {
+				log.Fatal(err)
+			}
+			dir = usr.HomeDir + dir[1:]
+		}
+		*storeOption.Dir = dir
 		s.RunStore(storeOption)
 
 	case gateway.FullCommand():

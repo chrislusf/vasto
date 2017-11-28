@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func (c *ClusterListener) registerClientAtMasterServer(master string, dataCenter string,
+func (c *ClusterListener) registerClientAtMasterServer(master string, keyspace, dataCenter string,
 	msgChan chan *pb.ClientMessage) error {
 	grpcConnection, err := grpc.Dial(master, grpc.WithInsecure())
 	if err != nil {
@@ -26,9 +26,8 @@ func (c *ClusterListener) registerClientAtMasterServer(master string, dataCenter
 	}
 
 	clientHeartbeat := &pb.ClientHeartbeat{
-		Location: &pb.Location{
-			DataCenter: dataCenter,
-		},
+		Keyspace:   keyspace,
+		DataCenter: dataCenter,
 	}
 
 	// log.Printf("Reporting allocated %v", as.allocatedResource)
@@ -46,7 +45,7 @@ func (c *ClusterListener) registerClientAtMasterServer(master string, dataCenter
 			return nil
 		}
 		if err != nil {
-			return fmt.Errorf("receive topology : %v", err)
+			return fmt.Errorf("client receive topology : %v", err)
 		}
 		msgChan <- msg
 		// log.Printf("client received message %v", msg)

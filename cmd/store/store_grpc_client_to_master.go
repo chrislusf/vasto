@@ -38,10 +38,9 @@ func (ss *storeServer) registerAtMasterServer() error {
 	log.Printf("register store to master %s", *ss.option.Master)
 
 	storeHeartbeat := &pb.StoreHeartbeat{
-		DataCenter: *ss.option.DataCenter,
-		Store: &pb.StoreResource{
-			Id:      *ss.option.Id,
-			Network: "tcp",
+		StoreResource: &pb.StoreResource{
+			DataCenter: *ss.option.DataCenter,
+			Network:    "tcp",
 			Address: fmt.Sprintf(
 				"%s:%d",
 				*ss.option.Host,
@@ -52,7 +51,7 @@ func (ss *storeServer) registerAtMasterServer() error {
 				*ss.option.Host,
 				int32(*ss.option.AdminPort),
 			),
-			NodeStatuses: make(map[uint32]*pb.NodeStatus),
+			StoreStatusesInCluster: ss.statusInCluster,
 		},
 	}
 
@@ -66,11 +65,20 @@ func (ss *storeServer) registerAtMasterServer() error {
 	finishChan := make(chan bool)
 	go func() {
 		select {
-		case nodeStatus := <-ss.nodeStatusChan:
-			log.Println("node status => ", nodeStatus)
-			storeHeartbeat.Store.NodeStatuses[nodeStatus.Id] = nodeStatus
+		case shardStatus := <-ss.shardStatusChan:
+			// collect current server's different cluster node status
+			log.Println("shard status => ", shardStatus)
+			t, ok := storeHeartbeat.StoreResource.StoreStatusesInCluster[shardStatus.ClusterName]
+			if !ok {
+				t = &pb.StoreStatusInCluster{
+					Id:           shardStatus.Id,
+					NodeStatuses: make(map[uint32]*pb.ShardStatus),
+				}
+				storeHeartbeat.StoreResource.StoreStatusesInCluster[shardStatus.ClusterName] = t
+			}
+			t.NodeStatuses[shardStatus.Id] = shardStatus
 			if err := stream.Send(storeHeartbeat); err != nil {
-				log.Printf("send node status: %v", storeHeartbeat, err)
+				log.Printf("send shard status: %v", storeHeartbeat, err)
 				return
 			}
 		case <-finishChan:
@@ -87,7 +95,7 @@ func (ss *storeServer) registerAtMasterServer() error {
 		}
 		if err != nil {
 			finishChan <- true
-			return fmt.Errorf("receive topology : %v", err)
+			return fmt.Errorf("store receive topology : %v", err)
 		}
 		ss.processStoreMessage(msg)
 	}

@@ -7,8 +7,6 @@ import (
 	"github.com/chrislusf/vasto/topology/cluster_listener"
 	"log"
 	"os"
-	"os/user"
-	"strings"
 )
 
 type node struct {
@@ -33,13 +31,6 @@ func newNodes(option *StoreOption, clusterListener *cluster_listener.ClusterList
 			break
 		}
 		dir := fmt.Sprintf("%s/%d", *option.Dir, id)
-		if strings.HasPrefix(dir, "~") {
-			usr, err := user.Current()
-			if err != nil {
-				log.Fatal(err)
-			}
-			dir = usr.HomeDir + dir[1:]
-		}
 		err := os.MkdirAll(dir, 0755)
 		if err != nil {
 			return nil, fmt.Errorf("mkdir %s: %v", dir, err)

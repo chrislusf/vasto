@@ -68,7 +68,7 @@ message ClientMessage {
     Cluster cluster = 1;
 
     message StoreResourceUpdate {
-        repeated StoreResource stores = 1;
+        repeated ClusterNode nodes = 1;
         bool is_delete = 2;
     }
     StoreResourceUpdate updates = 2;
@@ -81,19 +81,40 @@ message ClientMessage {
 
 }
 
-message Topology {
-    map<string, Cluster> data_center_clusters = 1;
-}
-
 message Cluster {
-    string data_center = 1;
-    repeated StoreResource stores = 2;
-    uint32 expected_cluster_size = 3;
-    uint32 current_cluster_size = 4;
-    uint32 next_cluster_size = 5;
+    string keyspace = 1;
+    string data_center = 2;
+    repeated ClusterNode nodes = 3;
+    uint32 expected_cluster_size = 4;
+    uint32 current_cluster_size = 5;
+    uint32 next_cluster_size = 6;
 }
 
-message NodeStatus {
+message ClusterNode {
+    uint32 shardId = 1;
+    string network = 2;
+    string address = 3;
+    string admin_address = 4;
+}
+
+message StoreResource {
+    string data_center = 1;
+    string network = 2;
+    string address = 3;
+    string admin_address = 4;
+    map<string, StoreStatusInCluster> store_statuses_in_cluster = 5;
+}
+
+message StoreStatusInCluster {
+    uint32 id = 1;
+    map<uint32, ShardStatus> node_statuses = 2;
+    // duplicated info, need to validate on master when reconvene
+    uint32 cluster_size = 3;
+    // duplicated info, need to validate on master when reconvene
+    uint32 replication_factor = 4;
+}
+
+message ShardStatus {
     uint32 id = 1;
     enum Status {
         EMPTY = 0;
@@ -101,30 +122,17 @@ message NodeStatus {
         READY = 2;
     }
     Status status = 2;
-}
-
-message StoreResource {
-    int32 id = 1;
-    string network = 2;
-    string address = 3;
-    string admin_address = 4;
-    map<uint32, NodeStatus> node_statuses = 5;
-}
-
-message Location {
-    string data_center = 1;
-    string network = 2;
-    string address = 3;
+    string cluster_name = 3;
 }
 
 //////////////////////////////////////////////////
 message StoreHeartbeat {
-    string data_center = 1;
-    StoreResource store = 2;
+    StoreResource store_resource = 1;
 }
 
 message ClientHeartbeat {
-    Location location = 1;
+    string data_center = 1;
+    string keyspace = 2;
 }
 
 message Empty {
@@ -274,7 +282,8 @@ message ListResponse {
 }
 message ResizeRequest {
     string data_center = 1;
-    uint32 cluster_size = 2;
+    string keyspace = 2;
+    uint32 cluster_size = 3;
 }
 message ResizeProgress {
     string error = 1;

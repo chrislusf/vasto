@@ -32,23 +32,29 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 		return fmt.Errorf("failed to get peer address")
 	}
 
+	clusterRing, found := ms.topo.keyspaces.getOrCreateKeyspace(clientHeartbeat.Keyspace).getCluster(
+		clientHeartbeat.Keyspace,
+		clientHeartbeat.DataCenter,
+	)
+
+	if !found {
+		return fmt.Errorf("keyspace %s in datacenter %s not found",
+			clientHeartbeat.Keyspace, clientHeartbeat.DataCenter)
+	}
+
 	log.Printf("client connected %v\n", pr.Addr.String())
 
-	ch, err := ms.clientChans.addClient(clientHeartbeat.Location.DataCenter, pr.Addr.String())
+	ch, err := ms.clientChans.addClient(clientHeartbeat.Keyspace, clientHeartbeat.DataCenter, pr.Addr.String())
 	if err != nil {
 		return err
 	}
 
-	ms.Lock()
-	clusterRing, ok := ms.clusters[clientHeartbeat.Location.DataCenter]
-	ms.Unlock()
-	if ok {
-		ms.clientChans.sendClientCluster(
-			clientHeartbeat.Location.DataCenter,
-			pr.Addr.String(),
-			clusterRing,
-		)
-	}
+	ms.clientChans.sendClientCluster(
+		clientHeartbeat.Keyspace,
+		clientHeartbeat.DataCenter,
+		pr.Addr.String(),
+		clusterRing,
+	)
 
 	clientDisconnectedChan := make(chan bool, 1)
 
@@ -60,7 +66,7 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 				break
 			}
 		}
-		ms.clientChans.removeClient(clientHeartbeat.Location.DataCenter, pr.Addr.String())
+		ms.clientChans.removeClient(clientHeartbeat.Keyspace, clientHeartbeat.DataCenter, pr.Addr.String())
 		log.Printf("client disconnected %v: %v", pr.Addr.String(), e)
 		clientDisconnectedChan <- true
 	}()

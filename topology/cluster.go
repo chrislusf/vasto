@@ -46,6 +46,7 @@ func NewNode(id int, network, address, adminAddress string) Node {
 // --------------------
 
 type ClusterRing struct {
+	keyspace            string
 	dataCenter          string
 	nodes               []Node
 	expectedClusterSize int
@@ -119,10 +120,6 @@ func (h *ClusterRing) GetNode(index int, options ...AccessOption) (Node, int, bo
 	return h.nodes[index], replica, true
 }
 
-func (h *ClusterRing) GetDataCenter() string {
-	return h.dataCenter
-}
-
 func (h *ClusterRing) MissingAndFreeNodeIds() (missingList, freeList []int) {
 	max := len(h.nodes)
 	currentClusterSize := h.CurrentSize()
@@ -148,8 +145,9 @@ func (h *ClusterRing) MissingAndFreeNodeIds() (missingList, freeList []int) {
 }
 
 // NewHashRing creates a new hash ring.
-func NewHashRing(dataCenter string) ClusterRing {
+func NewHashRing(keyspace, dataCenter string) ClusterRing {
 	return ClusterRing{
+		keyspace:   keyspace,
 		dataCenter: dataCenter,
 		nodes:      make([]Node, 0, 16),
 	}

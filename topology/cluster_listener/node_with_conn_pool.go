@@ -61,18 +61,18 @@ func (n *NodeWithConnPool) GetConnection() (net.Conn, error) {
 	return n.p.Get()
 }
 
-func (c *ClusterListener) AddNode(store *pb.StoreResource) {
-	node := newNodeWithConnPool(int(store.Id), store.Network, store.Address, store.AdminAddress)
+func (c *ClusterListener) AddNode(n *pb.ClusterNode) {
+	node := newNodeWithConnPool(int(n.ShardId), n.Network, n.Address, n.AdminAddress)
 	c.Add(node)
 	log.Printf("+node %d: %s:%s, cluster: %s", node.GetId(), node.GetNetwork(), node.GetAddress(), c)
 }
 
-func (c *ClusterListener) RemoveNode(store *pb.StoreResource) {
-	n := c.Remove(int(store.Id))
+func (c *ClusterListener) RemoveNode(n *pb.ClusterNode) {
+	node := c.Remove(int(n.ShardId))
 	if n != nil {
-		if t, ok := n.(*NodeWithConnPool); ok {
+		if t, ok := node.(*NodeWithConnPool); ok {
 			t.p.Close()
 		}
 	}
-	log.Printf("-node %d: %s, cluster: %s", store.GetId(), store.Address, c)
+	log.Printf("-node %d: %s, cluster: %s", node.GetId(), node.GetAddress(), c)
 }

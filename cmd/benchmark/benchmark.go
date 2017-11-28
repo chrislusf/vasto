@@ -16,6 +16,7 @@ type BenchmarkOption struct {
 	// dynamic cluster mode options
 	Master     *string
 	DataCenter *string
+	Keyspace   *string
 	// detail options
 	ClientCount  *int32
 	RequestCount *int32
@@ -78,6 +79,7 @@ func (b *benchmarker) startThreadsWithClient(name string, fn func(hist *Histogra
 			FixedCluster: b.option.FixedCluster,
 			Master:       b.option.Master,
 			DataCenter:   b.option.DataCenter,
+			Keyspace:     b.option.Keyspace,
 		})
 		c.Start()
 		fn(hist, c)

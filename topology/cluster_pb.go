@@ -4,9 +4,9 @@ import (
 	"github.com/chrislusf/vasto/pb"
 )
 
-func NewNodeFromStore(store *pb.StoreResource) Node {
+func NewNodeFromStore(store *pb.StoreResource, shardId uint32) Node {
 	return NewNode(
-		int(store.Id),
+		int(shardId),
 		store.Network,
 		store.Address,
 		store.AdminAddress,
@@ -18,15 +18,16 @@ func (cluster *ClusterRing) ToCluster() *pb.Cluster {
 		return &pb.Cluster{}
 	}
 	return &pb.Cluster{
-		DataCenter:          cluster.GetDataCenter(),
-		Stores:              cluster.ToStores(),
+		Keyspace:            cluster.keyspace,
+		DataCenter:          cluster.dataCenter,
+		Nodes:               cluster.toNodes(),
 		ExpectedClusterSize: uint32(cluster.ExpectedSize()),
 		CurrentClusterSize:  uint32(cluster.CurrentSize()),
 		NextClusterSize:     uint32(cluster.NextSize()),
 	}
 }
 
-func (r *ClusterRing) ToStores() (stores []*pb.StoreResource) {
+func (r *ClusterRing) toNodes() (stores []*pb.ClusterNode) {
 	if r == nil {
 		return
 	}
@@ -43,8 +44,8 @@ func (r *ClusterRing) ToStores() (stores []*pb.StoreResource) {
 		}
 		stores = append(
 			stores,
-			&pb.StoreResource{
-				Id:           int32(i),
+			&pb.ClusterNode{
+				ShardId:      uint32(i),
 				Network:      network,
 				Address:      address,
 				AdminAddress: adminAddress,

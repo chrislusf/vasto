@@ -18,6 +18,7 @@ type GatewayOption struct {
 	// or Master with DataCenter
 	Master     *string
 	DataCenter *string
+	Keyspace   *string
 }
 
 type gatewayServer struct {
@@ -35,6 +36,7 @@ func RunGateway(option *GatewayOption) {
 				FixedCluster: option.FixedCluster,
 				Master:       option.Master,
 				DataCenter:   option.DataCenter,
+				Keyspace:     option.Keyspace,
 			},
 		),
 	}

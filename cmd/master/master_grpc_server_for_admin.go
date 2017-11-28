@@ -22,15 +22,13 @@ func (ms *masterServer) ListStores(ctx context.Context, req *pb.ListRequest) (*p
 
 func (ms *masterServer) ResizeCluster(req *pb.ResizeRequest, stream pb.VastoMaster_ResizeClusterServer) error {
 
-	dc := req.DataCenter
+	keyspace, dc := req.Keyspace, req.DataCenter
 
-	ms.Lock()
-	r, ok := ms.clusters[dc]
-	ms.Unlock()
+	r, found := ms.topo.keyspaces.getOrCreateKeyspace(keyspace).getCluster(keyspace, dc)
 
 	resp := &pb.ResizeProgress{}
 
-	if !ok {
+	if !found {
 		resp.Error = fmt.Sprintf("cluster %s not found", dc)
 		if err := stream.Send(resp); err != nil {
 			return err
@@ -78,9 +76,9 @@ func (ms *masterServer) ResizeCluster(req *pb.ResizeRequest, stream pb.VastoMast
 	}
 
 	r.SetNextSize(int(req.GetClusterSize()))
-	ms.clientChans.notifyClusterSize(dc, uint32(r.CurrentSize()), uint32(r.NextSize()))
+	ms.clientChans.notifyClusterSize(keyspace, dc, uint32(r.CurrentSize()), uint32(r.NextSize()))
 
-	ms.clientChans.notifyClusterSize(dc, uint32(r.NextSize()), 0)
+	ms.clientChans.notifyClusterSize(keyspace, dc, uint32(r.NextSize()), 0)
 	r.SetExpectedSize(r.NextSize())
 	r.SetNextSize(0)
 

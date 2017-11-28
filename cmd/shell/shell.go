@@ -10,6 +10,7 @@ type ShellOption struct {
 	// dynamic cluster mode options
 	Master     *string
 	DataCenter *string
+	Keyspace   *string
 }
 
 type shell struct {
@@ -26,6 +27,7 @@ func RunShell(option *ShellOption) {
 				FixedCluster: option.FixedCluster,
 				Master:       option.Master,
 				DataCenter:   option.DataCenter,
+				Keyspace:     option.Keyspace,
 			},
 		),
 	}

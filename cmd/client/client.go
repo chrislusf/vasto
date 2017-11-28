@@ -8,6 +8,7 @@ type ClientOption struct {
 	FixedCluster *string
 	Master       *string
 	DataCenter   *string
+	Keyspace     *string
 }
 
 type VastoClient struct {
@@ -18,7 +19,7 @@ type VastoClient struct {
 func New(option *ClientOption) *VastoClient {
 	c := &VastoClient{
 		option:          option,
-		ClusterListener: cluster_listener.NewClusterClient(*option.DataCenter),
+		ClusterListener: cluster_listener.NewClusterClient(*option.Keyspace, *option.DataCenter),
 	}
 	return c
 }
@@ -34,6 +35,6 @@ func (c *VastoClient) Start() {
 		return
 	}
 
-	c.ClusterListener.Start(*c.option.Master, *c.option.DataCenter)
+	c.ClusterListener.Start(*c.option.Master, *c.option.Keyspace, *c.option.DataCenter)
 
 }

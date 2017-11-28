@@ -26,7 +26,7 @@ type LogManager struct {
 }
 
 const (
-	LogFilePrefix = "log-"
+	LogFilePrefix = "binlog-"
 	LogFileSuffix = ".dat"
 )
 

@@ -54,8 +54,8 @@ func (c *CommandList) Do(args []string, out io.Writer) error {
 		fmt.Fprintf(out, "Cluster is changing to: %d\n", cluster.NextClusterSize)
 	}
 
-	for _, store := range cluster.Stores {
-		fmt.Fprintf(out, "%4d: %32v\n", store.Id, store.Address)
+	for _, node := range cluster.Nodes {
+		fmt.Fprintf(out, "%4d: %32v\n", node.GetShardId(), node.GetAddress())
 	}
 
 	return nil

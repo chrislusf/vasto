@@ -14,9 +14,9 @@ type ClusterListener struct {
 	topology.ClusterRing
 }
 
-func NewClusterClient(dataCenter string) *ClusterListener {
+func NewClusterClient(keyspace, dataCenter string) *ClusterListener {
 	return &ClusterListener{
-		ClusterRing: topology.NewHashRing(dataCenter),
+		ClusterRing: topology.NewHashRing(keyspace, dataCenter),
 	}
 }
 
@@ -25,15 +25,15 @@ func NewClusterClient(dataCenter string) *ClusterListener {
 // The network is either tcp or socket
 func (l *ClusterListener) SetNodes(fixedCluster string) {
 	servers := strings.Split(fixedCluster, ",")
-	var nodes []*pb.StoreResource
+	var nodes []*pb.ClusterNode
 	for id, networkHostPort := range servers {
 		parts := strings.SplitN(networkHostPort, ":", 2)
-		store := &pb.StoreResource{
-			Id:      int32(id),
+		node := &pb.ClusterNode{
+			ShardId: uint32(id),
 			Network: parts[0],
 			Address: parts[1],
 		}
-		nodes = append(nodes, store)
+		nodes = append(nodes, node)
 	}
 	l.SetExpectedSize(len(nodes))
 	for _, node := range nodes {
@@ -43,7 +43,7 @@ func (l *ClusterListener) SetNodes(fixedCluster string) {
 
 // if master is not empty, return when client is connected to the master and
 // fetched the initial cluster information.
-func (l *ClusterListener) Start(master, dataCenter string) {
+func (l *ClusterListener) Start(master, keyspace, dataCenter string) {
 
 	if master == "" {
 		return
@@ -55,7 +55,7 @@ func (l *ClusterListener) Start(master, dataCenter string) {
 	clientMessageChan := make(chan *pb.ClientMessage)
 
 	go util.RetryForever(func() error {
-		return l.registerClientAtMasterServer(master, dataCenter, clientMessageChan)
+		return l.registerClientAtMasterServer(master, keyspace, dataCenter, clientMessageChan)
 	}, 2*time.Second)
 
 	go func() {
@@ -65,7 +65,7 @@ func (l *ClusterListener) Start(master, dataCenter string) {
 				if msg.GetCluster() != nil {
 					l.SetExpectedSize(int(msg.Cluster.ExpectedClusterSize))
 					l.SetNextSize(int(msg.Cluster.NextClusterSize))
-					for _, store := range msg.Cluster.Stores {
+					for _, store := range msg.Cluster.Nodes {
 						l.AddNode(store)
 					}
 					if !clientConnected {
@@ -73,7 +73,7 @@ func (l *ClusterListener) Start(master, dataCenter string) {
 						clientConnectedChan <- true
 					}
 				} else if msg.GetUpdates() != nil {
-					for _, store := range msg.Updates.Stores {
+					for _, store := range msg.Updates.Nodes {
 						if msg.Updates.GetIsDelete() {
 							l.RemoveNode(store)
 						} else {

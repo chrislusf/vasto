@@ -20,8 +20,8 @@ func newClientChannels() *clientChannels {
 	}
 }
 
-func (cc *clientChannels) addClient(dataCenter, server string) (chan *pb.ClientMessage, error) {
-	key := fmt.Sprintf("%s:%s", dataCenter, server)
+func (cc *clientChannels) addClient(keyspace, dataCenter, server string) (chan *pb.ClientMessage, error) {
+	key := fmt.Sprintf("%s:%s:%s", keyspace, dataCenter, server)
 	cc.Lock()
 	defer cc.Unlock()
 	if _, ok := cc.clientChans[key]; ok {
@@ -32,8 +32,8 @@ func (cc *clientChannels) addClient(dataCenter, server string) (chan *pb.ClientM
 	return ch, nil
 }
 
-func (cc *clientChannels) removeClient(dataCenter, server string) error {
-	key := fmt.Sprintf("%s:%s", dataCenter, server)
+func (cc *clientChannels) removeClient(keyspace, dataCenter, server string) error {
+	key := fmt.Sprintf("%s:%s:%s", keyspace, dataCenter, server)
 	cc.Lock()
 	defer cc.Unlock()
 	if ch, ok := cc.clientChans[key]; !ok {
@@ -45,8 +45,8 @@ func (cc *clientChannels) removeClient(dataCenter, server string) error {
 	return nil
 }
 
-func (cc *clientChannels) sendClient(dataCenter string, server string, msg *pb.ClientMessage) error {
-	key := fmt.Sprintf("%s:%s", dataCenter, server)
+func (cc *clientChannels) sendClient(keyspace, dataCenter string, server string, msg *pb.ClientMessage) error {
+	key := fmt.Sprintf("%s:%s:%s", keyspace, dataCenter, server)
 	cc.Lock()
 	defer cc.Unlock()
 	ch, ok := cc.clientChans[key]
@@ -57,8 +57,8 @@ func (cc *clientChannels) sendClient(dataCenter string, server string, msg *pb.C
 	return nil
 }
 
-func (cc *clientChannels) notifyClients(dataCenter string, msg *pb.ClientMessage) error {
-	prefix := dataCenter + ":"
+func (cc *clientChannels) notifyClients(keyspace, dataCenter string, msg *pb.ClientMessage) error {
+	prefix := keyspace + ":" + dataCenter + ":"
 	cc.Lock()
 	for key, ch := range cc.clientChans {
 		if strings.HasPrefix(key, prefix) {
@@ -69,20 +69,22 @@ func (cc *clientChannels) notifyClients(dataCenter string, msg *pb.ClientMessage
 	return nil
 }
 
-func (cc *clientChannels) notifyStoreResourceUpdate(dataCenter string, stores []*pb.StoreResource, isDelete bool) error {
+func (cc *clientChannels) notifyStoreResourceUpdate(keyspace, dataCenter string, nodes []*pb.ClusterNode, isDelete bool) error {
 	return cc.notifyClients(
+		keyspace,
 		dataCenter,
 		&pb.ClientMessage{
 			Updates: &pb.ClientMessage_StoreResourceUpdate{
-				Stores:   stores,
+				Nodes:    nodes,
 				IsDelete: isDelete,
 			},
 		},
 	)
 }
 
-func (cc *clientChannels) sendClientCluster(dataCenter, server string, cluster *topology.ClusterRing) error {
+func (cc *clientChannels) sendClientCluster(keyspace, dataCenter, server string, cluster *topology.ClusterRing) error {
 	return cc.sendClient(
+		keyspace,
 		dataCenter,
 		server,
 		&pb.ClientMessage{
@@ -91,8 +93,9 @@ func (cc *clientChannels) sendClientCluster(dataCenter, server string, cluster *
 	)
 }
 
-func (cc *clientChannels) notifyClusterSize(dataCenter string, currentClusterSize, nextClusterSize uint32) error {
+func (cc *clientChannels) notifyClusterSize(keyspace, dataCenter string, currentClusterSize, nextClusterSize uint32) error {
 	return cc.notifyClients(
+		keyspace,
 		dataCenter,
 		&pb.ClientMessage{
 			Resize: &pb.ClientMessage_Resize{

@@ -22,6 +22,7 @@ type StoreOption struct {
 	Master            *string
 	FixedCluster      *string
 	DataCenter        *string
+	Keyspace          *string
 	LogFileSizeMb     *int
 	LogFileCount      *int
 	ReplicationFactor *int
@@ -31,24 +32,30 @@ type storeServer struct {
 	option          *StoreOption
 	nodes           []*node
 	clusterListener *cluster_listener.ClusterListener
-	nodeStatusChan  chan *pb.NodeStatus
+	shardStatusChan chan *pb.ShardStatus
+	statusInCluster map[string]*pb.StoreStatusInCluster
 }
 
 func RunStore(option *StoreOption) {
 
-	clusterListener := cluster_listener.NewClusterClient(*option.DataCenter)
+	clusterListener := cluster_listener.NewClusterClient(*option.Keyspace, *option.DataCenter)
 
 	var ss = &storeServer{
 		option:          option,
 		clusterListener: clusterListener,
-		nodeStatusChan:  make(chan *pb.NodeStatus),
+		shardStatusChan: make(chan *pb.ShardStatus),
+		statusInCluster: make(map[string]*pb.StoreStatusInCluster),
+	}
+
+	if err := ss.loadExistingClusters(); err != nil {
+		log.Fatalf("load existing cluster files: %v", err)
 	}
 
 	if *option.FixedCluster != "" {
 		clusterListener.SetNodes(*ss.option.FixedCluster)
 	} else if *option.Master != "" {
 		go ss.keepConnectedToMasterServer()
-		clusterListener.Start(*ss.option.Master, *ss.option.DataCenter)
+		clusterListener.Start(*ss.option.Master, *ss.option.Keyspace, *ss.option.DataCenter)
 	}
 
 	nodes, err := newNodes(option, clusterListener)

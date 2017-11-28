@@ -23,14 +23,15 @@ type masterServer struct {
 	clusters    map[string]*topology.ClusterRing
 	sync.Mutex
 	defaultClusterSize int
+	topo               *masterTopology
 }
 
 func RunMaster(option *MasterOption) {
 	var ms = &masterServer{
 		option:             option,
 		clientChans:        newClientChannels(),
-		clusters:           make(map[string]*topology.ClusterRing),
 		defaultClusterSize: int(*option.ClusterSize),
+		topo:               newMasterTopology(),
 	}
 
 	listener, err := net.Listen("tcp", *option.Address)
