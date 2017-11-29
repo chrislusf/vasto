@@ -39,7 +39,6 @@ type storeServer struct {
 func RunStore(option *StoreOption) {
 
 	clusterListener := cluster_listener.NewClusterClient(*option.DataCenter)
-	clusterListener.ListenFor(*option.Keyspace)
 
 	var ss = &storeServer{
 		option:          option,
@@ -56,7 +55,8 @@ func RunStore(option *StoreOption) {
 		clusterListener.SetNodes(*option.Keyspace, *ss.option.FixedCluster)
 	} else if *option.Master != "" {
 		go ss.keepConnectedToMasterServer()
-		clusterListener.StartListener(*ss.option.Master, *ss.option.Keyspace, *ss.option.DataCenter)
+		clusterListener.AddExistingKeyspace(*ss.option.Keyspace)
+		clusterListener.StartListener(*ss.option.Master, *ss.option.DataCenter)
 	}
 
 	nodes, err := newNodes(option, clusterListener)

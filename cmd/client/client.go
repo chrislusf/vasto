@@ -21,7 +21,6 @@ func NewClient(option *ClientOption) *VastoClient {
 		Option:          option,
 		ClusterListener: cluster_listener.NewClusterClient(*option.DataCenter),
 	}
-	c.ClusterListener.ListenFor(*option.Keyspace)
 	return c
 }
 
@@ -36,6 +35,6 @@ func (c *VastoClient) StartClient() {
 		return
 	}
 
-	c.ClusterListener.StartListener(*c.Option.Master, *c.Option.Keyspace, *c.Option.DataCenter)
-
+	c.ClusterListener.AddExistingKeyspace(*c.Option.Keyspace)
+	c.ClusterListener.StartListener(*c.Option.Master, *c.Option.DataCenter)
 }

@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func (c *ClusterListener) registerClientAtMasterServer(master string, keyspace, dataCenter string,
+func (c *ClusterListener) registerClientAtMasterServer(master string, dataCenter string,
 	msgChan chan *pb.ClientMessage) error {
 	grpcConnection, err := grpc.Dial(master, grpc.WithInsecure())
 	if err != nil {
@@ -25,16 +25,27 @@ func (c *ClusterListener) registerClientAtMasterServer(master string, keyspace, 
 		return fmt.Errorf("register client on master %v: %v", master, err)
 	}
 
-	clientHeartbeat := &pb.ClientHeartbeat{
-		Keyspace:   keyspace,
-		DataCenter: dataCenter,
-	}
+	go func() {
+		for keyspace, _ := range c.clusters {
+			log.Printf("register existing cluster keyspace(%v) datacenter(%v)", keyspace, dataCenter)
+			if err := registerForClusterAtMaster(stream, string(keyspace), dataCenter); err != nil {
+				log.Printf("register existing cluster keyspace(%v) datacenter(%v): %v", keyspace, dataCenter, err)
+				return
+			}
+		}
+
+		for {
+			keyspace := <-c.keyspaceChan
+			log.Printf("register cluster new keyspace(%v) datacenter(%v)", keyspace, dataCenter)
+			if err := registerForClusterAtMaster(stream, keyspace, dataCenter); err != nil {
+				log.Printf("register cluster new keyspace(%v) datacenter(%v): %v", keyspace, dataCenter, err)
+				return
+			}
+		}
+
+	}()
 
 	// log.Printf("Reporting allocated %v", as.allocatedResource)
-
-	if err := stream.Send(clientHeartbeat); err != nil {
-		return fmt.Errorf("client send heartbeat: %v", err)
-	}
 
 	log.Printf("register client to master %s", master)
 
@@ -51,4 +62,16 @@ func (c *ClusterListener) registerClientAtMasterServer(master string, keyspace, 
 		// log.Printf("client received message %v", msg)
 	}
 
+}
+
+func registerForClusterAtMaster(stream pb.VastoMaster_RegisterClientClient, keyspace, dataCenter string) error {
+	clientHeartbeat := &pb.ClientHeartbeat{
+		Keyspace:   keyspace,
+		DataCenter: dataCenter,
+	}
+
+	if err := stream.Send(clientHeartbeat); err != nil {
+		return fmt.Errorf("client send heartbeat: %v", err)
+	}
+	return nil
 }

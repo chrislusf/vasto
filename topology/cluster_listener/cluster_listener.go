@@ -14,21 +14,32 @@ import (
 type keyspace_name string
 type ClusterListener struct {
 	sync.RWMutex
-	clusters   map[keyspace_name]*topology.ClusterRing
-	dataCenter string
+	clusters     map[keyspace_name]*topology.ClusterRing
+	keyspaceChan chan string
+	dataCenter   string
 }
 
 func NewClusterClient(dataCenter string) *ClusterListener {
 	return &ClusterListener{
-		clusters:   make(map[keyspace_name]*topology.ClusterRing),
-		dataCenter: dataCenter,
+		clusters:     make(map[keyspace_name]*topology.ClusterRing),
+		keyspaceChan: make(chan string, 1),
+		dataCenter:   dataCenter,
 	}
 }
 
-func (l *ClusterListener) ListenFor(keyspace string) {
+func (l *ClusterListener) AddExistingKeyspace(keyspace string) {
 	l.Lock()
 	l.clusters[keyspace_name(keyspace)] = topology.NewHashRing(keyspace, l.dataCenter)
 	l.Unlock()
+}
+
+// AddNewKeyspace register to listen to one keyspace
+func (l *ClusterListener) AddNewKeyspace(keyspace string) {
+	l.Lock()
+	l.clusters[keyspace_name(keyspace)] = topology.NewHashRing(keyspace, l.dataCenter)
+	l.Unlock()
+	println("listen for keyspace", keyspace)
+	l.keyspaceChan <- keyspace
 }
 
 func (l *ClusterListener) GetClusterRing(keyspace string) *topology.ClusterRing {
@@ -62,7 +73,7 @@ func (l *ClusterListener) SetNodes(keyspace string, fixedCluster string) {
 
 // if master is not empty, return when client is connected to the master and
 // fetched the initial cluster information.
-func (l *ClusterListener) StartListener(master, keyspace, dataCenter string) {
+func (l *ClusterListener) StartListener(master, dataCenter string) {
 
 	if master == "" {
 		return
@@ -74,7 +85,7 @@ func (l *ClusterListener) StartListener(master, keyspace, dataCenter string) {
 	clientMessageChan := make(chan *pb.ClientMessage)
 
 	go util.RetryForever(func() error {
-		return l.registerClientAtMasterServer(master, keyspace, dataCenter, clientMessageChan)
+		return l.registerClientAtMasterServer(master, dataCenter, clientMessageChan)
 	}, 2*time.Second)
 
 	go func() {

@@ -34,6 +34,8 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 			t := strings.Split(k_dc, ",")
 			keyspace, dc := t[0], t[1]
 			ms.clientChans.removeClient(keyspace, dc, pr.Addr.String())
+			log.Printf("client %v disconnect from cluster keyspace(%v) datacenter(%v)\n",
+				pr.Addr.String(), keyspace, dc)
 		}
 		log.Printf("client disconnected %v", pr.Addr.String())
 	}()
@@ -53,15 +55,14 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 
 		dc := clientHeartbeat.DataCenter
 		keyspace := clientHeartbeat.Keyspace
-		if keyspace == "" {
-			continue
-		}
 		clientWatchedKeyspaceAndDataCenters[keyspace+","+dc] = true
 
 		clusterRing, _ := ms.topo.keyspaces.getOrCreateKeyspace(keyspace).doGetOrCreateCluster(dc)
 
 		if ch, err := ms.clientChans.addClient(keyspace, dc, pr.Addr.String()); err == nil {
 			// this is not added yet, start a goroutine that sends to the stream, until client disconnects
+			log.Printf("client %v connect to cluster keyspace(%v) datacenter(%v)\n",
+				pr.Addr.String(), keyspace, dc)
 			go func() {
 				ms.clientChans.sendClientCluster(
 					keyspace,
