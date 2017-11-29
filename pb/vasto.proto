@@ -18,6 +18,9 @@ service VastoMaster {
     rpc Describe (DescribeRequest) returns (DescribeResponse) {
     }
 
+    rpc CreateCluster (CreateClusterRequest) returns (CreateClusterResponse) {
+    }
+
     rpc ResizeCluster (ResizeRequest) returns (stream ResizeProgress) {
     }
 
@@ -322,6 +325,19 @@ message DescribeResponse {
 
     uint32 client_count = 4;
 }
+
+message CreateClusterRequest {
+    string data_center = 1;
+    string keyspace = 2;
+    uint32 cluster_size = 3;
+    uint32 replication_factor = 4;
+}
+
+message CreateClusterResponse {
+    string error = 1;
+    Cluster cluster = 2;
+}
+
 message ResizeRequest {
     string data_center = 1;
     string keyspace = 2;

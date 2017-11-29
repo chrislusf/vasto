@@ -100,20 +100,23 @@ func (c *CommandDesc) Do(args []string, out io.Writer) error {
 		}
 
 		fmt.Fprintf(out, "Cluster Client Count : %d\n", descResponse.ClientCount)
-		cluster := descResponse.DescCluster.GetCluster()
-		if cluster != nil {
-			fmt.Fprintf(out, "Cluster Expected Size: %d\n", cluster.ExpectedClusterSize)
-			fmt.Fprintf(out, "Cluster Current  Size: %d\n", cluster.CurrentClusterSize)
-			if cluster.NextClusterSize != 0 {
-				fmt.Fprintf(out, "Cluster is changing to: %d\n", cluster.NextClusterSize)
-			}
-
-			for _, node := range cluster.Nodes {
-				fmt.Fprintf(out, "%4d: %32v\n", node.GetShardId(), node.GetAddress())
-			}
-		}
+		printCluster(out, descResponse.DescCluster.GetCluster())
 
 	}
 
 	return nil
+}
+
+func printCluster(out io.Writer, cluster *pb.Cluster) {
+	if cluster != nil {
+		fmt.Fprintf(out, "Cluster Expected Size: %d\n", cluster.ExpectedClusterSize)
+		fmt.Fprintf(out, "Cluster Current  Size: %d\n", cluster.CurrentClusterSize)
+		if cluster.NextClusterSize != 0 {
+			fmt.Fprintf(out, "Cluster is changing to: %d\n", cluster.NextClusterSize)
+		}
+
+		for _, node := range cluster.Nodes {
+			fmt.Fprintf(out, "%4d: %32v\n", node.GetShardId(), node.GetAddress())
+		}
+	}
 }

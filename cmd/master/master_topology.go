@@ -134,6 +134,13 @@ func (dcs *dataCenters) getOrCreateDataCenter(dataCenterName string) *dataCenter
 	return dc
 }
 
+func (dcs *dataCenters) getDataCenter(dataCenterName string) (dc *dataCenter, found bool) {
+	dcs.RLock()
+	dc, found = dcs.dataCenters[data_center_name(dataCenterName)]
+	dcs.RUnlock()
+	return
+}
+
 func (dc *dataCenter) upsertServer(storeResource *pb.StoreResource) (existing *pb.StoreResource, hasData bool) {
 	dc.RLock()
 	existing, hasData = dc.servers[storeResource.Address]
