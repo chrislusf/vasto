@@ -297,8 +297,30 @@ message DescribeRequest {
 
 }
 message DescribeResponse {
-    Cluster cluster = 1;
-    uint32 client_count = 2;
+    message DescDataCenters {
+        message DataCenter {
+            string data_center = 1;
+            repeated StoreResource store_resources = 2;
+        }
+        repeated DataCenter data_centers = 1;
+    }
+    DescDataCenters desc_data_centers = 1;
+
+    message DescKeyspaces {
+        message Keyspace {
+            string keyspace = 1;
+            repeated Cluster clusters = 2;
+        }
+        repeated Keyspace keyspaces = 1;
+    }
+    DescKeyspaces desc_keyspaces = 2;
+
+    message DescCluster {
+        Cluster cluster = 1;
+    }
+    DescCluster desc_cluster = 3;
+
+    uint32 client_count = 4;
 }
 message ResizeRequest {
     string data_center = 1;
