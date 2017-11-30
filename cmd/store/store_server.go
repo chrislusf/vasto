@@ -26,6 +26,15 @@ type StoreOption struct {
 	LogFileSizeMb     *int
 	LogFileCount      *int
 	ReplicationFactor *int
+	DiskSizeGb        *int
+	Tags              *string
+}
+
+func (o *StoreOption) GetAdminPort() int32 {
+	if *o.AdminPort == 0 {
+		return *o.TcpPort + 10000
+	}
+	return *o.AdminPort
 }
 
 type storeServer struct {
@@ -65,11 +74,8 @@ func RunStore(option *StoreOption) {
 	}
 	ss.nodes = nodes
 
-	if *option.TcpPort != 0 || *option.AdminPort != 0 {
-		if *option.AdminPort == 0 {
-			*option.AdminPort = *option.TcpPort + 10000
-		}
-		grpcAddress := fmt.Sprintf("%s:%d", *option.ListenHost, *option.AdminPort)
+	if *option.TcpPort != 0 {
+		grpcAddress := fmt.Sprintf("%s:%d", *option.ListenHost, option.GetAdminPort())
 		grpcListener, err := net.Listen("tcp", grpcAddress)
 		if err != nil {
 			log.Fatal(err)

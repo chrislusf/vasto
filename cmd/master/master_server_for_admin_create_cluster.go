@@ -10,16 +10,38 @@ func (ms *masterServer) CreateCluster(ctx context.Context, req *pb.CreateCluster
 
 	resp = &pb.CreateClusterResponse{}
 
-	_, found := ms.topo.dataCenters.getDataCenter(req.DataCenter)
+	dc, found := ms.topo.dataCenters.getDataCenter(req.DataCenter)
 	if !found {
 		resp.Error = fmt.Sprintf("no datacenter %v found", req.DataCenter)
 		return
 	}
 
-	_, found = ms.topo.keyspaces.getKeyspace(req.DataCenter)
-	if found {
-		resp.Error = fmt.Sprintf("keyspace %v found", req.DataCenter)
+	servers, err := dc.allocateServers(int(req.ClusterSize), float64(req.TotalDiskSizeGb*req.ReplicationFactor), req.Tags)
+	var nodes []*pb.ClusterNode
+	if err != nil {
+		resp.Error = err.Error()
 		return
+	}
+
+	for i, server := range servers {
+		nodes = append(nodes, &pb.ClusterNode{
+			ShardId:      uint32(i),
+			Network:      server.Network,
+			Address:      server.Address,
+			AdminAddress: server.AdminAddress,
+		})
+	}
+
+	if err = dc.createShards(ctx, req, servers); err != nil {
+		resp.Error = err.Error()
+	}
+
+	resp.Cluster = &pb.Cluster{
+		Keyspace:            req.Keyspace,
+		DataCenter:          req.DataCenter,
+		Nodes:               nodes,
+		ExpectedClusterSize: req.ClusterSize,
+		CurrentClusterSize:  uint32(len(nodes)),
 	}
 
 	return resp, nil

@@ -50,6 +50,10 @@ service VastoStore {
         // client pull data from server
     }
 
+    rpc CreateShard (CreateShardRequest) returns (CreateShardResponse) {
+        // client pull data from server
+    }
+
 }
 
 //////////////////////////////////////////////////
@@ -108,6 +112,9 @@ message StoreResource {
     string address = 3;
     string admin_address = 4;
     map<string, StoreStatusInCluster> store_statuses_in_cluster = 5;
+    repeated string tags = 7;
+    uint32 disk_size_gb = 8;
+    uint32 allocated_size_gb = 9;
 }
 
 message StoreStatusInCluster {
@@ -331,11 +338,25 @@ message CreateClusterRequest {
     string keyspace = 2;
     uint32 cluster_size = 3;
     uint32 replication_factor = 4;
+    uint32 total_disk_size_gb = 5;
+    repeated string tags = 6;
 }
 
 message CreateClusterResponse {
     string error = 1;
     Cluster cluster = 2;
+}
+
+message CreateShardRequest {
+    string keyspace = 1;
+    uint32 shard_id = 2;
+    uint32 cluster_size = 3;
+    uint32 replication_factor = 4;
+    uint32 shard_disk_size_gb = 5;
+}
+
+message CreateShardResponse {
+    string error = 1;
 }
 
 message ResizeRequest {

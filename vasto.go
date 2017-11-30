@@ -59,6 +59,8 @@ var (
 		LogFileSizeMb:     store.Flag("logFileSizeMb", "log file size limit in MB").Default("1024").Int(),
 		LogFileCount:      store.Flag("logFileCount", "log file count limit").Default("3").Int(),
 		ReplicationFactor: store.Flag("replicationFactor", "number of physical copies").Default("3").Int(),
+		DiskSizeGb:        store.Flag("diskSizeGb", "disk size in GB").Default("10").Int(),
+		Tags:              store.Flag("tags", "comma separated tags").Default("").String(),
 	}
 	storeProfile = store.Flag("cpuprofile", "cpu profile output file").Default("").String()
 

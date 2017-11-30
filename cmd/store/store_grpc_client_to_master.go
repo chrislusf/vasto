@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc"
 	"io"
 	"time"
+	"strings"
 )
 
 func (ss *storeServer) keepConnectedToMasterServer() {
@@ -49,13 +50,15 @@ func (ss *storeServer) registerAtMasterServer() error {
 			AdminAddress: fmt.Sprintf(
 				"%s:%d",
 				*ss.option.Host,
-				int32(*ss.option.AdminPort),
+				ss.option.GetAdminPort(),
 			),
 			StoreStatusesInCluster: ss.statusInCluster,
+			DiskSizeGb:             uint32(*ss.option.DiskSizeGb),
+			Tags:                   strings.Split(*ss.option.Tags, ","),
 		},
 	}
 
-	// log.Printf("Reporting allocated %v", as.allocatedResource)
+	// log.Printf("Reporting store %v", storeHeartbeat.StoreResource)
 
 	if err := stream.Send(storeHeartbeat); err != nil {
 		log.Printf("RegisterStore (%+v) = %v", storeHeartbeat, err)

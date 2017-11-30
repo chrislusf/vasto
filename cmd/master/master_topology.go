@@ -22,10 +22,11 @@ shard:
 
 type keyspace_name string
 type data_center_name string
+type server_address string
 
 type dataCenter struct {
 	name    data_center_name
-	servers map[string]*pb.StoreResource
+	servers map[server_address]*pb.StoreResource
 	sync.RWMutex
 }
 
@@ -125,7 +126,7 @@ func (dcs *dataCenters) getOrCreateDataCenter(dataCenterName string) *dataCenter
 	if !hasData {
 		dc = &dataCenter{
 			name:    data_center_name(dataCenterName),
-			servers: make(map[string]*pb.StoreResource),
+			servers: make(map[server_address]*pb.StoreResource),
 		}
 		dcs.Lock()
 		dcs.dataCenters[dc.name] = dc
@@ -143,11 +144,11 @@ func (dcs *dataCenters) getDataCenter(dataCenterName string) (dc *dataCenter, fo
 
 func (dc *dataCenter) upsertServer(storeResource *pb.StoreResource) (existing *pb.StoreResource, hasData bool) {
 	dc.RLock()
-	existing, hasData = dc.servers[storeResource.Address]
+	existing, hasData = dc.servers[server_address(storeResource.Address)]
 	dc.RUnlock()
 	if !hasData {
 		dc.Lock()
-		dc.servers[storeResource.Address] = storeResource
+		dc.servers[server_address(storeResource.Address)] = storeResource
 		dc.Unlock()
 	}
 	return
@@ -166,11 +167,11 @@ func (dcs *dataCenters) deleteServer(dc *dataCenter, storeResource *pb.StoreReso
 
 func (dc *dataCenter) doDeleteServer(storeResource *pb.StoreResource) (existing *pb.StoreResource, hasData bool) {
 	dc.RLock()
-	existing, hasData = dc.servers[storeResource.Address]
+	existing, hasData = dc.servers[server_address(storeResource.Address)]
 	dc.RUnlock()
 	if hasData {
 		dc.Lock()
-		delete(dc.servers, storeResource.Address)
+		delete(dc.servers, server_address(storeResource.Address))
 		dc.Unlock()
 	}
 	return
