@@ -73,14 +73,17 @@ func (l *ClusterListener) SetNodes(keyspace string, fixedCluster string) {
 
 // if master is not empty, return when client is connected to the master and
 // fetched the initial cluster information.
-func (l *ClusterListener) StartListener(master, dataCenter string) {
+func (l *ClusterListener) StartListener(master, dataCenter string, blockUntilConnected bool) {
 
 	if master == "" {
 		return
 	}
 
 	var clientConnected bool
-	clientConnectedChan := make(chan bool, 1)
+	var clientConnectedChan chan bool
+	if blockUntilConnected {
+		clientConnectedChan = make(chan bool, 1)
+	}
 
 	clientMessageChan := make(chan *pb.ClientMessage)
 
@@ -101,7 +104,9 @@ func (l *ClusterListener) StartListener(master, dataCenter string) {
 					}
 					if !clientConnected {
 						clientConnected = true
-						clientConnectedChan <- true
+						if blockUntilConnected {
+							clientConnectedChan <- true
+						}
 					}
 				} else if msg.GetUpdates() != nil {
 					for _, store := range msg.Updates.Nodes {
@@ -127,8 +132,10 @@ func (l *ClusterListener) StartListener(master, dataCenter string) {
 		}
 	}()
 
-	<-clientConnectedChan
-	close(clientConnectedChan)
+	if blockUntilConnected {
+		<-clientConnectedChan
+		close(clientConnectedChan)
+	}
 
 	// println("client is connected to master", master, "data center", dataCenter)
 

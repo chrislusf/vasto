@@ -134,7 +134,7 @@ message ShardStatus {
         READY = 2;
     }
     Status status = 2;
-    string cluster_name = 3;
+    string keyspace_name = 3;
 }
 
 //////////////////////////////////////////////////

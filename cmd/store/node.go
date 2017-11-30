@@ -32,7 +32,7 @@ func newNodes(option *StoreOption, clusterListener *cluster_listener.ClusterList
 		if i != 0 && id == int(*option.Id) {
 			break
 		}
-		dir := fmt.Sprintf("%s/%d", *option.Dir, id)
+		dir := fmt.Sprintf("%s/%s/%d", *option.Dir, *option.Keyspace, id)
 		err := os.MkdirAll(dir, 0755)
 		if err != nil {
 			return nil, fmt.Errorf("mkdir %s: %v", dir, err)

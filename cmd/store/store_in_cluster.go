@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	ClusterConfigFileSuffix = "-cluster.config"
+	ClusterConfigFileSuffix = "cluster.config"
 )
 
 func (ss *storeServer) loadExistingClusters() error {
@@ -24,11 +24,11 @@ func (ss *storeServer) loadExistingClusters() error {
 			continue
 		}
 
-		clusterName := name[0 : len(name)-len(ClusterConfigFileSuffix)]
+		clusterName := name[0: len(name)-len(ClusterConfigFileSuffix)]
 
 		fullPath := fmt.Sprintf("%s/%s", *ss.option.Dir, name)
 
-		log.Printf("load cluster %s from %s", clusterName, fullPath)
+		log.Printf("load cluster %s config from %s", clusterName, fullPath)
 
 		txt, err := ioutil.ReadFile(fullPath)
 		if err != nil {
@@ -48,19 +48,20 @@ func (ss *storeServer) loadExistingClusters() error {
 	return nil
 }
 
-func (ss *storeServer) saveClusterConfig(clusterName string) error {
-
-	status, ok := ss.statusInCluster[clusterName]
-	if !ok {
-		return fmt.Errorf("cluster %s not found", clusterName)
-	}
+func (ss *storeServer) saveClusterConfig(status *pb.StoreStatusInCluster, clusterName string) error {
 
 	txt := proto.MarshalTextString(status)
 
-	fullPath := fmt.Sprintf("%s/%s%s", *ss.option.Dir, clusterName, ClusterConfigFileSuffix)
+	fullPath := fmt.Sprintf("%s/%s/%s", *ss.option.Dir, clusterName, ClusterConfigFileSuffix)
 
 	log.Printf("save cluster %s to %s", clusterName, fullPath)
 
-	return ioutil.WriteFile(fullPath, []byte(txt), 0550)
+	if err := ioutil.WriteFile(fullPath, []byte(txt), 0550); err == nil {
+		ss.statusInCluster[clusterName] = status
+	} else {
+		log.Printf("save cluster %s to %s : %v", clusterName, fullPath, err)
+	}
+
+	return nil
 
 }

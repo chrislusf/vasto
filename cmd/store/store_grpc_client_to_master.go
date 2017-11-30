@@ -71,13 +71,13 @@ func (ss *storeServer) registerAtMasterServer() error {
 		case shardStatus := <-ss.shardStatusChan:
 			// collect current server's different cluster node status
 			log.Println("shard status => ", shardStatus)
-			t, ok := storeHeartbeat.StoreResource.StoreStatusesInCluster[shardStatus.ClusterName]
+			t, ok := storeHeartbeat.StoreResource.StoreStatusesInCluster[shardStatus.KeyspaceName]
 			if !ok {
 				t = &pb.StoreStatusInCluster{
 					Id:           shardStatus.Id,
 					NodeStatuses: make(map[uint32]*pb.ShardStatus),
 				}
-				storeHeartbeat.StoreResource.StoreStatusesInCluster[shardStatus.ClusterName] = t
+				storeHeartbeat.StoreResource.StoreStatusesInCluster[shardStatus.KeyspaceName] = t
 			}
 			t.NodeStatuses[shardStatus.Id] = shardStatus
 			if err := stream.Send(storeHeartbeat); err != nil {

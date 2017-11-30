@@ -64,15 +64,18 @@ func RunStore(option *StoreOption) {
 		clusterListener.SetNodes(*option.Keyspace, *ss.option.FixedCluster)
 	} else if *option.Master != "" {
 		go ss.keepConnectedToMasterServer()
-		clusterListener.AddExistingKeyspace(*ss.option.Keyspace)
-		clusterListener.StartListener(*ss.option.Master, *ss.option.DataCenter)
+		// clusterListener.AddExistingKeyspace(*ss.option.Keyspace)
+		clusterListener.StartListener(*ss.option.Master, *ss.option.DataCenter, false)
 	}
 
+	// TODO register to keyspaces/datacenters on startup
+	/*
 	nodes, err := newNodes(option, clusterListener)
 	if err != nil {
 		log.Fatal(err)
 	}
 	ss.nodes = nodes
+	*/
 
 	if *option.TcpPort != 0 {
 		grpcAddress := fmt.Sprintf("%s:%d", *option.ListenHost, option.GetAdminPort())
