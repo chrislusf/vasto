@@ -106,14 +106,15 @@ func (k *keyspace) doGetOrCreateCluster(dataCenterName string) (
 	return
 }
 
-func (k *keyspace) getOrCreateCluster(storeResource *pb.StoreResource, storeStatusInCluster *pb.StoreStatusInCluster) (
+func (k *keyspace) getOrCreateCluster(storeResource *pb.StoreResource, clusterSize int) (
 	*topology.ClusterRing, error) {
 	cluster, isNew := k.doGetOrCreateCluster(storeResource.DataCenter)
-	if isNew {
-		cluster.SetExpectedSize(int(storeStatusInCluster.ClusterSize))
-	} else if cluster.ExpectedSize() != int(storeStatusInCluster.ClusterSize) {
-		return nil, fmt.Errorf("store %v joined with cluster size %d",
-			storeResource, storeStatusInCluster.ClusterSize)
+	if isNew || cluster.ExpectedSize() == 0 {
+		// isNew may due to client joining
+		cluster.SetExpectedSize(clusterSize)
+	} else if cluster.ExpectedSize() != clusterSize {
+		return nil, fmt.Errorf("store %v joined with cluster %s size %d, expecting %d",
+			storeResource, k.name, clusterSize, cluster.ExpectedSize())
 	}
 
 	return cluster, nil

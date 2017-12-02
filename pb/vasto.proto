@@ -99,11 +99,10 @@ message Cluster {
     uint32 next_cluster_size = 6;
 }
 
+// denormalized
 message ClusterNode {
-    uint32 shardId = 1;
-    string network = 2;
-    string address = 3;
-    string admin_address = 4;
+    StoreResource store_resource = 1;
+    ShardStatus shard_status = 2;
 }
 
 message StoreResource {
@@ -111,15 +110,15 @@ message StoreResource {
     string network = 2;
     string address = 3;
     string admin_address = 4;
-    map<string, StoreStatusInCluster> store_statuses_in_cluster = 5;
     repeated string tags = 7;
     uint32 disk_size_gb = 8;
     uint32 allocated_size_gb = 9;
 }
 
+// StoreStatusInCluster is saved to and load from disk
 message StoreStatusInCluster {
     uint32 id = 1;
-    map<uint32, ShardStatus> node_statuses = 2;
+    map<uint32, ShardStatus> shard_statuses = 2;
     // duplicated info, need to validate on master when reconvene
     uint32 cluster_size = 3;
     // duplicated info, need to validate on master when reconvene
@@ -127,19 +126,26 @@ message StoreStatusInCluster {
 }
 
 message ShardStatus {
-    uint32 id = 1;
+    string keyspace_name = 1;
+    uint32 node_id = 2;
+    uint32 shard_id = 3;
+    uint32 cluster_size = 4;
+    uint32 replication_factor = 5;
     enum Status {
         EMPTY = 0;
         BOOTSTRAP = 1;
         READY = 2;
+        DELETED = 3;
     }
-    Status status = 2;
-    string keyspace_name = 3;
+    Status status = 6;
 }
 
 //////////////////////////////////////////////////
 message StoreHeartbeat {
+    // only in the initial heartbeat
     StoreResource store_resource = 1;
+    // sent to master one at a time, after the initial heartbeat
+    ShardStatus shardStatus = 2;
 }
 
 message ClientHeartbeat {

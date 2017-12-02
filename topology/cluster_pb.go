@@ -27,7 +27,7 @@ func (cluster *ClusterRing) ToCluster() *pb.Cluster {
 	}
 }
 
-func (r *ClusterRing) toNodes() (stores []*pb.ClusterNode) {
+func (r *ClusterRing) toNodes() (nodes []*pb.ClusterNode) {
 	if r == nil {
 		return
 	}
@@ -42,16 +42,22 @@ func (r *ClusterRing) toNodes() (stores []*pb.ClusterNode) {
 			address = node.GetAddress()
 			adminAddress = node.GetAdminAddress()
 		}
-		stores = append(
-			stores,
-			&pb.ClusterNode{
-				ShardId:      uint32(i),
-				Network:      network,
-				Address:      address,
-				AdminAddress: adminAddress,
-			},
-		)
+		for _, shardStatus := range node.GetShardStatuses() {
+			ss := shardStatus
+			nodes = append(
+				nodes,
+				&pb.ClusterNode{
+					StoreResource: &pb.StoreResource{
+						DataCenter:   r.dataCenter,
+						Network:      network,
+						Address:      address,
+						AdminAddress: adminAddress,
+					},
+					ShardStatus: ss,
+				},
+			)
+		}
 	}
 
-	return stores
+	return nodes
 }

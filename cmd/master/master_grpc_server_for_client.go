@@ -25,19 +25,20 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 		log.Println("failed to get peer address")
 		return fmt.Errorf("failed to get peer address")
 	}
-	log.Printf("client connected %v\n", pr.Addr.String())
+
+	serverAddress := server_address(pr.Addr.String())
+	// log.Printf("+ client %v", serverAddress)
 
 	// clean up if disconnects
 	clientWatchedKeyspaceAndDataCenters := make(map[string]bool)
 	defer func() {
 		for k_dc, _ := range clientWatchedKeyspaceAndDataCenters {
 			t := strings.Split(k_dc, ",")
-			keyspace, dc := t[0], t[1]
-			ms.clientChans.removeClient(keyspace, dc, pr.Addr.String())
-			log.Printf("client %v disconnect from cluster keyspace(%v) datacenter(%v)\n",
-				pr.Addr.String(), keyspace, dc)
+			keyspace, dc := keyspace_name(t[0]), data_center_name(t[1])
+			ms.clientChans.removeClient(keyspace, dc, serverAddress)
+			log.Printf("- client %v keyspace(%v) datacenter(%v)", serverAddress, keyspace, dc)
 		}
-		log.Printf("client disconnected %v", pr.Addr.String())
+		// log.Printf("- client %v", serverAddress)
 	}()
 
 	// the channel is used to stop spawned goroutines
@@ -53,23 +54,17 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 			return fmt.Errorf("read from client %v", err)
 		}
 
-		dc := clientHeartbeat.DataCenter
-		keyspace := clientHeartbeat.Keyspace
-		clientWatchedKeyspaceAndDataCenters[keyspace+","+dc] = true
+		dc := data_center_name(clientHeartbeat.DataCenter)
+		keyspace := keyspace_name(clientHeartbeat.Keyspace)
+		clientWatchedKeyspaceAndDataCenters[fmt.Sprintf("%s,%s", keyspace, dc)] = true
 
-		clusterRing, _ := ms.topo.keyspaces.getOrCreateKeyspace(keyspace).doGetOrCreateCluster(dc)
+		clusterRing, _ := ms.topo.keyspaces.getOrCreateKeyspace(string(keyspace)).doGetOrCreateCluster(string(dc))
 
-		if ch, err := ms.clientChans.addClient(keyspace, dc, pr.Addr.String()); err == nil {
+		if ch, err := ms.clientChans.addClient(keyspace, dc, serverAddress); err == nil {
 			// this is not added yet, start a goroutine that sends to the stream, until client disconnects
-			log.Printf("client %v connect to cluster keyspace(%v) datacenter(%v)\n",
-				pr.Addr.String(), keyspace, dc)
+			log.Printf("+ client %v keyspace(%v) datacenter(%v)", serverAddress, keyspace, dc)
 			go func() {
-				ms.clientChans.sendClientCluster(
-					keyspace,
-					dc,
-					pr.Addr.String(),
-					clusterRing,
-				)
+				ms.clientChans.sendClientCluster(keyspace, dc, serverAddress, clusterRing)
 				for {
 					select {
 					case msg := <-ch:

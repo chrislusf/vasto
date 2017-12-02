@@ -42,7 +42,7 @@ type storeServer struct {
 	nodes           []*node
 	clusterListener *cluster_listener.ClusterListener
 	shardStatusChan chan *pb.ShardStatus
-	statusInCluster map[string]*pb.StoreStatusInCluster
+	statusInCluster map[string]*pb.StoreStatusInCluster // saved to disk
 }
 
 func RunStore(option *StoreOption) {
@@ -56,7 +56,7 @@ func RunStore(option *StoreOption) {
 		statusInCluster: make(map[string]*pb.StoreStatusInCluster),
 	}
 
-	if err := ss.loadExistingClusters(); err != nil {
+	if err := ss.listExistingClusters(); err != nil {
 		log.Fatalf("load existing cluster files: %v", err)
 	}
 
@@ -64,18 +64,15 @@ func RunStore(option *StoreOption) {
 		clusterListener.SetNodes(*option.Keyspace, *ss.option.FixedCluster)
 	} else if *option.Master != "" {
 		go ss.keepConnectedToMasterServer()
-		// clusterListener.AddExistingKeyspace(*ss.option.Keyspace)
+		for keyspaceName, _ := range ss.statusInCluster {
+			clusterListener.AddExistingKeyspace(keyspaceName)
+		}
 		clusterListener.StartListener(*ss.option.Master, *ss.option.DataCenter, false)
 	}
 
-	// TODO register to keyspaces/datacenters on startup
-	/*
-	nodes, err := newNodes(option, clusterListener)
-	if err != nil {
-		log.Fatal(err)
+	for keyspaceName, storeStatus := range ss.statusInCluster {
+		ss.startExistingNodes(keyspaceName, storeStatus, clusterListener)
 	}
-	ss.nodes = nodes
-	*/
 
 	if *option.TcpPort != 0 {
 		grpcAddress := fmt.Sprintf("%s:%d", *option.ListenHost, option.GetAdminPort())
@@ -109,6 +106,8 @@ func RunStore(option *StoreOption) {
 		defer os.Remove(*option.UnixSocket)
 		go ss.serveTcp(unixSocketListener)
 	}
+
+	// TODO register to keyspaces/datacenters on startup
 
 	log.Printf("Vasto store starts on %s", *option.Dir)
 

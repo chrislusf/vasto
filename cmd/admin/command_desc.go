@@ -54,7 +54,8 @@ func (c *CommandDesc) Do(args []string, out io.Writer) error {
 				fmt.Fprintf(out, "    cluster %v expected size %d\n",
 					cluster.DataCenter, cluster.ExpectedClusterSize)
 				for _, node := range cluster.Nodes {
-					fmt.Fprintf(out, "        * %v %v\n", node.ShardId, node.Address)
+					fmt.Fprintf(out, "        * node %v shard %v %v\n",
+						node.ShardStatus.NodeId, node.ShardStatus.ShardId, node.StoreResource.Address)
 				}
 			}
 		}
@@ -76,10 +77,8 @@ func (c *CommandDesc) Do(args []string, out io.Writer) error {
 		for _, dataCenter := range dataCenters {
 			fmt.Fprintf(out, "datacenter %v\n", dataCenter.DataCenter)
 			for _, server := range dataCenter.StoreResources {
-				fmt.Fprintf(out, "    server %v\n", server.Address)
-				for keyspace, storeStatus := range server.StoreStatusesInCluster {
-					fmt.Fprintf(out, "        * %v %v\n", keyspace, storeStatus.String())
-				}
+				fmt.Fprintf(out, "    server %v total:%d GB, allocated:%d GB, Tags:%s\n",
+					server.Address, server.DiskSizeGb, server.AllocatedSizeGb, server.Tags)
 			}
 		}
 
@@ -116,7 +115,8 @@ func printCluster(out io.Writer, cluster *pb.Cluster) {
 		}
 
 		for _, node := range cluster.Nodes {
-			fmt.Fprintf(out, "%4d: %32v\n", node.GetShardId(), node.GetAddress())
+			fmt.Fprintf(out, "        * node %v shard %v %v\n",
+				node.ShardStatus.NodeId, node.ShardStatus.ShardId, node.StoreResource.Address)
 		}
 	}
 }

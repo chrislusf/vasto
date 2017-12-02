@@ -8,13 +8,17 @@ import (
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
 	"gopkg.in/fatih/pool.v2"
+	"github.com/chrislusf/vasto/topology"
 )
+
+type shard_id uint32
 
 type NodeWithConnPool struct {
 	id           int
 	network      string
 	address      string
 	adminAddress string
+	shards       map[shard_id]*pb.ShardStatus
 	p            pool.Pool
 }
 
@@ -37,6 +41,7 @@ func newNodeWithConnPool(id int, network, address, adminAddress string) *NodeWit
 		network:      network,
 		address:      address,
 		adminAddress: adminAddress,
+		shards:       make(map[shard_id]*pb.ShardStatus),
 		p:            p,
 	}
 }
@@ -61,20 +66,55 @@ func (n *NodeWithConnPool) GetConnection() (net.Conn, error) {
 	return n.p.Get()
 }
 
+func (n *NodeWithConnPool) SetShardStatus(shardStatus *pb.ShardStatus) (oldShardStatus *pb.ShardStatus) {
+	oldShardStatus = n.shards[shard_id(shardStatus.ShardId)]
+	n.shards[shard_id(shardStatus.ShardId)] = shardStatus
+	return
+}
+
+func (n *NodeWithConnPool) RemoveShardStatus(shardStatus *pb.ShardStatus) {
+	delete(n.shards, shard_id(shardStatus.ShardId))
+}
+
+func (n *NodeWithConnPool) GetShardStatuses() []*pb.ShardStatus {
+	var statuses []*pb.ShardStatus
+	for _, shard := range n.shards {
+		ss := shard
+		statuses = append(statuses, ss)
+	}
+	return statuses
+}
+
 func (c *ClusterListener) AddNode(keyspace string, n *pb.ClusterNode) {
 	r := c.GetClusterRing(keyspace)
-	node := newNodeWithConnPool(int(n.ShardId), n.Network, n.Address, n.AdminAddress)
+	st, ss := n.StoreResource, n.ShardStatus
+	node, _, found := r.GetNode(int(ss.NodeId))
+	if !found {
+		node = topology.Node(newNodeWithConnPool(int(ss.NodeId), st.Network, st.Address, st.AdminAddress))
+	}
+	oldShardStatus := node.SetShardStatus(ss)
 	r.Add(node)
-	log.Printf("+node %d: %s:%s, cluster: %s", node.GetId(), node.GetNetwork(), node.GetAddress(), r)
+	if oldShardStatus == nil {
+		log.Printf("+ node %d shard %d %s cluster %s", node.GetId(), ss.ShardId, node.GetAddress(), r)
+	} else if oldShardStatus.Status != ss.Status {
+		log.Printf("* node %d shard %d %s cluster %s status %s => %s",
+			node.GetId(), ss.ShardId, node.GetAddress(), r, oldShardStatus.Status, ss.Status)
+	}
 }
 
 func (c *ClusterListener) RemoveNode(keyspace string, n *pb.ClusterNode) {
 	r := c.GetClusterRing(keyspace)
-	node := r.Remove(int(n.ShardId))
+	ss := n.ShardStatus
 	if n != nil {
-		if t, ok := node.(*NodeWithConnPool); ok {
-			t.p.Close()
+		node := r.Remove(int(ss.NodeId))
+		if node != nil {
+			node.RemoveShardStatus(ss)
+			if t, ok := node.(*NodeWithConnPool); ok {
+				if len(t.shards) == 0 {
+					t.p.Close()
+				}
+			}
+			log.Printf("- node %d shard %d %s cluster: %s", node.GetId(), ss.ShardId, node.GetAddress(), r)
 		}
 	}
-	log.Printf("-node %d: %s, cluster: %s", node.GetId(), node.GetAddress(), r)
 }

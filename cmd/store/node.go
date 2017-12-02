@@ -7,7 +7,7 @@ import (
 	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/topology/cluster_listener"
 	"log"
-	"os"
+	"github.com/chrislusf/vasto/pb"
 )
 
 type node struct {
@@ -22,29 +22,22 @@ type node struct {
 	nextOffsetKey  []byte
 }
 
-func newNodes(option *StoreOption, clusterListener *cluster_listener.ClusterListener) (nodes []*node, err error) {
-	cluster := clusterListener.GetClusterRing(*option.Keyspace)
-	for i := 0; i < *option.ReplicationFactor; i++ {
-		id := int(*option.Id) - i
-		if id < 0 {
-			id += cluster.ExpectedSize()
-		}
-		if i != 0 && id == int(*option.Id) {
-			break
-		}
-		dir := fmt.Sprintf("%s/%s/%d", *option.Dir, *option.Keyspace, id)
-		err := os.MkdirAll(dir, 0755)
-		if err != nil {
-			return nil, fmt.Errorf("mkdir %s: %v", dir, err)
-		}
-		node := newNode(dir, int(*option.Id), id, cluster,
-			*option.ReplicationFactor, *option.LogFileSizeMb, *option.LogFileCount)
-		nodes = append(nodes, node)
-		if i != 0 {
+func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.StoreStatusInCluster,
+	clusterListener *cluster_listener.ClusterListener) {
+	cluster := clusterListener.GetClusterRing(keyspaceName)
+	for _, shardStatus := range storeStatus.ShardStatuses {
+		dir := fmt.Sprintf("%s/%s/%d", *ss.option.Dir, shardStatus.KeyspaceName, shardStatus.ShardId)
+		node := newNode(dir, int(storeStatus.Id), int(shardStatus.ShardId), cluster,
+			int(storeStatus.ReplicationFactor), *ss.option.LogFileSizeMb, *ss.option.LogFileCount)
+		ss.nodes = append(ss.nodes, node)
+		if shardStatus.NodeId != shardStatus.ShardId {
+			// FIXME only bootstrap and follow if not main? Wrong here!
 			go node.start()
 		}
+		// register the shard at master
+		t := shardStatus
+		ss.shardStatusChan <- t
 	}
-	return nodes, nil
 }
 
 func newNode(dir string, serverId, nodeId int, cluster *topology.ClusterRing,

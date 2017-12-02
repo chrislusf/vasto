@@ -52,9 +52,8 @@ func (ss *storeServer) registerAtMasterServer() error {
 				*ss.option.Host,
 				ss.option.GetAdminPort(),
 			),
-			StoreStatusesInCluster: ss.statusInCluster,
-			DiskSizeGb:             uint32(*ss.option.DiskSizeGb),
-			Tags:                   strings.Split(*ss.option.Tags, ","),
+			DiskSizeGb: uint32(*ss.option.DiskSizeGb),
+			Tags:       strings.Split(*ss.option.Tags, ","),
 		},
 	}
 
@@ -70,16 +69,10 @@ func (ss *storeServer) registerAtMasterServer() error {
 		select {
 		case shardStatus := <-ss.shardStatusChan:
 			// collect current server's different cluster node status
-			log.Println("shard status => ", shardStatus)
-			t, ok := storeHeartbeat.StoreResource.StoreStatusesInCluster[shardStatus.KeyspaceName]
-			if !ok {
-				t = &pb.StoreStatusInCluster{
-					Id:           shardStatus.Id,
-					NodeStatuses: make(map[uint32]*pb.ShardStatus),
-				}
-				storeHeartbeat.StoreResource.StoreStatusesInCluster[shardStatus.KeyspaceName] = t
+			// log.Println("shard status => ", shardStatus)
+			storeHeartbeat = &pb.StoreHeartbeat{
+				ShardStatus: shardStatus,
 			}
-			t.NodeStatuses[shardStatus.Id] = shardStatus
 			if err := stream.Send(storeHeartbeat); err != nil {
 				log.Printf("send shard status: %v", storeHeartbeat, err)
 				return
@@ -93,11 +86,11 @@ func (ss *storeServer) registerAtMasterServer() error {
 		msg, err := stream.Recv()
 		if err == io.EOF {
 			// read done.
-			finishChan <- true
+			close(finishChan)
 			return nil
 		}
 		if err != nil {
-			finishChan <- true
+			close(finishChan)
 			return fmt.Errorf("store receive topology : %v", err)
 		}
 		ss.processStoreMessage(msg)

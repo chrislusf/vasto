@@ -27,9 +27,9 @@ func (c *ClusterListener) registerClientAtMasterServer(master string, dataCenter
 
 	go func() {
 		for keyspace, _ := range c.clusters {
-			log.Printf("register existing cluster keyspace(%v) datacenter(%v)", keyspace, dataCenter)
+			log.Printf("register cluster keyspace(%v) datacenter(%v)", keyspace, dataCenter)
 			if err := registerForClusterAtMaster(stream, string(keyspace), dataCenter); err != nil {
-				log.Printf("register existing cluster keyspace(%v) datacenter(%v): %v", keyspace, dataCenter, err)
+				log.Printf("register cluster keyspace(%v) datacenter(%v): %v", keyspace, dataCenter, err)
 				return
 			}
 		}
@@ -59,7 +59,7 @@ func (c *ClusterListener) registerClientAtMasterServer(master string, dataCenter
 			return fmt.Errorf("client receive topology : %v", err)
 		}
 		msgChan <- msg
-		// log.Printf("client received message %v", msg)
+		log.Printf("client received message %v", msg)
 	}
 
 }

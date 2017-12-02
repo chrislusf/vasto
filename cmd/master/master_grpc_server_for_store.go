@@ -23,7 +23,7 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 
 	// add server to the data center
 	storeResource := storeHeartbeat.StoreResource
-	log.Printf("+ %s %s %v\n", storeResource.DataCenter, storeResource.Network, storeResource.Address)
+	log.Printf("+ store datacenter(%s) %v", storeResource.DataCenter, storeResource.Address)
 
 	dc := ms.topo.dataCenters.getOrCreateDataCenter(storeResource.DataCenter)
 
@@ -32,81 +32,86 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 	}
 	defer ms.topo.dataCenters.deleteServer(dc, storeResource)
 
-	// add shards on the server to the keyspace
-	for keyspaceName, shard := range storeResource.StoreStatusesInCluster {
-		keyspace := ms.topo.keyspaces.getOrCreateKeyspace(keyspaceName)
-		cluster, err := keyspace.getOrCreateCluster(storeResource, shard)
-		if err != nil {
-			log.Printf("cluster error: %v", err)
-			continue
-		}
+	seenShardsOnThisServer := make(map[string]*pb.ShardStatus)
+	defer ms.unRegisterShards(seenShardsOnThisServer, storeResource)
 
-		node := topology.NewNodeFromStore(storeResource, shard.Id)
-
-		cluster.Add(node)
-		ms.notifyUpdate(shard.Id, keyspaceName, storeResource, false)
-		defer func(keyspaceName string, shard *pb.StoreStatusInCluster) {
-			cluster.Remove(int(shard.Id))
-			ms.notifyUpdate(shard.Id, keyspaceName, storeResource, true)
-		}(keyspaceName, shard)
-	}
-
-	// loop through new shard status updates
 	var e error
 	for {
 		beat, e := stream.Recv()
 		if e != nil {
 			break
 		}
-
-		// FIXME cover all cases
-		// loop through old shards, compare them with the new ones
-		for keyspaceName, oldShard := range storeResource.StoreStatusesInCluster {
-			newStoreStatus, foundNewStoreStatus := beat.StoreResource.StoreStatusesInCluster[keyspaceName]
-			if foundNewStoreStatus {
-				for shardId, newShardStatus := range newStoreStatus.NodeStatuses {
-					if oldShardStatus, foundOldShardStatus := oldShard.NodeStatuses[shardId]; foundOldShardStatus {
-						if oldShardStatus.Status != newShardStatus.Status {
-							log.Printf("* dc %s server %s keyspace %s shard %d status %v => %v",
-								storeResource.DataCenter,
-								storeResource.Address,
-								keyspaceName,
-								shardId, oldShardStatus.Status, newShardStatus.Status)
-						}
-					} else {
-						log.Printf("+ dc %s server %s keyspace %s shard %d status %v",
-							storeResource.DataCenter,
-							storeResource.Address,
-							keyspaceName,
-							shardId, newShardStatus.Status)
-					}
-					oldShard.NodeStatuses[shardId] = newShardStatus
-					ms.notifyUpdate(shardId, keyspaceName, storeResource, false)
-				}
-			}
+		if err := ms.processShardStatus(seenShardsOnThisServer, storeResource, beat.ShardStatus); err != nil {
+			log.Printf("process shard status %v: %v", beat.ShardStatus, err)
+			log.Printf("- store datacenter(%s) %v: %v", storeResource.DataCenter, storeResource.Address, e)
+			return err
 		}
-
 	}
-	log.Printf("- %s %s %v : %v\n", storeHeartbeat.StoreResource.DataCenter,
-		storeHeartbeat.StoreResource.Network, storeHeartbeat.StoreResource.Address, e)
+	log.Printf("- store datacenter(%s) %v: %v", storeResource.DataCenter, storeResource.Address, e)
 
 	return nil
 }
 
-func (ms *masterServer) notifyUpdate(shardId uint32,
-	keyspaceName string, storeResource *pb.StoreResource, isDelete bool) error {
+func (ms *masterServer) notifyUpdate(shardStatus *pb.ShardStatus, storeResource *pb.StoreResource, isDelete bool) error {
 	return ms.clientChans.notifyStoreResourceUpdate(
-		keyspaceName,
-		storeResource.DataCenter,
+		keyspace_name(shardStatus.KeyspaceName),
+		data_center_name(storeResource.DataCenter),
 		[]*pb.ClusterNode{
 			&pb.ClusterNode{
-				ShardId:      shardId,
-				Network:      storeResource.Network,
-				Address:      storeResource.Address,
-				AdminAddress: storeResource.AdminAddress,
+				StoreResource: storeResource,
+				ShardStatus:   shardStatus,
 			},
 		},
 		isDelete,
 	)
 
+}
+
+func (ms *masterServer) processShardStatus(seenShardsOnThisServer map[string]*pb.ShardStatus,
+	storeResource *pb.StoreResource, shardStatus *pb.ShardStatus) error {
+	keyspace := ms.topo.keyspaces.getOrCreateKeyspace(shardStatus.KeyspaceName)
+	cluster, err := keyspace.getOrCreateCluster(storeResource, int(shardStatus.ClusterSize))
+	if err != nil {
+		return fmt.Errorf("cluster error: %v", err)
+	}
+
+	node, _, found := cluster.GetNode(int(shardStatus.NodeId))
+	if shardStatus.Status == pb.ShardStatus_DELETED && !found {
+		return nil
+	}
+	if !found {
+		node = topology.NewNodeFromStore(storeResource, shardStatus.NodeId)
+		cluster.Add(node)
+	}
+	if shardStatus.Status == pb.ShardStatus_DELETED {
+		node.RemoveShardStatus(shardStatus)
+		ms.notifyUpdate(shardStatus, storeResource, true)
+		delete(seenShardsOnThisServer, shardStatus.IdentifierOnThisServer())
+		log.Printf("- dc %s keyspace %s node %d shard %d %s cluster %s", storeResource.DataCenter,
+			shardStatus.KeyspaceName, node.GetId(), shardStatus.ShardId, node.GetAddress(), cluster)
+	} else {
+		oldShardStatus := node.SetShardStatus(shardStatus)
+		ms.notifyUpdate(shardStatus, storeResource, false)
+		seenShardsOnThisServer[shardStatus.IdentifierOnThisServer()] = shardStatus
+		if oldShardStatus == nil {
+			log.Printf("+ dc %s keyspace %s node %d shard %d %s cluster %s", storeResource.DataCenter,
+				shardStatus.KeyspaceName, node.GetId(), shardStatus.ShardId, node.GetAddress(), cluster)
+		} else if oldShardStatus.Status != shardStatus.Status {
+			log.Printf("* dc %s keyspace %s node %d shard %d %s cluster %s status:%s=>%s", storeResource.DataCenter,
+				shardStatus.KeyspaceName, node.GetId(), shardStatus.ShardId, node.GetAddress(), cluster,
+				oldShardStatus.Status, shardStatus.Status)
+		}
+	}
+
+	return nil
+}
+
+func (ms *masterServer) unRegisterShards(seenShardsOnThisServer map[string]*pb.ShardStatus, storeResource *pb.StoreResource) {
+	for _, shardStatus := range seenShardsOnThisServer {
+		keyspace := ms.topo.keyspaces.getOrCreateKeyspace(string(shardStatus.KeyspaceName))
+		if cluster, found := keyspace.getCluster(storeResource.DataCenter); found {
+			cluster.Remove(int(shardStatus.NodeId)) // just remove the whole node
+			ms.notifyUpdate(shardStatus, storeResource, true)
+		}
+	}
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/dgryski/go-jump"
+	"github.com/chrislusf/vasto/pb"
 )
 
 type Node interface {
@@ -12,6 +13,9 @@ type Node interface {
 	GetNetwork() string
 	GetAddress() string
 	GetAdminAddress() string
+	SetShardStatus(shardStatus *pb.ShardStatus) (oldShardStatus *pb.ShardStatus)
+	RemoveShardStatus(shardStatus *pb.ShardStatus)
+	GetShardStatuses() []*pb.ShardStatus
 }
 
 type node struct {
@@ -19,6 +23,7 @@ type node struct {
 	network      string
 	address      string
 	adminAddress string
+	shards       map[string]*pb.ShardStatus
 }
 
 func (n *node) GetId() int {
@@ -38,7 +43,26 @@ func (n *node) GetAdminAddress() string {
 }
 
 func NewNode(id int, network, address, adminAddress string) Node {
-	return &node{id: id, network: network, address: address, adminAddress: adminAddress}
+	return &node{id: id, network: network, address: address, adminAddress: adminAddress, shards: make(map[string]*pb.ShardStatus)}
+}
+
+func (n *node) SetShardStatus(shardStatus *pb.ShardStatus) (oldShardStatus *pb.ShardStatus) {
+	oldShardStatus = n.shards[shardStatus.IdentifierOnThisServer()]
+	n.shards[shardStatus.IdentifierOnThisServer()] = shardStatus
+	return
+}
+
+func (n *node) RemoveShardStatus(shardStatus *pb.ShardStatus) {
+	delete(n.shards, shardStatus.IdentifierOnThisServer())
+}
+
+func (n *node) GetShardStatuses() []*pb.ShardStatus {
+	var statuses []*pb.ShardStatus
+	for _, shard := range n.shards {
+		ss := shard
+		statuses = append(statuses, ss)
+	}
+	return statuses
 }
 
 // --------------------
@@ -64,10 +88,10 @@ func (h *ClusterRing) Add(n Node) {
 	h.nodes[n.GetId()] = n
 }
 
-func (h *ClusterRing) Remove(shardId int) Node {
-	if shardId < len(h.nodes) {
-		n := h.nodes[shardId]
-		h.nodes[shardId] = nil
+func (h *ClusterRing) Remove(nodeId int) Node {
+	if nodeId < len(h.nodes) {
+		n := h.nodes[nodeId]
+		h.nodes[nodeId] = nil
 		return n
 	}
 	return nil
@@ -115,6 +139,9 @@ func (h *ClusterRing) GetNode(index int, options ...AccessOption) (Node, int, bo
 		index, replica = option(index)
 	}
 	if index < 0 || index >= len(h.nodes) {
+		return nil, 0, false
+	}
+	if h.nodes[index] == nil {
 		return nil, 0, false
 	}
 	return h.nodes[index], replica, true

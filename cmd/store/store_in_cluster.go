@@ -2,64 +2,62 @@ package store
 
 import (
 	"fmt"
-	"github.com/chrislusf/vasto/pb"
-	"github.com/gogo/protobuf/proto"
 	"io/ioutil"
 	"log"
-	"strings"
+
+	"github.com/chrislusf/vasto/pb"
+	"github.com/golang/protobuf/proto"
 )
 
 const (
-	ClusterConfigFileSuffix = "cluster.config"
+	ClusterConfigFile = "cluster.config"
 )
 
-func (ss *storeServer) loadExistingClusters() error {
+func (ss *storeServer) listExistingClusters() error {
 	files, err := ioutil.ReadDir(*ss.option.Dir)
 	if err != nil {
 		return err
 	}
 	for _, f := range files {
-		name := f.Name()
-		if !strings.HasSuffix(name, ClusterConfigFileSuffix) {
+		if !f.IsDir() {
 			continue
 		}
 
-		clusterName := name[0: len(name)-len(ClusterConfigFileSuffix)]
-
-		fullPath := fmt.Sprintf("%s/%s", *ss.option.Dir, name)
-
-		log.Printf("load cluster %s config from %s", clusterName, fullPath)
-
+		keyspaceName := f.Name()
+		fullPath := fmt.Sprintf("%s/%s/%s", *ss.option.Dir, keyspaceName, ClusterConfigFile)
 		txt, err := ioutil.ReadFile(fullPath)
 		if err != nil {
-			log.Fatalf("read file %s: %v", fullPath, err)
+			log.Printf("read file %s: %v", fullPath, err)
+			continue
 		}
+		log.Printf("load cluster %s config from %s", keyspaceName, fullPath)
 
 		status := &pb.StoreStatusInCluster{}
 
 		if err = proto.UnmarshalText(string(txt), status); err != nil {
-			log.Fatalf("parse file %s: %v", fullPath, err)
+			log.Printf("parse file %s: %v", fullPath, err)
+			continue
 		}
 
-		ss.statusInCluster[clusterName] = status
+		ss.statusInCluster[keyspaceName] = status
 
 	}
 
 	return nil
 }
 
-func (ss *storeServer) saveClusterConfig(status *pb.StoreStatusInCluster, clusterName string) error {
+func (ss *storeServer) saveClusterConfig(status *pb.StoreStatusInCluster, keyspaceName string) error {
 
 	txt := proto.MarshalTextString(status)
 
-	fullPath := fmt.Sprintf("%s/%s/%s", *ss.option.Dir, clusterName, ClusterConfigFileSuffix)
+	fullPath := fmt.Sprintf("%s/%s/%s", *ss.option.Dir, keyspaceName, ClusterConfigFile)
 
-	log.Printf("save cluster %s to %s", clusterName, fullPath)
+	log.Printf("save cluster %s to %s", keyspaceName, fullPath)
 
-	if err := ioutil.WriteFile(fullPath, []byte(txt), 0550); err == nil {
-		ss.statusInCluster[clusterName] = status
+	if err := ioutil.WriteFile(fullPath, []byte(txt), 0640); err == nil {
+		ss.statusInCluster[keyspaceName] = status
 	} else {
-		log.Printf("save cluster %s to %s : %v", clusterName, fullPath, err)
+		log.Printf("save cluster %s to %s : %v", keyspaceName, fullPath, err)
 	}
 
 	return nil

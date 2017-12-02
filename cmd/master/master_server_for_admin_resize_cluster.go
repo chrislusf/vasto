@@ -7,9 +7,9 @@ import (
 
 func (ms *masterServer) ResizeCluster(req *pb.ResizeRequest, stream pb.VastoMaster_ResizeClusterServer) error {
 
-	keyspace, dc := req.Keyspace, req.DataCenter
+	keyspace, dc := keyspace_name(req.Keyspace), data_center_name(req.DataCenter)
 
-	r, found := ms.topo.keyspaces.getOrCreateKeyspace(keyspace).getCluster(dc)
+	r, found := ms.topo.keyspaces.getOrCreateKeyspace(string(keyspace)).getCluster(string(dc))
 
 	resp := &pb.ResizeProgress{}
 

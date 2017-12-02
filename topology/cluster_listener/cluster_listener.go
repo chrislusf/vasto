@@ -58,9 +58,14 @@ func (l *ClusterListener) SetNodes(keyspace string, fixedCluster string) {
 	for id, networkHostPort := range servers {
 		parts := strings.SplitN(networkHostPort, ":", 2)
 		node := &pb.ClusterNode{
-			ShardId: uint32(id),
-			Network: parts[0],
-			Address: parts[1],
+			StoreResource: &pb.StoreResource{
+				Network: parts[0],
+				Address: parts[1],
+			},
+			ShardStatus: &pb.ShardStatus{
+				NodeId:  uint32(id),
+				ShardId: uint32(id),
+			},
 		}
 		nodes = append(nodes, node)
 	}
@@ -99,8 +104,8 @@ func (l *ClusterListener) StartListener(master, dataCenter string, blockUntilCon
 					r := l.GetClusterRing(msg.Cluster.Keyspace)
 					r.SetExpectedSize(int(msg.Cluster.ExpectedClusterSize))
 					r.SetNextSize(int(msg.Cluster.NextClusterSize))
-					for _, store := range msg.Cluster.Nodes {
-						l.AddNode(msg.Cluster.Keyspace, store)
+					for _, node := range msg.Cluster.Nodes {
+						l.AddNode(msg.Cluster.Keyspace, node)
 					}
 					if !clientConnected {
 						clientConnected = true
@@ -109,11 +114,11 @@ func (l *ClusterListener) StartListener(master, dataCenter string, blockUntilCon
 						}
 					}
 				} else if msg.GetUpdates() != nil {
-					for _, store := range msg.Updates.Nodes {
+					for _, node := range msg.Updates.Nodes {
 						if msg.Updates.GetIsDelete() {
-							l.RemoveNode(msg.Updates.Keyspace, store)
+							l.RemoveNode(msg.Updates.Keyspace, node)
 						} else {
-							l.AddNode(msg.Updates.Keyspace, store)
+							l.AddNode(msg.Updates.Keyspace, node)
 						}
 					}
 				} else if msg.GetResize() != nil {

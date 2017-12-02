@@ -25,10 +25,15 @@ func (ms *masterServer) CreateCluster(ctx context.Context, req *pb.CreateCluster
 
 	for i, server := range servers {
 		nodes = append(nodes, &pb.ClusterNode{
-			ShardId:      uint32(i),
-			Network:      server.Network,
-			Address:      server.Address,
-			AdminAddress: server.AdminAddress,
+			StoreResource: &pb.StoreResource{
+				Network:      server.Network,
+				Address:      server.Address,
+				AdminAddress: server.AdminAddress,
+			},
+			ShardStatus: &pb.ShardStatus{
+				NodeId:  uint32(i),
+				ShardId: uint32(i),
+			},
 		})
 	}
 

@@ -35,7 +35,7 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 
 	status := &pb.StoreStatusInCluster{
 		Id:                uint32(serverId),
-		NodeStatuses:      make(map[uint32]*pb.ShardStatus),
+		ShardStatuses:     make(map[uint32]*pb.ShardStatus),
 		ClusterSize:       uint32(clusterSize),
 		ReplicationFactor: uint32(replicationFactor),
 	}
@@ -59,17 +59,24 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 		if i != 0 {
 			go node.start()
 		}
-		status.NodeStatuses[uint32(shardId)] = &pb.ShardStatus{
-			Id:           uint32(shardId),
-			Status:       pb.ShardStatus_EMPTY,
-			KeyspaceName: keyspace,
+
+		shardStatus := &pb.ShardStatus{
+			NodeId:            uint32(serverId),
+			ShardId:           uint32(shardId),
+			Status:            pb.ShardStatus_EMPTY,
+			KeyspaceName:      keyspace,
+			ClusterSize:       uint32(clusterSize),
+			ReplicationFactor: uint32(replicationFactor),
 		}
+
+		status.ShardStatuses[uint32(shardId)] = shardStatus
+
+		// register the shard at master
+		ss.shardStatusChan <- shardStatus
 	}
 
 	ss.saveClusterConfig(status, keyspace)
 	ss.clusterListener.AddNewKeyspace(keyspace)
-
-	// TODO register to keyspaces/datacenters
 
 	return nodes, nil
 }
