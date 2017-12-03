@@ -92,11 +92,11 @@ func (k *keyspace) getCluster(dataCenterName string) (cluster *topology.ClusterR
 	return
 }
 
-func (k *keyspace) doGetOrCreateCluster(dataCenterName string) (
+func (k *keyspace) doGetOrCreateCluster(dataCenterName string, clusterSize int) (
 	cluster *topology.ClusterRing, isNew bool) {
 	cluster, found := k.getCluster(dataCenterName)
 	if !found {
-		cluster = topology.NewHashRing(string(k.name), dataCenterName)
+		cluster = topology.NewHashRing(string(k.name), dataCenterName, clusterSize)
 		k.Lock()
 		k.clusters[data_center_name(dataCenterName)] = cluster
 		k.Unlock()
@@ -108,9 +108,9 @@ func (k *keyspace) doGetOrCreateCluster(dataCenterName string) (
 
 func (k *keyspace) getOrCreateCluster(storeResource *pb.StoreResource, clusterSize int) (
 	*topology.ClusterRing, error) {
-	cluster, isNew := k.doGetOrCreateCluster(storeResource.DataCenter)
-	if isNew || cluster.ExpectedSize() == 0 {
-		// isNew may due to client joining
+	cluster, _ := k.doGetOrCreateCluster(storeResource.DataCenter, clusterSize)
+	if cluster.ExpectedSize() == 0 {
+		// the cluster may have been created by client joining first
 		cluster.SetExpectedSize(clusterSize)
 	} else if cluster.ExpectedSize() != clusterSize {
 		return nil, fmt.Errorf("store %v joined with cluster %s size %d, expecting %d",

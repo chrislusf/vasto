@@ -86,19 +86,19 @@ func (n *NodeWithConnPool) GetShardStatuses() []*pb.ShardStatus {
 }
 
 func (c *ClusterListener) AddNode(keyspace string, n *pb.ClusterNode) {
-	r := c.GetClusterRing(keyspace)
+	cluster := c.GetClusterRing(keyspace)
 	st, ss := n.StoreResource, n.ShardStatus
-	node, _, found := r.GetNode(int(ss.NodeId))
+	node, _, found := cluster.GetNode(int(ss.NodeId))
 	if !found {
 		node = topology.Node(newNodeWithConnPool(int(ss.NodeId), st.Network, st.Address, st.AdminAddress))
 	}
 	oldShardStatus := node.SetShardStatus(ss)
-	r.Add(node)
+	cluster.Add(node)
 	if oldShardStatus == nil {
-		log.Printf("+ node %d shard %d %s cluster %s", node.GetId(), ss.ShardId, node.GetAddress(), r)
-	} else if oldShardStatus.Status != ss.Status {
+		log.Printf("+ node %d shard %d %s cluster %s", node.GetId(), ss.ShardId, node.GetAddress(), cluster)
+	} else if oldShardStatus.Status.String() != ss.Status.String() {
 		log.Printf("* node %d shard %d %s cluster %s status %s => %s",
-			node.GetId(), ss.ShardId, node.GetAddress(), r, oldShardStatus.Status, ss.Status)
+			node.GetId(), ss.ShardId, node.GetAddress(), cluster, oldShardStatus.Status.String(), ss.Status.String())
 	}
 }
 

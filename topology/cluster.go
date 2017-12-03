@@ -70,62 +70,62 @@ func (n *node) GetShardStatuses() []*pb.ShardStatus {
 // --------------------
 
 type ClusterRing struct {
-	keyspace            string
-	dataCenter          string
-	nodes               []Node
-	expectedClusterSize int
-	nextClusterSize     int
+	keyspace     string
+	dataCenter   string
+	nodes        []Node
+	expectedSize int
+	nextSize     int
 }
 
 // adds a address (+virtual hosts to the ring)
-func (h *ClusterRing) Add(n Node) {
-	if len(h.nodes) < n.GetId()+1 {
+func (cluster *ClusterRing) Add(n Node) {
+	if len(cluster.nodes) < n.GetId()+1 {
 		cap := n.GetId() + 1
 		nodes := make([]Node, cap)
-		copy(nodes, h.nodes)
-		h.nodes = nodes
+		copy(nodes, cluster.nodes)
+		cluster.nodes = nodes
 	}
-	h.nodes[n.GetId()] = n
+	cluster.nodes[n.GetId()] = n
 }
 
-func (h *ClusterRing) Remove(nodeId int) Node {
-	if nodeId < len(h.nodes) {
-		n := h.nodes[nodeId]
-		h.nodes[nodeId] = nil
+func (cluster *ClusterRing) Remove(nodeId int) Node {
+	if nodeId < len(cluster.nodes) {
+		n := cluster.nodes[nodeId]
+		cluster.nodes[nodeId] = nil
 		return n
 	}
 	return nil
 }
 
 // calculates a Jump hash for the key provided
-func (h *ClusterRing) FindBucketGivenSize(key uint64, size int) int {
+func (cluster *ClusterRing) FindBucketGivenSize(key uint64, size int) int {
 	return int(jump.Hash(key, size))
 }
 
 // calculates a Jump hash for the key provided
-func (h *ClusterRing) FindBucket(key uint64) int {
-	return int(jump.Hash(key, h.ExpectedSize()))
+func (cluster *ClusterRing) FindBucket(key uint64) int {
+	return int(jump.Hash(key, cluster.ExpectedSize()))
 }
 
-func (h *ClusterRing) ExpectedSize() int {
-	return h.expectedClusterSize
+func (cluster *ClusterRing) ExpectedSize() int {
+	return cluster.expectedSize
 }
 
-func (h *ClusterRing) NextSize() int {
-	return h.nextClusterSize
+func (cluster *ClusterRing) NextSize() int {
+	return cluster.nextSize
 }
 
-func (h *ClusterRing) SetExpectedSize(expectedSize int) {
-	h.expectedClusterSize = expectedSize
+func (cluster *ClusterRing) SetExpectedSize(expectedSize int) {
+	cluster.expectedSize = expectedSize
 }
 
-func (h *ClusterRing) SetNextSize(nextSize int) {
-	h.nextClusterSize = nextSize
+func (cluster *ClusterRing) SetNextSize(nextSize int) {
+	cluster.nextSize = nextSize
 }
 
-func (h *ClusterRing) CurrentSize() int {
-	for i := len(h.nodes); i > 0; i-- {
-		if h.nodes[i-1] == nil || h.nodes[i-1].GetAddress() == "" {
+func (cluster *ClusterRing) CurrentSize() int {
+	for i := len(cluster.nodes); i > 0; i-- {
+		if cluster.nodes[i-1] == nil || cluster.nodes[i-1].GetAddress() == "" {
 			continue
 		}
 		return i
@@ -133,30 +133,30 @@ func (h *ClusterRing) CurrentSize() int {
 	return 0
 }
 
-func (h *ClusterRing) GetNode(index int, options ...AccessOption) (Node, int, bool) {
+func (cluster *ClusterRing) GetNode(index int, options ...AccessOption) (Node, int, bool) {
 	replica := 0
 	for _, option := range options {
 		index, replica = option(index)
 	}
-	if index < 0 || index >= len(h.nodes) {
+	if index < 0 || index >= len(cluster.nodes) {
 		return nil, 0, false
 	}
-	if h.nodes[index] == nil {
+	if cluster.nodes[index] == nil {
 		return nil, 0, false
 	}
-	return h.nodes[index], replica, true
+	return cluster.nodes[index], replica, true
 }
 
-func (h *ClusterRing) MissingAndFreeNodeIds() (missingList, freeList []int) {
-	max := len(h.nodes)
-	currentClusterSize := h.CurrentSize()
+func (cluster *ClusterRing) MissingAndFreeNodeIds() (missingList, freeList []int) {
+	max := len(cluster.nodes)
+	currentClusterSize := cluster.CurrentSize()
 	if max < currentClusterSize {
 		max = currentClusterSize
 	}
 	for i := 0; i < max; i++ {
 		var n Node
-		if i < len(h.nodes) {
-			n = h.nodes[i]
+		if i < len(cluster.nodes) {
+			n = cluster.nodes[i]
 		}
 		if n == nil || n.GetAddress() == "" {
 			if i < currentClusterSize {
@@ -172,29 +172,30 @@ func (h *ClusterRing) MissingAndFreeNodeIds() (missingList, freeList []int) {
 }
 
 // NewHashRing creates a new hash ring.
-func NewHashRing(keyspace, dataCenter string) *ClusterRing {
+func NewHashRing(keyspace, dataCenter string, expectedSize int) *ClusterRing {
 	return &ClusterRing{
-		keyspace:   keyspace,
-		dataCenter: dataCenter,
-		nodes:      make([]Node, 0, 16),
+		keyspace:     keyspace,
+		dataCenter:   dataCenter,
+		nodes:        make([]Node, 0, 16),
+		expectedSize: expectedSize,
 	}
 }
 
-func (h *ClusterRing) String() string {
+func (cluster *ClusterRing) String() string {
 	var output bytes.Buffer
 	output.Write([]byte{'['})
-	nodeCount := h.CurrentSize()
-	max := len(h.nodes)
-	if max < h.expectedClusterSize {
-		max = h.expectedClusterSize
+	nodeCount := cluster.CurrentSize()
+	max := len(cluster.nodes)
+	if max < cluster.expectedSize {
+		max = cluster.expectedSize
 	}
 	for i := 0; i < max; i++ {
 		var n Node
-		if i < len(h.nodes) {
-			n = h.nodes[i]
+		if i < len(cluster.nodes) {
+			n = cluster.nodes[i]
 		}
 		if n == nil || n.GetAddress() == "" {
-			if i < h.expectedClusterSize || i < nodeCount {
+			if i < cluster.expectedSize || i < nodeCount {
 				if i != 0 {
 					output.Write([]byte{' '})
 				}
@@ -208,13 +209,17 @@ func (h *ClusterRing) String() string {
 		}
 	}
 	output.Write([]byte{']'})
-	if h.nextClusterSize == 0 {
-		output.WriteString(fmt.Sprintf(" size %d->%d ", h.CurrentSize(), h.expectedClusterSize))
+	if cluster.nextSize == 0 {
+		if cluster.CurrentSize() != cluster.expectedSize && cluster.expectedSize != 0 {
+			output.WriteString(fmt.Sprintf(" size %d->%d ", cluster.CurrentSize(), cluster.expectedSize))
+		} else {
+			output.WriteString(fmt.Sprintf(" size %d ", cluster.CurrentSize()))
+		}
 	} else {
-		output.WriteString(fmt.Sprintf(" size %d=>%d ", h.CurrentSize(), h.nextClusterSize))
+		output.WriteString(fmt.Sprintf(" size %d=>%d ", cluster.CurrentSize(), cluster.nextSize))
 	}
 
-	missingList, freeList := h.MissingAndFreeNodeIds()
+	missingList, freeList := cluster.MissingAndFreeNodeIds()
 
 	if len(missingList) > 0 || len(freeList) > 0 {
 		output.Write([]byte{'('})

@@ -27,12 +27,12 @@ func (cluster *ClusterRing) ToCluster() *pb.Cluster {
 	}
 }
 
-func (r *ClusterRing) toNodes() (nodes []*pb.ClusterNode) {
-	if r == nil {
+func (cluster *ClusterRing) toNodes() (nodes []*pb.ClusterNode) {
+	if cluster == nil {
 		return
 	}
-	for i := 0; i < r.CurrentSize(); i++ {
-		node, _, ok := r.GetNode(i)
+	for i := 0; i < cluster.CurrentSize(); i++ {
+		node, _, ok := cluster.GetNode(i)
 		if !ok {
 			continue
 		}
@@ -48,7 +48,7 @@ func (r *ClusterRing) toNodes() (nodes []*pb.ClusterNode) {
 				nodes,
 				&pb.ClusterNode{
 					StoreResource: &pb.StoreResource{
-						DataCenter:   r.dataCenter,
+						DataCenter:   cluster.dataCenter,
 						Network:      network,
 						Address:      address,
 						AdminAddress: adminAddress,

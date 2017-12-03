@@ -32,7 +32,7 @@ func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.S
 		ss.nodes = append(ss.nodes, node)
 		if shardStatus.NodeId != shardStatus.ShardId {
 			// FIXME only bootstrap and follow if not main? Wrong here!
-			go node.start()
+			go node.startWithBootstrapAndFollow()
 		}
 		// register the shard at master
 		t := shardStatus
@@ -59,10 +59,12 @@ func newNode(dir string, serverId, nodeId int, cluster *topology.ClusterRing,
 	return n
 }
 
-func (n *node) start() {
-	err := n.bootstrap()
-	if err != nil {
-		log.Fatalf("bootstrap: %v", err)
+func (n *node) startWithBootstrapAndFollow() {
+	if n.clusterRing != nil {
+		err := n.bootstrap()
+		if err != nil {
+			log.Printf("bootstrap: %v", err)
+		}
 	}
 	n.follow()
 }

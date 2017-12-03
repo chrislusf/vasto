@@ -58,7 +58,8 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 		keyspace := keyspace_name(clientHeartbeat.Keyspace)
 		clientWatchedKeyspaceAndDataCenters[fmt.Sprintf("%s,%s", keyspace, dc)] = true
 
-		clusterRing, _ := ms.topo.keyspaces.getOrCreateKeyspace(string(keyspace)).doGetOrCreateCluster(string(dc))
+		// for client, just set the expected cluster size to zero, and fix it when actual cluster is registered
+		clusterRing, _ := ms.topo.keyspaces.getOrCreateKeyspace(string(keyspace)).doGetOrCreateCluster(string(dc), 0)
 
 		if ch, err := ms.clientChans.addClient(keyspace, dc, serverAddress); err == nil {
 			// this is not added yet, start a goroutine that sends to the stream, until client disconnects

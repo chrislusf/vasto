@@ -7,9 +7,9 @@ import (
 	"google.golang.org/grpc"
 )
 
-func (h *ClusterRing) WithConnection(serverId int, fn func(Node, *grpc.ClientConn) error) error {
+func (cluster *ClusterRing) WithConnection(serverId int, fn func(Node, *grpc.ClientConn) error) error {
 
-	node, _, ok := h.GetNode(serverId)
+	node, _, ok := cluster.GetNode(serverId)
 
 	if !ok {
 		return fmt.Errorf("server %d not found", serverId)

@@ -59,7 +59,7 @@ func (c *ClusterListener) registerClientAtMasterServer(master string, dataCenter
 			return fmt.Errorf("client receive topology : %v", err)
 		}
 		msgChan <- msg
-		log.Printf("client received message %v", msg)
+		// log.Printf("client received message %v", msg)
 	}
 
 }

@@ -57,7 +57,7 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 			replicationFactor, *ss.option.LogFileSizeMb, *ss.option.LogFileCount)
 		nodes = append(nodes, node)
 		if i != 0 {
-			go node.start()
+			go node.startWithBootstrapAndFollow()
 		}
 
 		shardStatus := &pb.ShardStatus{
@@ -76,7 +76,7 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 	}
 
 	ss.saveClusterConfig(status, keyspace)
-	ss.clusterListener.AddNewKeyspace(keyspace)
+	ss.clusterListener.AddNewKeyspace(keyspace, clusterSize)
 
 	return nodes, nil
 }

@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc"
 )
 
+// follow keep trying all peers in the cluster and keep retrying to follow the peers
 func (n *node) follow() {
 
 	for _, serverId := range n.findPeerServerIds() {

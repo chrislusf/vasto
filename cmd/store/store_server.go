@@ -64,8 +64,8 @@ func RunStore(option *StoreOption) {
 		clusterListener.SetNodes(*option.Keyspace, *ss.option.FixedCluster)
 	} else if *option.Master != "" {
 		go ss.keepConnectedToMasterServer()
-		for keyspaceName, _ := range ss.statusInCluster {
-			clusterListener.AddExistingKeyspace(keyspaceName)
+		for keyspaceName, shardStatus := range ss.statusInCluster {
+			clusterListener.AddExistingKeyspace(keyspaceName, int(shardStatus.ClusterSize))
 		}
 		clusterListener.StartListener(*ss.option.Master, *ss.option.DataCenter, false)
 	}
