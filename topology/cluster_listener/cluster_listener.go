@@ -27,32 +27,32 @@ func NewClusterClient(dataCenter string) *ClusterListener {
 	}
 }
 
-func (l *ClusterListener) AddExistingKeyspace(keyspace string, clusterSize int) {
-	l.Lock()
-	l.clusters[keyspace_name(keyspace)] = topology.NewHashRing(keyspace, l.dataCenter, clusterSize)
-	l.Unlock()
+func (clusterListener *ClusterListener) AddExistingKeyspace(keyspace string, clusterSize int) {
+	clusterListener.Lock()
+	clusterListener.clusters[keyspace_name(keyspace)] = topology.NewHashRing(keyspace, clusterListener.dataCenter, clusterSize)
+	clusterListener.Unlock()
 }
 
 // AddNewKeyspace register to listen to one keyspace
-func (l *ClusterListener) AddNewKeyspace(keyspace string, clusterSize int) {
-	l.Lock()
-	l.clusters[keyspace_name(keyspace)] = topology.NewHashRing(keyspace, l.dataCenter, clusterSize)
-	l.Unlock()
+func (clusterListener *ClusterListener) AddNewKeyspace(keyspace string, clusterSize int) {
+	clusterListener.Lock()
+	clusterListener.clusters[keyspace_name(keyspace)] = topology.NewHashRing(keyspace, clusterListener.dataCenter, clusterSize)
+	clusterListener.Unlock()
 	println("listen for keyspace", keyspace)
-	l.keyspaceChan <- keyspace
+	clusterListener.keyspaceChan <- keyspace
 }
 
-func (l *ClusterListener) GetClusterRing(keyspace string) *topology.ClusterRing {
-	l.RLock()
-	t := l.clusters[keyspace_name(keyspace)]
-	l.RUnlock()
+func (clusterListener *ClusterListener) GetClusterRing(keyspace string) *topology.ClusterRing {
+	clusterListener.RLock()
+	t := clusterListener.clusters[keyspace_name(keyspace)]
+	clusterListener.RUnlock()
 	return t
 }
 
 // SetNodes initialize the cluster to a comma-separated node list,
 // where each node has the format of network:host:port
 // The network is either tcp or socket
-func (l *ClusterListener) SetNodes(keyspace string, fixedCluster string) {
+func (clusterListener *ClusterListener) SetNodes(keyspace string, fixedCluster string) {
 	servers := strings.Split(fixedCluster, ",")
 	var nodes []*pb.ClusterNode
 	for id, networkHostPort := range servers {
@@ -69,16 +69,16 @@ func (l *ClusterListener) SetNodes(keyspace string, fixedCluster string) {
 		}
 		nodes = append(nodes, node)
 	}
-	r := l.GetClusterRing(keyspace)
+	r := clusterListener.GetClusterRing(keyspace)
 	r.SetExpectedSize(len(nodes))
 	for _, node := range nodes {
-		l.AddNode(keyspace, node)
+		clusterListener.AddNode(keyspace, node)
 	}
 }
 
 // if master is not empty, return when client is connected to the master and
 // fetched the initial cluster information.
-func (l *ClusterListener) StartListener(master, dataCenter string, blockUntilConnected bool) {
+func (clusterListener *ClusterListener) StartListener(master, dataCenter string, blockUntilConnected bool) {
 
 	if master == "" {
 		return
@@ -93,7 +93,7 @@ func (l *ClusterListener) StartListener(master, dataCenter string, blockUntilCon
 	clientMessageChan := make(chan *pb.ClientMessage)
 
 	go util.RetryForever(func() error {
-		return l.registerClientAtMasterServer(master, dataCenter, clientMessageChan)
+		return clusterListener.registerClientAtMasterServer(master, dataCenter, clientMessageChan)
 	}, 2*time.Second)
 
 	go func() {
@@ -101,11 +101,11 @@ func (l *ClusterListener) StartListener(master, dataCenter string, blockUntilCon
 			select {
 			case msg := <-clientMessageChan:
 				if msg.GetCluster() != nil {
-					r := l.GetClusterRing(msg.Cluster.Keyspace)
+					r := clusterListener.GetClusterRing(msg.Cluster.Keyspace)
 					r.SetExpectedSize(int(msg.Cluster.ExpectedClusterSize))
 					r.SetNextSize(int(msg.Cluster.NextClusterSize))
 					for _, node := range msg.Cluster.Nodes {
-						l.AddNode(msg.Cluster.Keyspace, node)
+						clusterListener.AddNode(msg.Cluster.Keyspace, node)
 					}
 					if !clientConnected {
 						clientConnected = true
@@ -116,19 +116,19 @@ func (l *ClusterListener) StartListener(master, dataCenter string, blockUntilCon
 				} else if msg.GetUpdates() != nil {
 					for _, node := range msg.Updates.Nodes {
 						if msg.Updates.GetIsDelete() {
-							l.RemoveNode(msg.Updates.Keyspace, node)
+							clusterListener.RemoveNode(msg.Updates.Keyspace, node)
 						} else {
-							l.AddNode(msg.Updates.Keyspace, node)
+							clusterListener.AddNode(msg.Updates.Keyspace, node)
 						}
 					}
 				} else if msg.GetResize() != nil {
-					r := l.GetClusterRing(msg.Resize.Keyspace)
+					r := clusterListener.GetClusterRing(msg.Resize.Keyspace)
 					r.SetExpectedSize(int(msg.Resize.CurrentClusterSize))
 					r.SetNextSize(int(msg.Resize.NextClusterSize))
 					if r.NextSize() == 0 {
-						fmt.Printf("keyspace %s dc %s resized to %d\n", msg.Resize.Keyspace, l.dataCenter, r.CurrentSize())
+						fmt.Printf("keyspace %s dc %s resized to %d\n", msg.Resize.Keyspace, clusterListener.dataCenter, r.CurrentSize())
 					} else {
-						fmt.Printf("keyspace %s dc %s resizing %d => %d\n", msg.Resize.Keyspace, l.dataCenter, r.ExpectedSize(), r.NextSize())
+						fmt.Printf("keyspace %s dc %s resizing %d => %d\n", msg.Resize.Keyspace, clusterListener.dataCenter, r.ExpectedSize(), r.NextSize())
 					}
 				} else {
 					fmt.Printf("unknown message %v\n", msg)

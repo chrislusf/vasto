@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func (c *ClusterListener) registerClientAtMasterServer(master string, dataCenter string,
+func (clusterListener *ClusterListener) registerClientAtMasterServer(master string, dataCenter string,
 	msgChan chan *pb.ClientMessage) error {
 	grpcConnection, err := grpc.Dial(master, grpc.WithInsecure())
 	if err != nil {
@@ -26,7 +26,7 @@ func (c *ClusterListener) registerClientAtMasterServer(master string, dataCenter
 	}
 
 	go func() {
-		for keyspace, _ := range c.clusters {
+		for keyspace, _ := range clusterListener.clusters {
 			log.Printf("register cluster keyspace(%v) datacenter(%v)", keyspace, dataCenter)
 			if err := registerForClusterAtMaster(stream, string(keyspace), dataCenter); err != nil {
 				log.Printf("register cluster keyspace(%v) datacenter(%v): %v", keyspace, dataCenter, err)
@@ -35,7 +35,7 @@ func (c *ClusterListener) registerClientAtMasterServer(master string, dataCenter
 		}
 
 		for {
-			keyspace := <-c.keyspaceChan
+			keyspace := <-clusterListener.keyspaceChan
 			log.Printf("register cluster new keyspace(%v) datacenter(%v)", keyspace, dataCenter)
 			if err := registerForClusterAtMaster(stream, keyspace, dataCenter); err != nil {
 				log.Printf("register cluster new keyspace(%v) datacenter(%v): %v", keyspace, dataCenter, err)

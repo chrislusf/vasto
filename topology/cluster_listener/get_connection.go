@@ -7,20 +7,20 @@ import (
 	"net"
 )
 
-func (c *ClusterListener) GetConnectionByPartitionKey(keyspace string, partitionKey []byte, options ...topology.AccessOption) (net.Conn, int, error) {
+func (clusterListener *ClusterListener) GetConnectionByPartitionKey(keyspace string, partitionKey []byte, options ...topology.AccessOption) (net.Conn, int, error) {
 	partitionHash := util.Hash(partitionKey)
-	return c.GetConnectionByPartitionHash(keyspace, partitionHash, options...)
+	return clusterListener.GetConnectionByPartitionHash(keyspace, partitionHash, options...)
 }
 
-func (c *ClusterListener) GetConnectionByPartitionHash(keyspace string, partitionHash uint64, options ...topology.AccessOption) (net.Conn, int, error) {
-	r := c.GetClusterRing(keyspace)
+func (clusterListener *ClusterListener) GetConnectionByPartitionHash(keyspace string, partitionHash uint64, options ...topology.AccessOption) (net.Conn, int, error) {
+	r := clusterListener.GetClusterRing(keyspace)
 	bucket := r.FindBucket(partitionHash)
-	return c.GetConnectionByBucket(keyspace, bucket, options...)
+	return clusterListener.GetConnectionByBucket(keyspace, bucket, options...)
 }
 
-func (c *ClusterListener) GetConnectionByBucket(keyspace string, bucket int, options ...topology.AccessOption) (net.Conn, int, error) {
+func (clusterListener *ClusterListener) GetConnectionByBucket(keyspace string, bucket int, options ...topology.AccessOption) (net.Conn, int, error) {
 
-	r := c.GetClusterRing(keyspace)
+	r := clusterListener.GetClusterRing(keyspace)
 
 	n, replica, ok := r.GetNode(bucket, options...)
 	if !ok {
