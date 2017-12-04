@@ -38,24 +38,22 @@ var (
 	master       = app.Command("master", "Start a master process")
 	masterOption = &m.MasterOption{
 		Address: master.Flag("address", "listening address host:port").Default(":8278").String(),
-		ClusterSize: master.Flag("initClusterSize",
-			"a cluster size to start with, can be changed by 'vasto admin'").Default("2").Int32(),
 	}
 
 	store       = app.Command("store", "Start a vasto store")
 	storeOption = &s.StoreOption{
-		Id:         store.Flag("id", "store id").Default("0").Int32(),
-		Dir:        store.Flag("dir", "folder to store data").Default(os.TempDir()).String(),
-		Host:       store.Flag("host", "store host address").Default(util.GetLocalIP()).String(),
-		ListenHost: store.Flag("listenHost", "store listening host address").Default("").String(),
-		TcpPort:    store.Flag("port", "store listening tcp port").Default("8279").Int32(),
-		AdminPort:  store.Flag("adminPort", "store listening grpc port, default to tcp port + 10000").Default("0").Int32(),
-		UnixSocket: store.Flag("unixSocket", "store listening unix socket").Default("").Short('s').String(),
-		Master:     store.Flag("cluster.master", "master address").Default("localhost:8278").String(),
-		FixedCluster: store.Flag("cluster.fixed",
+		Id:                store.Flag("id", "store id").Default("0").Int32(),
+		Dir:               store.Flag("dir", "folder to store data").Default(os.TempDir()).String(),
+		Host:              store.Flag("host", "store host address").Default(util.GetLocalIP()).String(),
+		ListenHost:        store.Flag("listenHost", "store listening host address").Default("").String(),
+		TcpPort:           store.Flag("port", "store listening tcp port").Default("8279").Int32(),
+		AdminPort:         store.Flag("adminPort", "store listening grpc port, default to tcp port + 10000").Default("0").Int32(),
+		DisableUnixSocket: store.Flag("disableUnixSocket", "store listening unix socket").Default("false").Bool(),
+		Master:            store.Flag("cluster.master", "master address").Default("localhost:8278").String(),
+		FixedCluster: store.Flag("fixed.cluster",
 			"overwrite --cluster.master, format network:host:port[,network:host:port]*").Default("").String(),
 		DataCenter:        store.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
-		Keyspace:          store.Flag("keyspace", "keyspace name").Default("").String(),
+		Keyspace:          store.Flag("fixed.keyspace", "keyspace name").Default("keyspace1").String(),
 		LogFileSizeMb:     store.Flag("logFileSizeMb", "log file size limit in MB").Default("1024").Int(),
 		LogFileCount:      store.Flag("logFileCount", "log file count limit").Default("3").Int(),
 		ReplicationFactor: store.Flag("replicationFactor", "number of physical copies").Default("3").Int(),
@@ -78,12 +76,12 @@ var (
 
 	bench           = app.Command("bench", "Start a vasto benchmark")
 	benchmarkOption = &b.BenchmarkOption{
-		StoreAddress:    bench.Flag("store.tcpAddress", "store listening tcp address").Default("localhost:8279").String(),
-		StoreUnixSocket: bench.Flag("store.socket", "store listening unix socket").Default("").Short('s').String(),
-		ClientCount:     bench.Flag("clientCount", "parallel client count").Default("8").Short('c').Int32(),
-		RequestCount:    bench.Flag("requestCount", "total request count").Default("1024000").Short('n').Int32(),
-		BatchSize:       bench.Flag("batchSize", "put requests in batch").Default("1").Short('b').Int32(),
-		FixedCluster: bench.Flag("cluster.fixed",
+		StoreAddress:      bench.Flag("store.tcpAddress", "store listening tcp address").Default("localhost:8279").String(),
+		DisableUnixSocket: bench.Flag("disableUnixSocket", "store listening unix socket").Default("false").Bool(),
+		ClientCount:       bench.Flag("clientCount", "parallel client count").Default("2").Short('c').Int32(),
+		RequestCount:      bench.Flag("requestCount", "total request count").Default("1024000").Short('n').Int32(),
+		BatchSize:         bench.Flag("batchSize", "put requests in batch").Default("1").Short('b').Int32(),
+		FixedCluster: bench.Flag("fixed.cluster",
 			"overwrite --cluster.master, format network:host:port[,network:host:port]*").Default("").String(),
 		Master:     bench.Flag("cluster.master", "master address").Default("localhost:8278").String(),
 		DataCenter: bench.Flag("cluster.dataCenter", "data center name").Default("defaultDataCenter").String(),

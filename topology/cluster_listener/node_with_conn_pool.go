@@ -8,6 +8,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"gopkg.in/fatih/pool.v2"
 	"github.com/chrislusf/vasto/topology"
+	"github.com/chrislusf/vasto/util"
 )
 
 type shard_id uint32
@@ -24,6 +25,10 @@ type NodeWithConnPool struct {
 func newNodeWithConnPool(id int, network, address, adminAddress string) *NodeWithConnPool {
 	p, _ := pool.NewChannelPool(0, 100,
 		func() (net.Conn, error) {
+			if unixSocket, ok := util.GetUnixSocketFile(address); ok {
+				network, address = "unix", unixSocket
+			}
+
 			conn, err := net.Dial(network, address)
 			if err != nil {
 				return nil, fmt.Errorf("Failed to dial %s on %s : %v", network, address, err)

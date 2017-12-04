@@ -9,6 +9,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology/cluster_listener"
 	"github.com/chrislusf/vasto/util/on_interrupt"
+	"github.com/chrislusf/vasto/util"
 )
 
 type StoreOption struct {
@@ -17,7 +18,7 @@ type StoreOption struct {
 	Host              *string
 	ListenHost        *string
 	TcpPort           *int32
-	UnixSocket        *string
+	DisableUnixSocket *bool
 	AdminPort         *int32
 	Master            *string
 	FixedCluster      *string
@@ -55,6 +56,8 @@ func RunStore(option *StoreOption) {
 		shardStatusChan: make(chan *pb.ShardStatus),
 		statusInCluster: make(map[string]*pb.StoreStatusInCluster),
 	}
+
+	ss.clusterListener.RegisterShardEventProcessor(&cluster_listener.ClusterEventLogger{})
 
 	if err := ss.listExistingClusters(); err != nil {
 		log.Fatalf("load existing cluster files: %v", err)
@@ -94,17 +97,20 @@ func RunStore(option *StoreOption) {
 		go ss.serveTcp(tcpListener)
 	}
 
-	if *option.UnixSocket != "" {
-		unixSocketListener, err := net.Listen("unix", *option.UnixSocket)
-		if err != nil {
-			log.Fatal(err)
+	if !*option.DisableUnixSocket {
+		tcpAddress := fmt.Sprintf("%s:%d", *option.ListenHost, *option.TcpPort)
+		if unixSocket, _ := util.GetUnixSocketFile(tcpAddress); unixSocket != "" {
+			unixSocketListener, err := net.Listen("unix", unixSocket)
+			if err != nil {
+				log.Fatal(err)
+			}
+			log.Printf("listens on socket %s", unixSocket)
+			on_interrupt.OnInterrupt(func() {
+				os.Remove(unixSocket)
+			}, nil)
+			defer os.Remove(unixSocket)
+			go ss.serveTcp(unixSocketListener)
 		}
-		log.Printf("listens on socket %s", *option.UnixSocket)
-		on_interrupt.OnInterrupt(func() {
-			os.Remove(*option.UnixSocket)
-		}, nil)
-		defer os.Remove(*option.UnixSocket)
-		go ss.serveTcp(unixSocketListener)
 	}
 
 	// TODO register to keyspaces/datacenters on startup

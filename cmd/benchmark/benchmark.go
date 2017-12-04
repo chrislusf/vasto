@@ -9,8 +9,8 @@ import (
 
 type BenchmarkOption struct {
 	// store mode options
-	StoreAddress    *string
-	StoreUnixSocket *string
+	StoreAddress      *string
+	DisableUnixSocket *bool
 	// fixed cluster mode options
 	FixedCluster *string
 	// dynamic cluster mode options
@@ -37,11 +37,7 @@ func RunBenchmarker(option *BenchmarkOption) {
 		println("benchmarking on cluster with master", *option.Master)
 		b.runBenchmarkerOnCluster(option)
 	} else {
-		if *option.StoreUnixSocket != "" {
-			println("benchmarking on single store or gateway", *option.StoreUnixSocket)
-		} else {
-			println("benchmarking on single store or gateway", *option.StoreAddress)
-		}
+		println("benchmarking on single store or gateway", *option.StoreAddress)
 		b.runBenchmarkerOnStore(option)
 	}
 }
@@ -62,7 +58,7 @@ func (b *benchmarker) startThreads(name string, fn func(hist *Histogram)) {
 	wg.Wait()
 
 	elapsed := time.Since(start)
-	speed := float64(*b.option.RequestCount**b.option.BatchSize) * 1e9 / float64(elapsed)
+	speed := float64(*b.option.RequestCount * *b.option.BatchSize) * 1e9 / float64(elapsed)
 	fmt.Printf("%-10s : %9.1f op/s\n", name, speed)
 
 	var hist = hists[0]
