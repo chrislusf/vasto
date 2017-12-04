@@ -14,9 +14,10 @@ import (
 type keyspace_name string
 type ClusterListener struct {
 	sync.RWMutex
-	clusters     map[keyspace_name]*topology.ClusterRing
-	keyspaceChan chan string
-	dataCenter   string
+	clusters             map[keyspace_name]*topology.ClusterRing
+	keyspaceChan         chan string
+	dataCenter           string
+	shardEventProcessors []ShardEventProcessor
 }
 
 func NewClusterClient(dataCenter string) *ClusterListener {
@@ -106,6 +107,9 @@ func (clusterListener *ClusterListener) StartListener(master, dataCenter string,
 					r.SetNextSize(int(msg.Cluster.NextClusterSize))
 					for _, node := range msg.Cluster.Nodes {
 						clusterListener.AddNode(msg.Cluster.Keyspace, node)
+						for _, shardEventProcess := range clusterListener.shardEventProcessors {
+							shardEventProcess.OnShardCreateEvent(r, node.StoreResource, node.ShardStatus)
+						}
 					}
 					if !clientConnected {
 						clientConnected = true
@@ -114,11 +118,22 @@ func (clusterListener *ClusterListener) StartListener(master, dataCenter string,
 						}
 					}
 				} else if msg.GetUpdates() != nil {
+					r := clusterListener.GetClusterRing(msg.Updates.Keyspace)
 					for _, node := range msg.Updates.Nodes {
 						if msg.Updates.GetIsDelete() {
 							clusterListener.RemoveNode(msg.Updates.Keyspace, node)
+							for _, shardEventProcess := range clusterListener.shardEventProcessors {
+								shardEventProcess.OnShardRemoveEvent(r, node.StoreResource, node.ShardStatus)
+							}
 						} else {
-							clusterListener.AddNode(msg.Updates.Keyspace, node)
+							oldShardStatus := clusterListener.AddNode(msg.Updates.Keyspace, node)
+							for _, shardEventProcess := range clusterListener.shardEventProcessors {
+								if oldShardStatus == nil {
+									shardEventProcess.OnShardCreateEvent(r, node.StoreResource, node.ShardStatus)
+								} else if oldShardStatus.Status.String() != node.ShardStatus.String() {
+									shardEventProcess.OnShardUpdateEvent(r, node.StoreResource, node.ShardStatus, oldShardStatus)
+								}
+							}
 						}
 					}
 				} else if msg.GetResize() != nil {

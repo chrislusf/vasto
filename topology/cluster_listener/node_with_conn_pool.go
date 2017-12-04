@@ -1,7 +1,6 @@
 package cluster_listener
 
 import (
-	"log"
 	"net"
 	"time"
 
@@ -85,21 +84,16 @@ func (n *NodeWithConnPool) GetShardStatuses() []*pb.ShardStatus {
 	return statuses
 }
 
-func (clusterListener *ClusterListener) AddNode(keyspace string, n *pb.ClusterNode) {
+func (clusterListener *ClusterListener) AddNode(keyspace string, n *pb.ClusterNode) (oldShardStatus *pb.ShardStatus) {
 	cluster := clusterListener.GetClusterRing(keyspace)
 	st, ss := n.StoreResource, n.ShardStatus
 	node, _, found := cluster.GetNode(int(ss.NodeId))
 	if !found {
 		node = topology.Node(newNodeWithConnPool(int(ss.NodeId), st.Network, st.Address, st.AdminAddress))
 	}
-	oldShardStatus := node.SetShardStatus(ss)
+	oldShardStatus = node.SetShardStatus(ss)
 	cluster.Add(node)
-	if oldShardStatus == nil {
-		log.Printf("+ node %d shard %d %s cluster %s", node.GetId(), ss.ShardId, node.GetAddress(), cluster)
-	} else if oldShardStatus.Status.String() != ss.Status.String() {
-		log.Printf("* node %d shard %d %s cluster %s status %s => %s",
-			node.GetId(), ss.ShardId, node.GetAddress(), cluster, oldShardStatus.Status.String(), ss.Status.String())
-	}
+	return oldShardStatus
 }
 
 func (clusterListener *ClusterListener) RemoveNode(keyspace string, n *pb.ClusterNode) {
@@ -114,7 +108,6 @@ func (clusterListener *ClusterListener) RemoveNode(keyspace string, n *pb.Cluste
 					t.p.Close()
 				}
 			}
-			log.Printf("- node %d shard %d %s cluster: %s", node.GetId(), ss.ShardId, node.GetAddress(), r)
 		}
 	}
 }

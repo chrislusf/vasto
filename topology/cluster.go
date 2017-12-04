@@ -80,8 +80,8 @@ type ClusterRing struct {
 // adds a address (+virtual hosts to the ring)
 func (cluster *ClusterRing) Add(n Node) {
 	if len(cluster.nodes) < n.GetId()+1 {
-		cap := n.GetId() + 1
-		nodes := make([]Node, cap)
+		capacity := n.GetId() + 1
+		nodes := make([]Node, capacity)
 		copy(nodes, cluster.nodes)
 		cluster.nodes = nodes
 	}
