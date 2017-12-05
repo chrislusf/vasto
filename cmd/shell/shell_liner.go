@@ -69,7 +69,7 @@ func (s *shell) runShell() {
 					if c.Name() == cmd {
 						c.SetCilent(s.vastoClient)
 						if err := c.Do(args, env, os.Stderr); err != nil {
-							fmt.Fprintf(os.Stderr, "e: %v\n", err)
+							fmt.Fprintf(os.Stderr, "error: %v\n", err)
 							if err == InvalidArguments {
 								fmt.Println()
 								fmt.Printf("\t%s %s \n", c.Name(), c.Help())

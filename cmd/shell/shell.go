@@ -2,7 +2,6 @@ package shell
 
 import (
 	"github.com/chrislusf/vasto/cmd/client"
-	"github.com/chrislusf/vasto/topology/cluster_listener"
 )
 
 type ShellOption struct {
@@ -35,7 +34,7 @@ func RunShell(option *ShellOption) {
 
 	b.vastoClient.StartClient()
 
-	b.vastoClient.ClusterListener.RegisterShardEventProcessor(&cluster_listener.ClusterEventLogger{})
+	b.vastoClient.ClusterListener.RegisterShardEventProcessor(b)
 
 	b.runShell()
 

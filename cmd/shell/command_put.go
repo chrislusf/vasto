@@ -32,6 +32,9 @@ func (c *CommandPut) Do(args []string, env map[string]string, writer io.Writer) 
 	if err != nil {
 		return err
 	}
+	if len(args) < 2 {
+		return InvalidArguments
+	}
 
 	key := []byte(args[0])
 	value := []byte(args[1])
