@@ -15,3 +15,18 @@ type ShardEventProcessor interface {
 func (clusterListener *ClusterListener) RegisterShardEventProcessor(shardEventProcess ShardEventProcessor) {
 	clusterListener.shardEventProcessors = append(clusterListener.shardEventProcessors, shardEventProcess)
 }
+
+func (clusterListener *ClusterListener) UnregisterShardEventProcessor(shardEventProcess ShardEventProcessor) {
+	found := -1
+	for k, p := range clusterListener.shardEventProcessors {
+		if p == shardEventProcess {
+			found = k
+		}
+	}
+	if found < 0 {
+		return
+	}
+	copy(clusterListener.shardEventProcessors[found:], clusterListener.shardEventProcessors[found+1:])
+	clusterListener.shardEventProcessors[len(clusterListener.shardEventProcessors)-1] = nil // or the zero value of T
+	clusterListener.shardEventProcessors = clusterListener.shardEventProcessors[:len(clusterListener.shardEventProcessors)-1]
+}

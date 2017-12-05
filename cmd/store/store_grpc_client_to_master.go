@@ -65,20 +65,24 @@ func (ss *storeServer) registerAtMasterServer() error {
 	}
 
 	finishChan := make(chan bool)
+	defer close(finishChan)
+
 	go func() {
-		select {
-		case shardStatus := <-ss.shardStatusChan:
-			// collect current server's different cluster node status
-			// log.Println("shard status => ", shardStatus)
-			storeHeartbeat = &pb.StoreHeartbeat{
-				ShardStatus: shardStatus,
-			}
-			if err := stream.Send(storeHeartbeat); err != nil {
-				log.Printf("send shard status: %v", storeHeartbeat, err)
+		for {
+			select {
+			case shardStatus := <-ss.shardStatusChan:
+				// collect current server's different cluster node status
+				// log.Println("shard status => ", shardStatus)
+				storeHeartbeat = &pb.StoreHeartbeat{
+					ShardStatus: shardStatus,
+				}
+				if err := stream.Send(storeHeartbeat); err != nil {
+					log.Printf("send shard status: %v", storeHeartbeat, err)
+					return
+				}
+			case <-finishChan:
 				return
 			}
-		case <-finishChan:
-			return
 		}
 	}()
 
@@ -86,11 +90,9 @@ func (ss *storeServer) registerAtMasterServer() error {
 		msg, err := stream.Recv()
 		if err == io.EOF {
 			// read done.
-			close(finishChan)
 			return nil
 		}
 		if err != nil {
-			close(finishChan)
 			return fmt.Errorf("store receive topology : %v", err)
 		}
 		ss.processStoreMessage(msg)

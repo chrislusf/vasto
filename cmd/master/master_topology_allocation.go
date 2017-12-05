@@ -8,7 +8,6 @@ import (
 	"context"
 	"sync"
 	"google.golang.org/grpc"
-	"log"
 )
 
 // allocateServers
@@ -68,18 +67,20 @@ func (dc *dataCenter) createShards(ctx context.Context, req *pb.CreateClusterReq
 		wg.Add(1)
 		go func(shardId int, store *pb.StoreResource) {
 			defer wg.Done()
-			log.Printf("connecting to server %d at %s", shardId, store.GetAdminAddress())
+			// log.Printf("connecting to server %d at %s", shardId, store.GetAdminAddress())
 			if err := withConnection(store, func(grpcConnection *grpc.ClientConn) error {
 
 				client := pb.NewVastoStoreClient(grpcConnection)
-
-				resp, err := client.CreateShard(ctx, &pb.CreateShardRequest{
+				request := &pb.CreateShardRequest{
 					Keyspace:          req.Keyspace,
 					ShardId:           uint32(shardId),
 					ClusterSize:       req.ClusterSize,
 					ReplicationFactor: req.ReplicationFactor,
 					ShardDiskSizeGb:   uint32(math.Ceil(float64(req.TotalDiskSizeGb) / float64(req.ClusterSize))),
-				})
+				}
+
+				// log.Printf("sending store %v: %v", store.AdminAddress, request)
+				resp, err := client.CreateShard(ctx, request)
 				if err != nil {
 					return err
 				}
@@ -91,7 +92,7 @@ func (dc *dataCenter) createShards(ctx context.Context, req *pb.CreateClusterReq
 				createShardsError = err
 				return
 			}
-			log.Printf("shard created on server %d at %s", shardId, store.GetAdminAddress())
+			// log.Printf("shard created on server %d at %s", shardId, store.GetAdminAddress())
 		}(shardId, store)
 	}
 	wg.Wait()

@@ -35,12 +35,13 @@ func (clusterListener *ClusterListener) AddExistingKeyspace(keyspace string, clu
 }
 
 // AddNewKeyspace register to listen to one keyspace
-func (clusterListener *ClusterListener) AddNewKeyspace(keyspace string, clusterSize int) {
+func (clusterListener *ClusterListener) AddNewKeyspace(keyspace string, clusterSize int) *topology.ClusterRing {
 	clusterListener.Lock()
-	clusterListener.clusters[keyspace_name(keyspace)] = topology.NewHashRing(keyspace, clusterListener.dataCenter, clusterSize)
+	t := topology.NewHashRing(keyspace, clusterListener.dataCenter, clusterSize)
+	clusterListener.clusters[keyspace_name(keyspace)] = t
 	clusterListener.Unlock()
-	println("listen for keyspace", keyspace)
 	clusterListener.keyspaceChan <- keyspace
+	return t
 }
 
 func (clusterListener *ClusterListener) GetClusterRing(keyspace string) *topology.ClusterRing {

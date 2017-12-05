@@ -12,8 +12,6 @@ import (
 // 1. if the shard is already created, do nothing
 func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardRequest) (*pb.CreateShardResponse, error) {
 
-	log.Printf("create shard: %v", request)
-
 	nodes, err := ss.createShards(request.Keyspace, int(request.ShardId), int(request.ClusterSize), int(request.ReplicationFactor))
 	if err != nil {
 		log.Printf("create keyspace %s: %v", request.Keyspace, err)
@@ -31,7 +29,7 @@ func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardR
 
 func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, replicationFactor int) (nodes []*node, err error) {
 
-	cluster := ss.clusterListener.GetClusterRing(keyspace)
+	cluster := ss.clusterListener.AddNewKeyspace(keyspace, clusterSize)
 
 	status := &pb.StoreStatusInCluster{
 		Id:                uint32(serverId),
@@ -43,7 +41,7 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 	for i := 0; i < replicationFactor; i++ {
 		shardId := serverId - i
 		if shardId < 0 {
-			shardId += cluster.ExpectedSize()
+			shardId += clusterSize
 		}
 		if i != 0 && shardId == serverId {
 			break
@@ -53,12 +51,10 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 		if err != nil {
 			return nil, fmt.Errorf("mkdir %s: %v", dir, err)
 		}
-		node := newNode(dir, serverId, shardId, cluster,
+		node := newNode(keyspace, dir, serverId, shardId, cluster, ss.clusterListener,
 			replicationFactor, *ss.option.LogFileSizeMb, *ss.option.LogFileCount)
 		nodes = append(nodes, node)
-		if i != 0 {
-			go node.startWithBootstrapAndFollow()
-		}
+		go node.startWithBootstrapAndFollow()
 
 		shardStatus := &pb.ShardStatus{
 			NodeId:            uint32(serverId),
@@ -76,7 +72,6 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 	}
 
 	ss.saveClusterConfig(status, keyspace)
-	ss.clusterListener.AddNewKeyspace(keyspace, clusterSize)
 
 	return nodes, nil
 }

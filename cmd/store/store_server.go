@@ -57,7 +57,7 @@ func RunStore(option *StoreOption) {
 		statusInCluster: make(map[string]*pb.StoreStatusInCluster),
 	}
 
-	ss.clusterListener.RegisterShardEventProcessor(&cluster_listener.ClusterEventLogger{})
+	// ss.clusterListener.RegisterShardEventProcessor(&cluster_listener.ClusterEventLogger{})
 
 	if err := ss.listExistingClusters(); err != nil {
 		log.Fatalf("load existing cluster files: %v", err)
@@ -100,6 +100,9 @@ func RunStore(option *StoreOption) {
 	if !*option.DisableUnixSocket {
 		tcpAddress := fmt.Sprintf("%s:%d", *option.ListenHost, *option.TcpPort)
 		if unixSocket, _ := util.GetUnixSocketFile(tcpAddress); unixSocket != "" {
+			if util.FileExists(unixSocket) {
+				os.Remove(unixSocket)
+			}
 			unixSocketListener, err := net.Listen("unix", unixSocket)
 			if err != nil {
 				log.Fatal(err)
