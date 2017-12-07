@@ -10,13 +10,13 @@ func Retry(fn func() error) error {
 	return timeDelayedRetry(fn, time.Second, 3*time.Second)
 }
 
-func RetryForever(fn func() error, waitTimes time.Duration) {
+func RetryForever(name string, fn func() error, waitTimes time.Duration) {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for {
 		err := fn()
 		if err != nil {
 		}
-		log.Printf("Failed: %v", err)
+		log.Printf("%s failed: %v", name, err)
 		time.Sleep(time.Duration((r.Float64() + 1) * float64(waitTimes)))
 	}
 }

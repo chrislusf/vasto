@@ -3,6 +3,7 @@ package store
 import (
 	"github.com/chrislusf/vasto/topology"
 	"google.golang.org/grpc"
+	"log"
 )
 
 func (n *node) isBootstrapNeeded() (bestPeerToCopy int, isNeeded bool) {
@@ -40,6 +41,12 @@ func (n *node) isBootstrapNeeded() (bestPeerToCopy int, isNeeded bool) {
 		isNeeded = isNeeded || t
 	}
 
+	if isNeeded {
+		log.Printf("node %v found peer %v to bootstrap from", n.id, bestPeerToCopy)
+	} else {
+		log.Printf("node %v found bootstrapping is not needed", n.id)
+	}
+
 	return bestPeerToCopy, isNeeded
 }
 
@@ -58,7 +65,7 @@ func (n *node) findPeerServerIds() (serverIds []int) {
 		serverIds = append(serverIds, serverId)
 	}
 
-	// log.Printf("cluster size %d, node %d, server %d peers are: %v", n.clusterListener.ExpectedSize(), n.id, n.serverId, serverIds)
+	log.Printf("cluster size %d, node %d, server %d peers are: %v", n.clusterRing.ExpectedSize(), n.id, n.serverId, serverIds)
 
 	return
 }

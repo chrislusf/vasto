@@ -15,7 +15,7 @@ import (
 
 func (ss *storeServer) keepConnectedToMasterServer() {
 
-	util.RetryForever(func() error {
+	util.RetryForever("store connect to master", func() error {
 		return ss.registerAtMasterServer()
 	}, 2*time.Second)
 
@@ -63,6 +63,15 @@ func (ss *storeServer) registerAtMasterServer() error {
 		log.Printf("RegisterStore (%+v) = %v", storeHeartbeat, err)
 		return err
 	}
+
+	// send any existing shard status to the master and quit
+	go func() {
+		for _, storeStatus := range ss.statusInCluster {
+			for _, shardStatus := range storeStatus.ShardStatuses {
+				ss.shardStatusChan <- shardStatus
+			}
+		}
+	}()
 
 	finishChan := make(chan bool)
 	defer close(finishChan)

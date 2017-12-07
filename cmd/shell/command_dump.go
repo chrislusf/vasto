@@ -26,7 +26,7 @@ func (c *CommandDump) Name() string {
 }
 
 func (c *CommandDump) Help() string {
-	return "key"
+	return ""
 }
 
 func (c *CommandDump) SetCilent(client *client.VastoClient) {

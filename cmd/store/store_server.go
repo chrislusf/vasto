@@ -13,11 +13,11 @@ import (
 )
 
 type StoreOption struct {
-	Id                *int32
 	Dir               *string
 	Host              *string
 	ListenHost        *string
 	TcpPort           *int32
+	Bootstrap         *bool
 	DisableUnixSocket *bool
 	AdminPort         *int32
 	Master            *string
@@ -44,6 +44,7 @@ type storeServer struct {
 	clusterListener *cluster_listener.ClusterListener
 	shardStatusChan chan *pb.ShardStatus
 	statusInCluster map[string]*pb.StoreStatusInCluster // saved to disk
+	periodTasks     []PeriodicTask
 }
 
 func RunStore(option *StoreOption) {
@@ -56,6 +57,7 @@ func RunStore(option *StoreOption) {
 		shardStatusChan: make(chan *pb.ShardStatus),
 		statusInCluster: make(map[string]*pb.StoreStatusInCluster),
 	}
+	go ss.startPeriodTasks()
 
 	// ss.clusterListener.RegisterShardEventProcessor(&cluster_listener.ClusterEventLogger{})
 

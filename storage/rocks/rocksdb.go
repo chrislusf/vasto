@@ -67,3 +67,10 @@ func (d *Rocks) Close() {
 	d.dbOptions.Destroy()
 	d.db.Close()
 }
+
+func (d *Rocks) Size() (sum uint64) {
+	for _, lifeFileMetadata := range d.db.GetLiveFilesMetaData() {
+		sum += uint64(lifeFileMetadata.Size)
+	}
+	return sum
+}

@@ -6,6 +6,7 @@ import (
 	"log"
 	"github.com/chrislusf/vasto/pb"
 	"golang.org/x/net/context"
+	"time"
 )
 
 func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.VastoStore_TailBinlogServer) error {
@@ -43,6 +44,14 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 			segment += 1
 		} else if err != nil {
 			return fmt.Errorf("failed to read segment %d offset %d: %v", segment, offset, err)
+		} else if len(entries) <= 10 {
+			time.Sleep(100 * time.Millisecond)
+			entries, nextOffset, err = ss.nodes[replica].lm.ReadEntries(segment, offset, limit)
+			if err == io.EOF {
+				segment += 1
+			} else if err != nil {
+				return fmt.Errorf("failed to read segment %d offset %d: %v", segment, offset, err)
+			}
 		}
 		// println("len(entries) =", len(entries), "offset", offset, "next offset", nextOffset)
 

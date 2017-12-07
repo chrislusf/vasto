@@ -7,6 +7,7 @@ import (
 	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/topology/cluster_listener"
 	"github.com/chrislusf/vasto/pb"
+	"log"
 )
 
 type node struct {
@@ -20,8 +21,15 @@ type node struct {
 	clusterListenerFinishChan chan bool
 	replicationFactor         int
 	// just to avoid repeatedly create these variables
-	nextSegmentKey []byte
-	nextOffsetKey  []byte
+	nextSegmentKey, nextOffsetKey []byte
+	prevSegment                   uint32
+	prevOffset                    uint64
+	nextSegment                   uint32
+	nextOffset                    uint64
+}
+
+func (n *node) String() string {
+	return fmt.Sprintf("%s.%d.%d", n.keyspace, n.serverId, n.id)
 }
 
 func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.StoreStatusInCluster,
@@ -32,7 +40,10 @@ func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.S
 		node := newNode(keyspaceName, dir, int(storeStatus.Id), int(shardStatus.ShardId), cluster, clusterListener,
 			int(storeStatus.ReplicationFactor), *ss.option.LogFileSizeMb, *ss.option.LogFileCount)
 		ss.nodes = append(ss.nodes, node)
-		go node.startWithBootstrapAndFollow()
+		ss.RegisterPeriodicTask(node)
+		go node.startWithBootstrapAndFollow(*ss.option.Bootstrap)
+
+		println("size", node.db.Size())
 
 		// register the shard at master
 		t := shardStatus
@@ -63,17 +74,17 @@ func newNode(keyspaceName, dir string, serverId, nodeId int, cluster *topology.C
 	return n
 }
 
-func (n *node) startWithBootstrapAndFollow() {
+func (n *node) startWithBootstrapAndFollow(mayBootstrap bool) {
 
-	n.startListenForNodePeerEvents()
-
-	/*
-	if n.clusterRing != nil {
+	if n.clusterRing != nil && mayBootstrap {
 		err := n.bootstrap()
 		if err != nil {
 			log.Printf("bootstrap: %v", err)
 		}
 	}
+
 	n.follow()
-	*/
+
+	n.startListenForNodePeerEvents()
+
 }

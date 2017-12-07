@@ -94,7 +94,7 @@ func (clusterListener *ClusterListener) StartListener(master, dataCenter string,
 
 	clientMessageChan := make(chan *pb.ClientMessage)
 
-	go util.RetryForever(func() error {
+	go util.RetryForever("cluster listner to master", func() error {
 		return clusterListener.registerClientAtMasterServer(master, dataCenter, clientMessageChan)
 	}, 2*time.Second)
 

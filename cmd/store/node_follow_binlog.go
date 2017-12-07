@@ -16,21 +16,29 @@ const (
 	syncProgressFlushInterval = time.Minute
 )
 
-func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn) error {
+func (n *node) EverySecond() {
+	// log.Printf("%s every second", n)
+	if n.prevSegment != n.nextSegment || n.prevOffset != n.nextOffset {
+		n.setProgress(n.nextSegment, n.nextOffset)
+		n.prevSegment, n.prevOffset = n.nextSegment, n.nextOffset
+	}
+}
+
+func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn) (err error) {
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
-	nextSegment, nextOffset, _, err := n.getProgress()
+	n.nextSegment, n.nextOffset, _, err = n.getProgress()
 	if err != nil {
 		log.Printf("read node %d follow progress: %v", n.id, err)
 	}
 
-	log.Printf("Starting to follow from segment %d offset %d", nextSegment, nextOffset)
+	log.Printf("Starting to follow from segment %d offset %d", n.nextSegment, n.nextOffset)
 
 	request := &pb.PullUpdateRequest{
 		NodeId:  uint32(n.id),
-		Segment: nextSegment,
-		Offset:  nextOffset,
+		Segment: n.nextSegment,
+		Offset:  n.nextOffset,
 		Limit:   8096,
 	}
 
@@ -38,14 +46,6 @@ func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn
 	if err != nil {
 		return fmt.Errorf("client.TailBinlog to server %d %s: %v", node.GetId(), node.GetAdminAddress(), err)
 	}
-
-	flushCounter := 0
-	flushTime := time.Now()
-
-	defer func() {
-		println("on defer: saving segment", nextSegment, "offset", nextOffset)
-		n.setProgress(nextSegment, nextOffset)
-	}()
 
 	for {
 
@@ -56,13 +56,16 @@ func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn
 			return fmt.Errorf("pull changes: %v", err)
 		}
 
+		log.Printf("%s follow 0 entry: %d", n, len(changes.Entries))
+
 		for _, entry := range changes.Entries {
 
-			// fmt.Printf("node %d follow entry: %v\n", n.id, entry.String())
-
-			flushCounter++
+			// log.Printf("%s follow 1 entry: %v", n, string(entry.Key))
 
 			b, err := n.db.Get(entry.Key)
+			if err != nil {
+				continue
+			}
 
 			// process deletes
 			if entry.IsDelete {
@@ -79,6 +82,8 @@ func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn
 				continue
 			}
 
+			// log.Printf("%s follow 2 entry: %v, err: %v, len(b)=%d", n, string(entry.Key), err, len(b))
+
 			// process put
 			t := &codec.Entry{
 				PartitionHash: entry.PartitionHash,
@@ -86,39 +91,34 @@ func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn
 				TtlSecond:     entry.TtlSecond,
 				Value:         entry.Value,
 			}
-			if err != nil || len(b) == 0 {
+			if len(b) == 0 {
+				// no existing data found
+				n.db.Put(entry.Key, t.ToBytes())
 				continue
 			}
+
 			row := codec.FromBytes(b)
+			// log.Printf("%s follow 3 entry: %v, expired %v, %v", n, string(entry.Key), row.IsExpired(), t.IsExpired())
 			if row.IsExpired() {
 				if !t.IsExpired() {
+					log.Printf("%s follow 3 entry: %v", n, string(entry.Key))
 					n.db.Put(entry.Key, t.ToBytes())
 					continue
 				}
 			} else {
+				// log.Printf("data time %d, existing time %d, delta %d", row.UpdatedAtNs, entry.UpdatedAtNs, row.UpdatedAtNs-entry.UpdatedAtNs)
 				if row.UpdatedAtNs > entry.UpdatedAtNs {
 					continue
 				}
 				n.db.Put(entry.Key, t.ToBytes())
 				continue
 			}
+			// log.Printf("%s follow 4 entry: %v", n, string(entry.Key))
 
-		}
-
-		if flushCounter >= 8096 || flushTime.Add(syncProgressFlushInterval).Before(time.Now()) {
-
-			println("on flush: saving segment", nextSegment, "offset", nextOffset)
-			err = n.setProgress(changes.NextSegment, changes.NextOffset)
-			if err != nil {
-				log.Printf("set node %d follow progress: %v", n.id, err)
-			}
-
-			flushCounter = 0
-			flushTime = time.Now()
 		}
 
 		// set the nextSegment and nextOffset for OnInterrupt()
-		nextSegment, nextOffset = changes.NextSegment, changes.NextOffset
+		n.nextSegment, n.nextOffset = changes.NextSegment, changes.NextOffset
 
 	}
 

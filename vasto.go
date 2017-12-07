@@ -42,23 +42,22 @@ var (
 
 	store       = app.Command("store", "Start a vasto store")
 	storeOption = &s.StoreOption{
-		Id:                store.Flag("id", "store id").Default("0").Int32(),
 		Dir:               store.Flag("dir", "folder to store data").Default(os.TempDir()).String(),
 		Host:              store.Flag("host", "store host address").Default(util.GetLocalIP()).String(),
 		ListenHost:        store.Flag("listenHost", "store listening host address").Default("").String(),
 		TcpPort:           store.Flag("port", "store listening tcp port").Default("8279").Int32(),
 		AdminPort:         store.Flag("adminPort", "store listening grpc port, default to tcp port + 10000").Default("0").Int32(),
+		Bootstrap:         store.Flag("clearAndBootstrap", "clear local data and copy snapshot from other peers").Default("false").Bool(),
 		DisableUnixSocket: store.Flag("disableUnixSocket", "store listening unix socket").Default("false").Bool(),
-		Master:            store.Flag("cluster.master", "master address").Default("localhost:8278").String(),
-		FixedCluster: store.Flag("fixed.cluster",
-			"overwrite --cluster.master, format network:host:port[,network:host:port]*").Default("").String(),
+		Master:            store.Flag("master", "master address").Default("localhost:8278").String(),
 		DataCenter:        store.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
-		Keyspace:          store.Flag("fixed.keyspace", "keyspace name").Default("keyspace1").String(),
 		LogFileSizeMb:     store.Flag("logFileSizeMb", "log file size limit in MB").Default("1024").Int(),
 		LogFileCount:      store.Flag("logFileCount", "log file count limit").Default("3").Int(),
 		ReplicationFactor: store.Flag("replicationFactor", "number of physical copies").Default("3").Int(),
 		DiskSizeGb:        store.Flag("diskSizeGb", "disk size in GB").Default("10").Int(),
 		Tags:              store.Flag("tags", "comma separated tags").Default("").String(),
+		FixedCluster:      store.Flag("fixed.cluster", "overwrite --master, format network:host:port[,network:host:port]*").Default("").String(),
+		Keyspace:          store.Flag("fixed.keyspace", "keyspace name").Default("keyspace1").String(),
 	}
 	storeProfile = store.Flag("cpuprofile", "cpu profile output file").Default("").String()
 

@@ -3,6 +3,7 @@ package store
 import (
 	"fmt"
 	"github.com/chrislusf/vasto/util"
+	"log"
 )
 
 func (n *node) getProgress() (segment uint32, offset uint64, hasProgress bool, err error) {
@@ -25,15 +26,15 @@ func (n *node) getProgress() (segment uint32, offset uint64, hasProgress bool, e
 
 func (n *node) setProgress(segment uint32, offset uint64) (err error) {
 
-	// println("node", n.id, "saving next segment", segment, "offset", offset)
+	log.Printf("shard %s saves next segment %d offset %d", n, segment, offset)
 
 	err = n.db.Put(n.nextSegmentKey, util.Uint32toBytes(segment))
 	if err != nil {
-		return fmt.Errorf("set follow progress: segment %d %d: %v", segment, offset, err)
+		return fmt.Errorf("shard %s sets follow progress: segment %d %d: %v", n, segment, offset, err)
 	}
 	err = n.db.Put(n.nextOffsetKey, util.Uint64toBytes(offset))
 	if err != nil {
-		return fmt.Errorf("set follow progress: offset %d %d: %v", segment, offset, err)
+		return fmt.Errorf("shard %s sets follow progress: offset %d %d: %v", n, segment, offset, err)
 	}
 
 	return nil
