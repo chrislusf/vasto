@@ -68,9 +68,22 @@ func (ss *storeServer) handleRequest(reader io.Reader, writer io.Writer) error {
 		return fmt.Errorf("read message: %v", err)
 	}
 
+	output, err = ss.handleInputOutput(input)
+
+	err = util.WriteMessage(writer, output)
+	if err != nil {
+		return fmt.Errorf("write message: %v", err)
+	}
+
+	return nil
+
+}
+
+func (ss *storeServer) handleInputOutput(input []byte) (output []byte, err error) {
+
 	requests := &pb.Requests{}
 	if err = proto.Unmarshal(input, requests); err != nil {
-		return fmt.Errorf("unmarshal: %v", err)
+		return nil, fmt.Errorf("unmarshal: %v", err)
 	}
 
 	responses := &pb.Responses{}
@@ -81,15 +94,10 @@ func (ss *storeServer) handleRequest(reader io.Reader, writer io.Writer) error {
 
 	output, err = proto.Marshal(responses)
 	if err != nil {
-		return fmt.Errorf("marshal: %v", err)
+		return output, fmt.Errorf("marshal: %v", err)
 	}
 
-	err = util.WriteMessage(writer, output)
-	if err != nil {
-		return fmt.Errorf("write message: %v", err)
-	}
-
-	return nil
+	return output, err
 
 }
 

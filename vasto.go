@@ -56,6 +56,7 @@ var (
 		ReplicationFactor: store.Flag("replicationFactor", "number of physical copies").Default("3").Int(),
 		DiskSizeGb:        store.Flag("diskSizeGb", "disk size in GB").Default("10").Int(),
 		Tags:              store.Flag("tags", "comma separated tags").Default("").String(),
+		DisableUseEventIo: store.Flag("disableUseEventIo", "use event loop for network").Default("false").Bool(),
 		FixedCluster:      store.Flag("fixed.cluster", "overwrite --master, format network:host:port[,network:host:port]*").Default("").String(),
 		Keyspace:          store.Flag("fixed.keyspace", "keyspace name").Default("keyspace1").String(),
 	}

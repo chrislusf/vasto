@@ -44,7 +44,7 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 			segment += 1
 		} else if err != nil {
 			return fmt.Errorf("failed to read segment %d offset %d: %v", segment, offset, err)
-		} else if len(entries) <= 10 {
+		} else if len(entries) <= 100 {
 			time.Sleep(100 * time.Millisecond)
 			entries, nextOffset, err = ss.nodes[replica].lm.ReadEntries(segment, offset, limit)
 			if err == io.EOF {
