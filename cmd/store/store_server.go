@@ -43,11 +43,11 @@ func (o *StoreOption) GetAdminPort() int32 {
 
 type storeServer struct {
 	option          *StoreOption
-	nodes           []*node
 	clusterListener *cluster_listener.ClusterListener
 	shardStatusChan chan *pb.ShardStatus
 	statusInCluster map[string]*pb.StoreStatusInCluster // saved to disk
 	periodTasks     []PeriodicTask
+	keyspaceShards  *keyspaceShards
 }
 
 func RunStore(option *StoreOption) {
@@ -59,6 +59,7 @@ func RunStore(option *StoreOption) {
 		clusterListener: clusterListener,
 		shardStatusChan: make(chan *pb.ShardStatus),
 		statusInCluster: make(map[string]*pb.StoreStatusInCluster),
+		keyspaceShards:  newKeyspaceShards(),
 	}
 	go ss.startPeriodTasks()
 

@@ -7,9 +7,10 @@ import (
 	"time"
 )
 
-func (ss *storeServer) processDelete(deleteRequest *pb.DeleteRequest) *pb.DeleteResponse {
+func (ss *storeServer) processDelete(nodes []*node, deleteRequest *pb.DeleteRequest) *pb.DeleteResponse {
+
 	replica := int(deleteRequest.Replica)
-	if replica >= len(ss.nodes) {
+	if replica >= len(nodes) {
 		return &pb.DeleteResponse{
 			Status: fmt.Sprintf("replica %d not found", replica),
 		}
@@ -19,7 +20,7 @@ func (ss *storeServer) processDelete(deleteRequest *pb.DeleteRequest) *pb.Delete
 		Ok: true,
 	}
 
-	node := ss.nodes[replica]
+	node := nodes[replica]
 	err := node.db.Delete(deleteRequest.Key)
 	if err != nil {
 		resp.Ok = false

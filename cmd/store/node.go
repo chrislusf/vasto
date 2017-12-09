@@ -39,7 +39,7 @@ func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.S
 		dir := fmt.Sprintf("%s/%s/%d", *ss.option.Dir, shardStatus.KeyspaceName, shardStatus.ShardId)
 		node := newNode(keyspaceName, dir, int(storeStatus.Id), int(shardStatus.ShardId), cluster, clusterListener,
 			int(storeStatus.ReplicationFactor), *ss.option.LogFileSizeMb, *ss.option.LogFileCount)
-		ss.nodes = append(ss.nodes, node)
+		ss.keyspaceShards.addShards(keyspaceName, node)
 		ss.RegisterPeriodicTask(node)
 		go node.startWithBootstrapAndFollow(*ss.option.Bootstrap)
 

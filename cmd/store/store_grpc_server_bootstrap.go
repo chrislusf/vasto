@@ -2,12 +2,15 @@ package store
 
 import (
 	"github.com/chrislusf/vasto/pb"
+	"fmt"
 )
 
 func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb.VastoStore_BootstrapCopyServer) error {
 
-	replica := ss.findDbReplica(request.NodeId)
-	node := ss.nodes[replica]
+	node, found := ss.findDbReplica(request.Keyspace, request.NodeId)
+	if !found {
+		return fmt.Errorf("shard: %s.%d not found", request.Keyspace, request.NodeId)
+	}
 
 	segment, offset := node.lm.GetSegmentOffset()
 
@@ -37,12 +40,15 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 	return err
 }
 
-func (ss *storeServer) findDbReplica(nodeId uint32) (replica int) {
-	for k, node := range ss.nodes {
+func (ss *storeServer) findDbReplica(keyspace string, nodeId uint32) (replica *node, found bool) {
+
+	nodes := ss.keyspaceShards.getShards(keyspace)
+
+	for _, node := range nodes {
 		if node.id == int(nodeId) {
-			replica = k
-			return replica
+			replica = node
+			return replica, true
 		}
 	}
-	return -1
+	return nil, false
 }

@@ -31,7 +31,7 @@ func (c *VastoClient) Put(keyspace string, partitionKey, key, value []byte, opti
 		},
 	}
 
-	requests := &pb.Requests{}
+	requests := &pb.Requests{Keyspace:keyspace}
 	requests.Requests = append(requests.Requests, request)
 
 	_, err = pb.SendRequests(conn, requests)

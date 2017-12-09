@@ -19,7 +19,7 @@ func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardR
 			Error: err.Error(),
 		}, nil
 	}
-	ss.nodes = append(ss.nodes, nodes...)
+	ss.keyspaceShards.addShards(request.Keyspace, nodes...)
 
 	return &pb.CreateShardResponse{
 		Error: "",

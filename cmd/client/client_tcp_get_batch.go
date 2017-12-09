@@ -46,7 +46,7 @@ func (c *VastoClient) BatchGet(keyspace string, keys [][]byte, options ...topolo
 				request.Get.Replica = uint32(replica)
 			}
 
-			requests := &pb.Requests{}
+			requests := &pb.Requests{Keyspace:keyspace}
 			requests.Requests = requestList
 
 			responses, err := pb.SendRequests(conn, requests)

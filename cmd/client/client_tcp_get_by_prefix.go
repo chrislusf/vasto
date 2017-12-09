@@ -27,7 +27,7 @@ func (c *VastoClient) GetByPrefix(keyspace string, partitionKey, prefix []byte, 
 		},
 	}
 
-	requests := &pb.Requests{}
+	requests := &pb.Requests{Keyspace:keyspace}
 	requests.Requests = append(requests.Requests, request)
 
 	responses, err := pb.SendRequests(conn, requests)

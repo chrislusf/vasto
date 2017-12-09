@@ -88,7 +88,7 @@ func (ss *storeServer) handleInputOutput(input []byte) (output []byte, err error
 
 	responses := &pb.Responses{}
 	for _, request := range requests.Requests {
-		response := ss.processRequest(request)
+		response := ss.processRequest(requests.Keyspace, request)
 		responses.Responses = append(responses.Responses, response)
 	}
 
@@ -101,22 +101,25 @@ func (ss *storeServer) handleInputOutput(input []byte) (output []byte, err error
 
 }
 
-func (ss *storeServer) processRequest(command *pb.Request) *pb.Response {
+func (ss *storeServer) processRequest(keyspace string, command *pb.Request) *pb.Response {
+
+	nodes := ss.keyspaceShards.getShards(keyspace)
+
 	if command.GetGet() != nil {
 		return &pb.Response{
-			Get: ss.processGet(command.Get),
+			Get: ss.processGet(nodes, command.Get),
 		}
 	} else if command.GetPut() != nil {
 		return &pb.Response{
-			Put: ss.processPut(command.Put),
+			Put: ss.processPut(nodes, command.Put),
 		}
 	} else if command.GetDelete() != nil {
 		return &pb.Response{
-			Delete: ss.processDelete(command.Delete),
+			Delete: ss.processDelete(nodes, command.Delete),
 		}
 	} else if command.GetGetByPrefix() != nil {
 		return &pb.Response{
-			GetByPrefix: ss.processPrefix(command.GetByPrefix),
+			GetByPrefix: ss.processPrefix(nodes, command.GetByPrefix),
 		}
 	}
 	return &pb.Response{

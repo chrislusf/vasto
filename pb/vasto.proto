@@ -160,7 +160,8 @@ message Empty {
 //// data queries
 //////////////////////////////////////////////////
 message Requests {
-    repeated Request requests = 1;
+    string keyspace = 1;
+    repeated Request requests = 2;
 }
 
 message Responses {
@@ -242,7 +243,8 @@ message CopyDoneMessge {
 }
 
 message BootstrapCopyRequest {
-    uint32 node_id = 1;
+    string keyspace = 1;
+    uint32 node_id = 2;
 }
 message BootstrapCopyResponse {
 
@@ -257,10 +259,11 @@ message BootstrapCopyResponse {
 }
 
 message PullUpdateRequest {
-    uint32 node_id = 1;
-    uint32 segment = 2;
-    uint64 offset = 3;
-    uint32 limit = 4;
+    string keyspace = 1;
+    uint32 node_id = 2;
+    uint32 segment = 3;
+    uint64 offset = 4;
+    uint32 limit = 5;
 }
 
 message PullUpdateResponse {
@@ -281,7 +284,8 @@ message UpdateEntry {
 }
 
 message CheckBinlogRequest {
-    uint32 node_id = 1;
+    string keyspace = 1;
+    uint32 node_id = 2;
 }
 message CheckBinlogResponse {
     uint32 node_id = 1;

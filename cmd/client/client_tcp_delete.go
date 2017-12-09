@@ -21,7 +21,7 @@ func (c *VastoClient) Delete(keyspace string, key []byte, options ...topology.Ac
 		},
 	}
 
-	requests := &pb.Requests{}
+	requests := &pb.Requests{Keyspace:keyspace}
 	requests.Requests = append(requests.Requests, request)
 
 	_, err = pb.SendRequests(conn, requests)

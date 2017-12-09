@@ -11,14 +11,17 @@ import (
 
 func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.VastoStore_TailBinlogServer) error {
 
-	replica := ss.findDbReplica(request.NodeId)
+	node, found := ss.findDbReplica(request.Keyspace, request.NodeId)
+	if !found {
+		return fmt.Errorf("shard: %s.%d not found", request.Keyspace, request.NodeId)
+	}
 	segment := uint32(request.Segment)
 	offset := int64(request.Offset)
 	limit := int(request.Limit)
 
 	// println("TailBinlog server, segment", segment, "offset", offset, "limit", limit)
 
-	if !ss.nodes[replica].lm.HasSegment(segment) {
+	if !node.lm.HasSegment(segment) {
 
 		t := &pb.PullUpdateResponse{
 			OutOfSync: true,
@@ -28,7 +31,7 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 			return err
 		}
 
-		start, stop := ss.nodes[replica].lm.GetSegmentRange()
+		start, stop := node.lm.GetSegmentRange()
 
 		return fmt.Errorf("out of sync client reads segment %d offset %d, only has segment [%d,%d]",
 			segment, offset, start, stop)
@@ -39,14 +42,14 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 
 		// println("TailBinlog server reading entries, segment", segment, "offset", offset, "limit", limit)
 
-		entries, nextOffset, err := ss.nodes[replica].lm.ReadEntries(segment, offset, limit)
+		entries, nextOffset, err := node.lm.ReadEntries(segment, offset, limit)
 		if err == io.EOF {
 			segment += 1
 		} else if err != nil {
 			return fmt.Errorf("failed to read segment %d offset %d: %v", segment, offset, err)
 		} else if len(entries) <= 100 {
 			time.Sleep(100 * time.Millisecond)
-			entries, nextOffset, err = ss.nodes[replica].lm.ReadEntries(segment, offset, limit)
+			entries, nextOffset, err = node.lm.ReadEntries(segment, offset, limit)
 			if err == io.EOF {
 				segment += 1
 			} else if err != nil {
@@ -87,9 +90,13 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 }
 
 func (ss *storeServer) CheckBinlog(ctx context.Context, request *pb.CheckBinlogRequest) (*pb.CheckBinlogResponse, error) {
-	replica := ss.findDbReplica(request.NodeId)
 
-	earliestSegment, latestSegment := ss.nodes[replica].lm.GetSegmentRange()
+	node, found := ss.findDbReplica(request.Keyspace, request.NodeId)
+	if !found {
+		return nil, fmt.Errorf("shard: %s.%d not found", request.Keyspace, request.NodeId)
+	}
+
+	earliestSegment, latestSegment := node.lm.GetSegmentRange()
 
 	return &pb.CheckBinlogResponse{
 		NodeId:          request.NodeId,
