@@ -51,7 +51,7 @@ var (
 		DisableUnixSocket: store.Flag("disableUnixSocket", "store listening unix socket").Default("false").Bool(),
 		Master:            store.Flag("master", "master address").Default("localhost:8278").String(),
 		DataCenter:        store.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
-		LogFileSizeMb:     store.Flag("logFileSizeMb", "log file size limit in MB").Default("1024").Int(),
+		LogFileSizeMb:     store.Flag("logFileSizeMb", "log file size limit in MB").Default("128").Int(),
 		LogFileCount:      store.Flag("logFileCount", "log file count limit").Default("3").Int(),
 		ReplicationFactor: store.Flag("replicationFactor", "number of physical copies").Default("3").Int(),
 		DiskSizeGb:        store.Flag("diskSizeGb", "disk size in GB").Default("10").Int(),
