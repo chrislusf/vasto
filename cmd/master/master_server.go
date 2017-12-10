@@ -17,6 +17,7 @@ type MasterOption struct {
 type masterServer struct {
 	option      *MasterOption
 	clientChans *clientChannels
+	clientsStat *clientsStat
 	topo        *masterTopology
 }
 
@@ -24,6 +25,7 @@ func RunMaster(option *MasterOption) {
 	var ms = &masterServer{
 		option:      option,
 		clientChans: newClientChannels(),
+		clientsStat: newClientsStat(),
 		topo:        newMasterTopology(),
 	}
 

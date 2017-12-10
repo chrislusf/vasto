@@ -59,7 +59,7 @@ func meetRequirement(existingTags, requiredTags []string) bool {
 	return true
 }
 
-func (dc *dataCenter) createShards(ctx context.Context, req *pb.CreateClusterRequest, stores []*pb.StoreResource) (error) {
+func createShards(ctx context.Context, req *pb.CreateClusterRequest, stores []*pb.StoreResource) (error) {
 
 	var createShardsError error
 	var wg sync.WaitGroup
@@ -97,6 +97,42 @@ func (dc *dataCenter) createShards(ctx context.Context, req *pb.CreateClusterReq
 	}
 	wg.Wait()
 	return createShardsError
+}
+
+func deleteShards(ctx context.Context, req *pb.DeleteClusterRequest, stores []*pb.StoreResource) (error) {
+
+	var deleteShardsError error
+	var wg sync.WaitGroup
+	for shardId, store := range stores {
+		wg.Add(1)
+		go func(shardId int, store *pb.StoreResource) {
+			defer wg.Done()
+			// log.Printf("connecting to server %d at %s", shardId, store.GetAdminAddress())
+			if err := withConnection(store, func(grpcConnection *grpc.ClientConn) error {
+
+				client := pb.NewVastoStoreClient(grpcConnection)
+				request := &pb.DeleteKeyspaceRequest{
+					Keyspace: req.Keyspace,
+				}
+
+				// log.Printf("sending store %v: %v", store.AdminAddress, request)
+				resp, err := client.DeleteKeyspace(ctx, request)
+				if err != nil {
+					return err
+				}
+				if resp.Error != "" {
+					return fmt.Errorf("delete keyspace %s on %s: %s", req.Keyspace, store.AdminAddress, resp.Error)
+				}
+				return nil
+			}); err != nil {
+				deleteShardsError = err
+				return
+			}
+			// log.Printf("shard created on server %d at %s", shardId, store.GetAdminAddress())
+		}(shardId, store)
+	}
+	wg.Wait()
+	return deleteShardsError
 }
 
 func withConnection(store *pb.StoreResource, fn func(*grpc.ClientConn) error) error {

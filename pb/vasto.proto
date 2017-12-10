@@ -21,6 +21,9 @@ service VastoMaster {
     rpc CreateCluster (CreateClusterRequest) returns (CreateClusterResponse) {
     }
 
+    rpc DeleteCluster (DeleteClusterRequest) returns (DeleteClusterResponse) {
+    }
+
     rpc ResizeCluster (ResizeRequest) returns (stream ResizeProgress) {
     }
 
@@ -51,6 +54,10 @@ service VastoStore {
     }
 
     rpc CreateShard (CreateShardRequest) returns (CreateShardResponse) {
+        // client pull data from server
+    }
+
+    rpc DeleteKeyspace (DeleteKeyspaceRequest) returns (DeleteKeyspaceResponse) {
         // client pull data from server
     }
 
@@ -151,6 +158,7 @@ message StoreHeartbeat {
 message ClientHeartbeat {
     string data_center = 1;
     string keyspace = 2;
+    bool is_unfollow = 3;
 }
 
 message Empty {
@@ -321,6 +329,7 @@ message DescribeResponse {
         message DataCenter {
             string data_center = 1;
             repeated StoreResource store_resources = 2;
+            uint32 client_count = 3;
         }
         repeated DataCenter data_centers = 1;
     }
@@ -330,6 +339,7 @@ message DescribeResponse {
         message Keyspace {
             string keyspace = 1;
             repeated Cluster clusters = 2;
+            uint32 client_count = 3;
         }
         repeated Keyspace keyspaces = 1;
     }
@@ -337,6 +347,7 @@ message DescribeResponse {
 
     message DescCluster {
         Cluster cluster = 1;
+        uint32 client_count = 3;
     }
     DescCluster desc_cluster = 3;
 
@@ -357,6 +368,15 @@ message CreateClusterResponse {
     Cluster cluster = 2;
 }
 
+message DeleteClusterRequest {
+    string data_center = 1;
+    string keyspace = 2;
+}
+
+message DeleteClusterResponse {
+    string error = 1;
+}
+
 message CreateShardRequest {
     string keyspace = 1;
     uint32 shard_id = 2;
@@ -366,6 +386,14 @@ message CreateShardRequest {
 }
 
 message CreateShardResponse {
+    string error = 1;
+}
+
+message DeleteKeyspaceRequest {
+    string keyspace = 1;
+}
+
+message DeleteKeyspaceResponse {
     string error = 1;
 }
 

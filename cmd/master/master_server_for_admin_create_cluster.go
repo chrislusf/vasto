@@ -37,7 +37,7 @@ func (ms *masterServer) CreateCluster(ctx context.Context, req *pb.CreateCluster
 		})
 	}
 
-	if err = dc.createShards(ctx, req, servers); err != nil {
+	if err = createShards(ctx, req, servers); err != nil {
 		resp.Error = err.Error()
 	}
 

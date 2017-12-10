@@ -8,18 +8,21 @@ import (
 	"github.com/chrislusf/vasto/topology/cluster_listener"
 	"github.com/chrislusf/vasto/pb"
 	"log"
+	"context"
 )
 
 type node struct {
-	keyspace                  string
-	id                        int
-	serverId                  int
-	db                        *rocks.Rocks
-	lm                        *binlog.LogManager
-	clusterRing               *topology.ClusterRing
-	clusterListener           *cluster_listener.ClusterListener
-	clusterListenerFinishChan chan bool
-	replicationFactor         int
+	keyspace          string
+	id                int
+	serverId          int
+	db                *rocks.Rocks
+	lm                *binlog.LogManager
+	clusterRing       *topology.ClusterRing
+	clusterListener   *cluster_listener.ClusterListener
+	replicationFactor int
+	nodeFinishChan    chan bool
+	ctx               context.Context
+	cancelFunc        context.CancelFunc
 	// just to avoid repeatedly create these variables
 	nextSegmentKey, nextOffsetKey []byte
 	prevSegment                   uint32
@@ -54,15 +57,20 @@ func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.S
 func newNode(keyspaceName, dir string, serverId, nodeId int, cluster *topology.ClusterRing,
 	clusterListener *cluster_listener.ClusterListener,
 	replicationFactor int, logFileSizeMb int, logFileCount int) *node {
+
+	ctx, cancelFunc := context.WithCancel(context.Background())
+
 	n := &node{
-		keyspace:                  keyspaceName,
-		id:                        nodeId,
-		serverId:                  serverId,
-		db:                        rocks.New(dir),
-		clusterRing:               cluster,
-		clusterListener:           clusterListener,
-		replicationFactor:         replicationFactor,
-		clusterListenerFinishChan: make(chan bool),
+		keyspace:          keyspaceName,
+		id:                nodeId,
+		serverId:          serverId,
+		db:                rocks.New(dir),
+		clusterRing:       cluster,
+		clusterListener:   clusterListener,
+		replicationFactor: replicationFactor,
+		nodeFinishChan:    make(chan bool),
+		ctx:               ctx,
+		cancelFunc:        cancelFunc,
 	}
 	if logFileSizeMb > 0 {
 		n.lm = binlog.NewLogManager(dir, nodeId, int64(logFileSizeMb*1024*1024), logFileCount)
@@ -85,6 +93,18 @@ func (n *node) startWithBootstrapAndFollow(mayBootstrap bool) {
 
 	n.follow()
 
-	n.startListenForNodePeerEvents()
+	n.clusterListener.RegisterShardEventProcessor(n)
+
+}
+
+func (n *node) shutdownNode() {
+
+	n.clusterListener.RemoveKeyspace(n.keyspace)
+
+	n.clusterListener.UnregisterShardEventProcessor(n)
+
+	n.cancelFunc()
+
+	close(n.nodeFinishChan)
 
 }

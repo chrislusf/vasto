@@ -14,17 +14,19 @@ import (
 type shard_id uint32
 
 type NodeWithConnPool struct {
-	id           int
-	network      string
-	address      string
-	adminAddress string
-	shards       map[shard_id]*pb.ShardStatus
-	p            pool.Pool
+	id            int
+	network       string
+	address       string
+	adminAddress  string
+	storeResource *pb.StoreResource
+	shards        map[shard_id]*pb.ShardStatus
+	p             pool.Pool
 }
 
-func newNodeWithConnPool(id int, network, address, adminAddress string) *NodeWithConnPool {
+func newNodeWithConnPool(id int, storeResource *pb.StoreResource) *NodeWithConnPool {
 	p, _ := pool.NewChannelPool(0, 100,
 		func() (net.Conn, error) {
+			network, address := storeResource.Network, storeResource.Address
 			if unixSocket, ok := util.GetUnixSocketFile(address); ok {
 				network, address = "unix", unixSocket
 			}
@@ -41,12 +43,10 @@ func newNodeWithConnPool(id int, network, address, adminAddress string) *NodeWit
 			return conn, err
 		})
 	return &NodeWithConnPool{
-		id:           id,
-		network:      network,
-		address:      address,
-		adminAddress: adminAddress,
-		shards:       make(map[shard_id]*pb.ShardStatus),
-		p:            p,
+		id:            id,
+		storeResource: storeResource,
+		shards:        make(map[shard_id]*pb.ShardStatus),
+		p:             p,
 	}
 }
 
@@ -55,15 +55,19 @@ func (n *NodeWithConnPool) GetId() int {
 }
 
 func (n *NodeWithConnPool) GetNetwork() string {
-	return n.network
+	return n.storeResource.Network
 }
 
 func (n *NodeWithConnPool) GetAddress() string {
-	return n.address
+	return n.storeResource.Address
 }
 
 func (n *NodeWithConnPool) GetAdminAddress() string {
-	return n.adminAddress
+	return n.storeResource.AdminAddress
+}
+
+func (n *NodeWithConnPool) GetStoreResource() *pb.StoreResource {
+	return n.storeResource
 }
 
 func (n *NodeWithConnPool) GetConnection() (net.Conn, error) {
@@ -94,7 +98,7 @@ func (clusterListener *ClusterListener) AddNode(keyspace string, n *pb.ClusterNo
 	st, ss := n.StoreResource, n.ShardStatus
 	node, _, found := cluster.GetNode(int(ss.NodeId))
 	if !found {
-		node = topology.Node(newNodeWithConnPool(int(ss.NodeId), st.Network, st.Address, st.AdminAddress))
+		node = topology.Node(newNodeWithConnPool(int(ss.NodeId), st))
 	}
 	oldShardStatus = node.SetShardStatus(ss)
 	cluster.Add(node)

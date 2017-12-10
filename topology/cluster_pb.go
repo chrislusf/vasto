@@ -7,9 +7,7 @@ import (
 func NewNodeFromStore(store *pb.StoreResource, shardId uint32) Node {
 	return NewNode(
 		int(shardId),
-		store.Network,
-		store.Address,
-		store.AdminAddress,
+		store,
 	)
 }
 

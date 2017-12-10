@@ -49,7 +49,7 @@ func (c *CommandDesc) Do(args []string, out io.Writer) error {
 
 		keyspaces := descResponse.DescKeyspaces.Keyspaces
 		for _, keyspace := range keyspaces {
-			fmt.Fprintf(out, "keyspace %v\n", keyspace.Keyspace)
+			fmt.Fprintf(out, "keyspace %v client:%d\n", keyspace.Keyspace, keyspace.ClientCount)
 			for _, cluster := range keyspace.Clusters {
 				fmt.Fprintf(out, "    cluster %v expected size %d\n",
 					cluster.DataCenter, cluster.ExpectedClusterSize)
@@ -75,7 +75,7 @@ func (c *CommandDesc) Do(args []string, out io.Writer) error {
 
 		dataCenters := descResponse.DescDataCenters.DataCenters
 		for _, dataCenter := range dataCenters {
-			fmt.Fprintf(out, "datacenter %v\n", dataCenter.DataCenter)
+			fmt.Fprintf(out, "datacenter %v client:%d\n", dataCenter.DataCenter, dataCenter.ClientCount)
 			for _, server := range dataCenter.StoreResources {
 				fmt.Fprintf(out, "    server %v total:%d GB, allocated:%d GB, Tags:%s\n",
 					server.Address, server.DiskSizeGb, server.AllocatedSizeGb, server.Tags)
@@ -98,7 +98,11 @@ func (c *CommandDesc) Do(args []string, out io.Writer) error {
 			return err
 		}
 
-		fmt.Fprintf(out, "Cluster Client Count : %d\n", descResponse.ClientCount)
+		if descResponse.DescCluster == nil {
+			return fmt.Errorf("no cluster keyspace(%v) dc(%v) found", param, args[1])
+		}
+
+		fmt.Fprintf(out, "Cluster Client Count : %d\n", descResponse.DescCluster.ClientCount)
 		printCluster(out, descResponse.DescCluster.GetCluster())
 
 	}

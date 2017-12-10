@@ -19,7 +19,7 @@ func TestNode(t *testing.T) {
 
 // closure function for benchmarking multiple clusters
 func baselineBenchmark(hosts int) func(b *testing.B) {
-	ring := NewHashRing("")
+	ring := NewHashRing("ks1", "dc1", hosts, 2)
 	for i := 0; i < hosts; i++ {
 		ring.Add(NewNode(i, "tcp", fmt.Sprint("localhost:", 7000+i), fmt.Sprint("localhost:", 8000+i)))
 	}
@@ -78,8 +78,8 @@ func TestHashing(t *testing.T) {
 	assert.True(t, actualMovedPercentage < expectedMovePercentage+0.002)
 }
 
-func createRing(hosts int) ClusterRing {
-	ring := NewHashRing("")
+func createRing(hosts int) *ClusterRing {
+	ring := NewHashRing("ks1", "dc1", hosts, 2)
 	for i := 0; i < hosts; i++ {
 		ring.Add(NewNode(i, "tcp", fmt.Sprint("localhost:", 7000+i), fmt.Sprint("localhost:", 8000+i)))
 	}

@@ -1,7 +1,6 @@
 package master
 
 import (
-	"fmt"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
 	"sync"
@@ -85,6 +84,12 @@ func (ks *keyspaces) getKeyspace(keyspaceName string) (k *keyspace, found bool) 
 	return
 }
 
+func (ks *keyspaces) removeKeyspace(keyspaceName string) {
+	ks.Lock()
+	delete(ks.keyspaces, keyspace_name(keyspaceName))
+	ks.Unlock()
+}
+
 func (k *keyspace) getCluster(dataCenterName string) (cluster *topology.ClusterRing, found bool) {
 	k.RLock()
 	cluster, found = k.clusters[data_center_name(dataCenterName)]
@@ -92,11 +97,17 @@ func (k *keyspace) getCluster(dataCenterName string) (cluster *topology.ClusterR
 	return
 }
 
-func (k *keyspace) doGetOrCreateCluster(dataCenterName string, clusterSize int) (
+func (k *keyspace) removeCluster(dataCenterName string) {
+	k.Lock()
+	delete(k.clusters, data_center_name(dataCenterName))
+	k.Unlock()
+}
+
+func (k *keyspace) doGetOrCreateCluster(dataCenterName string, clusterSize int, replicationFactor int) (
 	cluster *topology.ClusterRing, isNew bool) {
 	cluster, found := k.getCluster(dataCenterName)
 	if !found {
-		cluster = topology.NewHashRing(string(k.name), dataCenterName, clusterSize)
+		cluster = topology.NewHashRing(string(k.name), dataCenterName, clusterSize, replicationFactor)
 		k.Lock()
 		k.clusters[data_center_name(dataCenterName)] = cluster
 		k.Unlock()
@@ -106,18 +117,12 @@ func (k *keyspace) doGetOrCreateCluster(dataCenterName string, clusterSize int) 
 	return
 }
 
-func (k *keyspace) getOrCreateCluster(storeResource *pb.StoreResource, clusterSize int) (
-	*topology.ClusterRing, error) {
-	cluster, _ := k.doGetOrCreateCluster(storeResource.DataCenter, clusterSize)
-	if cluster.ExpectedSize() == 0 {
-		// the cluster may have been created by client joining first
-		cluster.SetExpectedSize(clusterSize)
-	} else if cluster.ExpectedSize() != clusterSize {
-		return nil, fmt.Errorf("store %v joined with cluster %s size %d, expecting %d",
-			storeResource, k.name, clusterSize, cluster.ExpectedSize())
-	}
+func (k *keyspace) getOrCreateCluster(storeResource *pb.StoreResource, clusterSize int, replicationFactor int) (*topology.ClusterRing) {
+	cluster, _ := k.doGetOrCreateCluster(storeResource.DataCenter, clusterSize, replicationFactor)
+	cluster.SetExpectedSize(clusterSize)
+	cluster.SetReplicationFactor(replicationFactor)
 
-	return cluster, nil
+	return cluster
 }
 
 func (dcs *dataCenters) getOrCreateDataCenter(dataCenterName string) *dataCenter {

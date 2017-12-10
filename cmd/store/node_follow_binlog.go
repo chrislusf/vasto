@@ -1,7 +1,6 @@
 package store
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"time"
@@ -16,6 +15,12 @@ const (
 	syncProgressFlushInterval = time.Minute
 )
 
+// implementing PeriodicTask
+func (n *node) Keyspace() string {
+	return n.keyspace
+}
+
+// implementing PeriodicTask
 func (n *node) EverySecond() {
 	// log.Printf("%s every second", n)
 	if n.prevSegment != n.nextSegment || n.prevOffset != n.nextOffset {
@@ -42,7 +47,7 @@ func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn
 		Limit:   8096,
 	}
 
-	stream, err := client.TailBinlog(context.Background(), request)
+	stream, err := client.TailBinlog(n.ctx, request)
 	if err != nil {
 		return fmt.Errorf("client.TailBinlog to server %d %s: %v", node.GetId(), node.GetAdminAddress(), err)
 	}

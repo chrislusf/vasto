@@ -31,3 +31,9 @@ func (ks *keyspaceShards) addShards(keyspaceName string, nodes ...*node) {
 	}
 	ks.Unlock()
 }
+
+func (ks *keyspaceShards) deleteKeyspace(keyspaceName string) {
+	ks.Lock()
+	delete(ks.keyspaceToShards, keyspace_name(keyspaceName))
+	ks.Unlock()
+}

@@ -13,17 +13,16 @@ type Node interface {
 	GetNetwork() string
 	GetAddress() string
 	GetAdminAddress() string
+	GetStoreResource() *pb.StoreResource
 	SetShardStatus(shardStatus *pb.ShardStatus) (oldShardStatus *pb.ShardStatus)
 	RemoveShardStatus(shardStatus *pb.ShardStatus)
 	GetShardStatuses() []*pb.ShardStatus
 }
 
 type node struct {
-	id           int
-	network      string
-	address      string
-	adminAddress string
-	shards       map[string]*pb.ShardStatus
+	id     int
+	store  *pb.StoreResource
+	shards map[string]*pb.ShardStatus
 }
 
 func (n *node) GetId() int {
@@ -31,19 +30,23 @@ func (n *node) GetId() int {
 }
 
 func (n *node) GetNetwork() string {
-	return n.network
+	return n.store.Network
 }
 
 func (n *node) GetAddress() string {
-	return n.address
+	return n.store.Address
 }
 
 func (n *node) GetAdminAddress() string {
-	return n.adminAddress
+	return n.store.AdminAddress
 }
 
-func NewNode(id int, network, address, adminAddress string) Node {
-	return &node{id: id, network: network, address: address, adminAddress: adminAddress, shards: make(map[string]*pb.ShardStatus)}
+func (n *node) GetStoreResource() *pb.StoreResource {
+	return n.store
+}
+
+func NewNode(id int, store *pb.StoreResource) Node {
+	return &node{id: id, store: store, shards: make(map[string]*pb.ShardStatus)}
 }
 
 func (n *node) SetShardStatus(shardStatus *pb.ShardStatus) (oldShardStatus *pb.ShardStatus) {
@@ -70,11 +73,12 @@ func (n *node) GetShardStatuses() []*pb.ShardStatus {
 // --------------------
 
 type ClusterRing struct {
-	keyspace     string
-	dataCenter   string
-	nodes        []Node
-	expectedSize int
-	nextSize     int
+	keyspace          string
+	dataCenter        string
+	nodes             []Node
+	expectedSize      int
+	nextSize          int
+	replicationFactor int
 }
 
 // adds a address (+virtual hosts to the ring)
@@ -115,12 +119,20 @@ func (cluster *ClusterRing) NextSize() int {
 	return cluster.nextSize
 }
 
+func (cluster *ClusterRing) ReplicationFactor() int {
+	return cluster.replicationFactor
+}
+
 func (cluster *ClusterRing) SetExpectedSize(expectedSize int) {
 	cluster.expectedSize = expectedSize
 }
 
 func (cluster *ClusterRing) SetNextSize(nextSize int) {
 	cluster.nextSize = nextSize
+}
+
+func (cluster *ClusterRing) SetReplicationFactor(replicationFactor int) {
+	cluster.replicationFactor = replicationFactor
 }
 
 func (cluster *ClusterRing) CurrentSize() int {
@@ -172,12 +184,13 @@ func (cluster *ClusterRing) MissingAndFreeNodeIds() (missingList, freeList []int
 }
 
 // NewHashRing creates a new hash ring.
-func NewHashRing(keyspace, dataCenter string, expectedSize int) *ClusterRing {
+func NewHashRing(keyspace, dataCenter string, expectedSize int, replicationFactor int) *ClusterRing {
 	return &ClusterRing{
-		keyspace:     keyspace,
-		dataCenter:   dataCenter,
-		nodes:        make([]Node, 0, 16),
-		expectedSize: expectedSize,
+		keyspace:          keyspace,
+		dataCenter:        dataCenter,
+		nodes:             make([]Node, 0, 16),
+		expectedSize:      expectedSize,
+		replicationFactor: replicationFactor,
 	}
 }
 

@@ -29,7 +29,7 @@ func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardR
 
 func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, replicationFactor int) (nodes []*node, err error) {
 
-	cluster := ss.clusterListener.AddNewKeyspace(keyspace, clusterSize)
+	cluster := ss.clusterListener.AddNewKeyspace(keyspace, clusterSize, replicationFactor)
 
 	status := &pb.StoreStatusInCluster{
 		Id:                uint32(serverId),

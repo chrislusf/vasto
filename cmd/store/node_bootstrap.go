@@ -8,7 +8,6 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
 	"github.com/tecbot/gorocksdb"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -58,7 +57,7 @@ func (n *node) checkBinlogAvailable(grpcConnection *grpc.ClientConn) (latestSegm
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
-	resp, err := client.CheckBinlog(context.Background(), &pb.CheckBinlogRequest{
+	resp, err := client.CheckBinlog(n.ctx, &pb.CheckBinlogRequest{
 		NodeId: uint32(n.id),
 	})
 	if err != nil {
@@ -89,7 +88,7 @@ func (n *node) writeToSst(grpcConnection *grpc.ClientConn) (segment uint32, offs
 		NodeId: uint32(n.id),
 	}
 
-	stream, err := client.BootstrapCopy(context.Background(), request)
+	stream, err := client.BootstrapCopy(n.ctx, request)
 	if err != nil {
 		return 0, 0, fmt.Errorf("client.TailBinlog: %v", err)
 	}

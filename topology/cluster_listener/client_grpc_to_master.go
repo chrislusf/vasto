@@ -28,17 +28,25 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 	go func() {
 		for keyspace, _ := range clusterListener.clusters {
 			log.Printf("register cluster keyspace(%v) datacenter(%v)", keyspace, dataCenter)
-			if err := registerForClusterAtMaster(stream, string(keyspace), dataCenter); err != nil {
+			if err := registerForClusterAtMaster(stream, string(keyspace), dataCenter, false); err != nil {
 				log.Printf("register cluster keyspace(%v) datacenter(%v): %v", keyspace, dataCenter, err)
 				return
 			}
 		}
 
 		for {
-			keyspace := <-clusterListener.keyspaceChan
-			log.Printf("register cluster new keyspace(%v) datacenter(%v)", keyspace, dataCenter)
-			if err := registerForClusterAtMaster(stream, keyspace, dataCenter); err != nil {
-				log.Printf("register cluster new keyspace(%v) datacenter(%v): %v", keyspace, dataCenter, err)
+			msg := <-clusterListener.keyspaceFollowMessageChan
+			if msg.isUnfollow {
+				log.Printf("unfollow cluster keyspace(%v) datacenter(%v)", msg.keyspace, dataCenter)
+			} else {
+				log.Printf("register cluster new keyspace(%v) datacenter(%v)", msg.keyspace, dataCenter)
+			}
+			if err := registerForClusterAtMaster(stream, string(msg.keyspace), dataCenter, msg.isUnfollow); err != nil {
+				if msg.isUnfollow {
+					log.Printf("unfollow cluster keyspace(%v) datacenter(%v): %v", msg.keyspace, dataCenter, err)
+				} else {
+					log.Printf("register cluster new keyspace(%v) datacenter(%v): %v", msg.keyspace, dataCenter, err)
+				}
 				return
 			}
 		}
@@ -64,10 +72,11 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 
 }
 
-func registerForClusterAtMaster(stream pb.VastoMaster_RegisterClientClient, keyspace, dataCenter string) error {
+func registerForClusterAtMaster(stream pb.VastoMaster_RegisterClientClient, keyspace, dataCenter string, isUnfollow bool) error {
 	clientHeartbeat := &pb.ClientHeartbeat{
 		Keyspace:   keyspace,
 		DataCenter: dataCenter,
+		IsUnfollow: isUnfollow,
 	}
 
 	if err := stream.Send(clientHeartbeat); err != nil {

@@ -6,23 +6,6 @@ import (
 	"log"
 )
 
-func (n *node) startListenForNodePeerEvents() {
-
-	n.clusterListener.RegisterShardEventProcessor(n)
-
-	select {
-	case <-n.clusterListenerFinishChan:
-		n.clusterListener.UnregisterShardEventProcessor(n)
-	}
-
-}
-
-func (n *node) stopListenForNodePeerEvents() {
-
-	close(n.clusterListenerFinishChan)
-
-}
-
 // the following functions implements cluster_listener.ShardEventProcessor
 
 func (n *node) OnShardCreateEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, shardStatus *pb.ShardStatus) {

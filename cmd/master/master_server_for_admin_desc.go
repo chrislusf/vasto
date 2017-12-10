@@ -17,7 +17,8 @@ func (ms *masterServer) Describe(ctx context.Context, req *pb.DescribeRequest) (
 			cluster, found := keyspace.getCluster(req.DescCluster.DataCenter)
 			if found {
 				resp.DescCluster = &pb.DescribeResponse_DescCluster{
-					Cluster: cluster.ToCluster(),
+					Cluster:     cluster.ToCluster(),
+					ClientCount: uint32(ms.clientsStat.getClusterClientCount(keyspace.name, data_center_name(req.DescCluster.DataCenter))),
 				}
 			}
 		}
@@ -37,6 +38,7 @@ func (ms *masterServer) Describe(ctx context.Context, req *pb.DescribeRequest) (
 				&pb.DescribeResponse_DescDataCenters_DataCenter{
 					DataCenter:     string(dataCenterName),
 					StoreResources: servers,
+					ClientCount:    uint32(ms.clientsStat.getDataCenterClientCount(dataCenterName)),
 				})
 		}
 		ms.topo.dataCenters.RUnlock()
@@ -54,8 +56,9 @@ func (ms *masterServer) Describe(ctx context.Context, req *pb.DescribeRequest) (
 			keyspace.RUnlock()
 			resp.DescKeyspaces.Keyspaces = append(resp.DescKeyspaces.Keyspaces,
 				&pb.DescribeResponse_DescKeyspaces_Keyspace{
-					Keyspace: string(keyspaceName),
-					Clusters: clusters,
+					Keyspace:    string(keyspaceName),
+					Clusters:    clusters,
+					ClientCount: uint32(ms.clientsStat.getKeyspaceClientCount(keyspaceName)),
 				})
 		}
 		ms.topo.keyspaces.RUnlock()

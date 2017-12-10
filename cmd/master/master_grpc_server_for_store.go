@@ -70,10 +70,7 @@ func (ms *masterServer) notifyUpdate(shardStatus *pb.ShardStatus, storeResource 
 func (ms *masterServer) processShardStatus(seenShardsOnThisServer map[string]*pb.ShardStatus,
 	storeResource *pb.StoreResource, shardStatus *pb.ShardStatus) error {
 	keyspace := ms.topo.keyspaces.getOrCreateKeyspace(shardStatus.KeyspaceName)
-	cluster, err := keyspace.getOrCreateCluster(storeResource, int(shardStatus.ClusterSize))
-	if err != nil {
-		return fmt.Errorf("cluster error: %v", err)
-	}
+	cluster := keyspace.getOrCreateCluster(storeResource, int(shardStatus.ClusterSize), int(shardStatus.ReplicationFactor))
 
 	node, _, found := cluster.GetNode(int(shardStatus.NodeId))
 	if shardStatus.Status == pb.ShardStatus_DELETED && !found {

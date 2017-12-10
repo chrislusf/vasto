@@ -12,36 +12,48 @@ import (
 )
 
 type keyspace_name string
+
+type keyspace_follow_message struct {
+	keyspace   keyspace_name
+	isUnfollow bool
+}
 type ClusterListener struct {
 	sync.RWMutex
-	clusters             map[keyspace_name]*topology.ClusterRing
-	keyspaceChan         chan string
-	dataCenter           string
-	shardEventProcessors []ShardEventProcessor
+	clusters                  map[keyspace_name]*topology.ClusterRing
+	keyspaceFollowMessageChan chan keyspace_follow_message
+	dataCenter                string
+	shardEventProcessors      []ShardEventProcessor
 }
 
 func NewClusterClient(dataCenter string) *ClusterListener {
 	return &ClusterListener{
-		clusters:     make(map[keyspace_name]*topology.ClusterRing),
-		keyspaceChan: make(chan string, 1),
-		dataCenter:   dataCenter,
+		clusters:                  make(map[keyspace_name]*topology.ClusterRing),
+		keyspaceFollowMessageChan: make(chan keyspace_follow_message, 1),
+		dataCenter:                dataCenter,
 	}
 }
 
-func (clusterListener *ClusterListener) AddExistingKeyspace(keyspace string, clusterSize int) {
+func (clusterListener *ClusterListener) AddExistingKeyspace(keyspace string, clusterSize int, replicationFactor int) {
 	clusterListener.Lock()
-	clusterListener.clusters[keyspace_name(keyspace)] = topology.NewHashRing(keyspace, clusterListener.dataCenter, clusterSize)
+	clusterListener.clusters[keyspace_name(keyspace)] = topology.NewHashRing(keyspace, clusterListener.dataCenter, clusterSize, replicationFactor)
 	clusterListener.Unlock()
 }
 
 // AddNewKeyspace register to listen to one keyspace
-func (clusterListener *ClusterListener) AddNewKeyspace(keyspace string, clusterSize int) *topology.ClusterRing {
+func (clusterListener *ClusterListener) AddNewKeyspace(keyspace string, clusterSize int, replicationFactor int) *topology.ClusterRing {
 	clusterListener.Lock()
-	t := topology.NewHashRing(keyspace, clusterListener.dataCenter, clusterSize)
+	t := topology.NewHashRing(keyspace, clusterListener.dataCenter, clusterSize, replicationFactor)
 	clusterListener.clusters[keyspace_name(keyspace)] = t
 	clusterListener.Unlock()
-	clusterListener.keyspaceChan <- keyspace
+	clusterListener.keyspaceFollowMessageChan <- keyspace_follow_message{keyspace: keyspace_name(keyspace)}
 	return t
+}
+
+func (clusterListener *ClusterListener) RemoveKeyspace(keyspace string) {
+	clusterListener.Lock()
+	delete(clusterListener.clusters, keyspace_name(keyspace))
+	clusterListener.Unlock()
+	clusterListener.keyspaceFollowMessageChan <- keyspace_follow_message{keyspace: keyspace_name(keyspace), isUnfollow: true}
 }
 
 func (clusterListener *ClusterListener) GetClusterRing(keyspace string) *topology.ClusterRing {
