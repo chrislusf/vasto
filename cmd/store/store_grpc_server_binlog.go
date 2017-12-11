@@ -14,7 +14,7 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 	log.Printf("TailBinlog %v", request)
 
 	node, found := ss.findDbReplica(request.Keyspace, request.NodeId)
-	if !found {
+	if !found || node.isShutdown{
 		return fmt.Errorf("shard: %s.%d not found", request.Keyspace, request.NodeId)
 	}
 	segment := uint32(request.Segment)

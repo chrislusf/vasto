@@ -22,6 +22,7 @@ type shard struct {
 	replicationFactor int
 	nodeFinishChan    chan bool
 	cancelFunc        context.CancelFunc
+	isShutdown        bool
 	// just to avoid repeatedly create these variables
 	nextSegmentKey, nextOffsetKey []byte
 	prevSegment                   uint32
@@ -95,6 +96,8 @@ func (s *shard) startWithBootstrapAndFollow(ctx context.Context, mayBootstrap bo
 }
 
 func (s *shard) shutdownNode() {
+
+	s.isShutdown = true
 
 	s.cancelFunc()
 
