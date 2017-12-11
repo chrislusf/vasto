@@ -6,7 +6,7 @@ import (
 	"github.com/chrislusf/vasto/storage/codec"
 )
 
-func (ss *storeServer) processPrefix(nodes []*node, prefixRequest *pb.GetByPrefixRequest) *pb.GetByPrefixResponse {
+func (ss *storeServer) processPrefix(nodes []*shard, prefixRequest *pb.GetByPrefixRequest) *pb.GetByPrefixResponse {
 	replica := int(prefixRequest.Replica)
 	if replica >= len(nodes) {
 		return &pb.GetByPrefixResponse{

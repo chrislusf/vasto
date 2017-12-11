@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func (ss *storeServer) processDelete(nodes []*node, deleteRequest *pb.DeleteRequest) *pb.DeleteResponse {
+func (ss *storeServer) processDelete(nodes []*shard, deleteRequest *pb.DeleteRequest) *pb.DeleteResponse {
 
 	replica := int(deleteRequest.Replica)
 	if replica >= len(nodes) {
@@ -32,13 +32,13 @@ func (ss *storeServer) processDelete(nodes []*node, deleteRequest *pb.DeleteRequ
 
 }
 
-func (n *node) logDelete(key []byte, partitionHash uint64, updatedAtNs uint64) {
+func (s *shard) logDelete(key []byte, partitionHash uint64, updatedAtNs uint64) {
 
-	if n.lm == nil {
+	if s.lm == nil {
 		return
 	}
 
-	n.lm.AppendEntry(binlog.NewLogEntry(
+	s.lm.AppendEntry(binlog.NewLogEntry(
 		partitionHash,
 		updatedAtNs,
 		0,

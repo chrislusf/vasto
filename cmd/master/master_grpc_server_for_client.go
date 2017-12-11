@@ -85,7 +85,6 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 								return
 							}
 						case <-clientDisconnectedChan:
-							log.Printf("send to client err: %v", err)
 							return
 						}
 					}

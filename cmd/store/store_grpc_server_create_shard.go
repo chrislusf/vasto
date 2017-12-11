@@ -27,7 +27,7 @@ func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardR
 
 }
 
-func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, replicationFactor int) (nodes []*node, err error) {
+func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, replicationFactor int) (nodes []*shard, err error) {
 
 	cluster := ss.clusterListener.AddNewKeyspace(keyspace, clusterSize, replicationFactor)
 
@@ -51,7 +51,7 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 		if err != nil {
 			return nil, fmt.Errorf("mkdir %s: %v", dir, err)
 		}
-		node := newNode(keyspace, dir, serverId, shardId, cluster, ss.clusterListener,
+		node := newShard(keyspace, dir, serverId, shardId, cluster, ss.clusterListener,
 			replicationFactor, *ss.option.LogFileSizeMb, *ss.option.LogFileCount)
 		nodes = append(nodes, node)
 

@@ -10,7 +10,7 @@ import (
 	"github.com/chrislusf/vasto/storage/codec"
 )
 
-func (ss *storeServer) processPut(nodes []*node, putRequest *pb.PutRequest) *pb.PutResponse {
+func (ss *storeServer) processPut(nodes []*shard, putRequest *pb.PutRequest) *pb.PutResponse {
 	replica := int(putRequest.Replica)
 	if replica >= len(nodes) {
 		return &pb.PutResponse{
@@ -33,7 +33,7 @@ func (ss *storeServer) processPut(nodes []*node, putRequest *pb.PutRequest) *pb.
 
 	node := nodes[replica]
 
-	// fmt.Printf("node %d put keyValue: %v\n", node.id, putRequest.KeyValue.String())
+	// fmt.Printf("shard %d put keyValue: %v\n", shard.id, putRequest.KeyValue.String())
 
 	err := node.db.Put(key, entry.ToBytes())
 	if err != nil {
@@ -46,17 +46,17 @@ func (ss *storeServer) processPut(nodes []*node, putRequest *pb.PutRequest) *pb.
 	return resp
 }
 
-func (n *node) logPut(putRequest *pb.PutRequest, updatedAtNs uint64) {
+func (s *shard) logPut(putRequest *pb.PutRequest, updatedAtNs uint64) {
 
 	// println("logPut1", putRequest.String())
 
-	if n.lm == nil {
+	if s.lm == nil {
 		return
 	}
 
 	// println("logPut2", putRequest.String())
 
-	err := n.lm.AppendEntry(binlog.NewLogEntry(
+	err := s.lm.AppendEntry(binlog.NewLogEntry(
 		putRequest.PartitionHash,
 		updatedAtNs,
 		putRequest.TtlSecond,

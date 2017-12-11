@@ -6,23 +6,23 @@ import (
 	"log"
 )
 
-func (n *node) isBootstrapNeeded() (bestPeerToCopy int, isNeeded bool) {
+func (s *shard) isBootstrapNeeded() (bestPeerToCopy int, isNeeded bool) {
 
-	peerServerIds := n.findPeerServerIds()
+	peerServerIds := s.findPeerServerIds()
 
 	isBootstrapNeededChan := make(chan bool, len(peerServerIds))
 	maxSegment := uint32(0)
 	bestPeerToCopy = -1
 	checkedServerCount := 0
 	for _, serverId := range peerServerIds {
-		_, _, ok := n.clusterRing.GetNode(serverId)
+		_, _, ok := s.clusterRing.GetNode(serverId)
 		if !ok {
 			continue
 		}
 		checkedServerCount++
-		go n.clusterRing.WithConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
+		go s.clusterRing.WithConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
 
-			latestSegment, canTailBinlog, err := n.checkBinlogAvailable(grpcConnection)
+			latestSegment, canTailBinlog, err := s.checkBinlogAvailable(grpcConnection)
 			if err != nil {
 				isBootstrapNeededChan <- false
 				return err
@@ -42,30 +42,30 @@ func (n *node) isBootstrapNeeded() (bestPeerToCopy int, isNeeded bool) {
 	}
 
 	if isNeeded {
-		log.Printf("node %v found peer %v to bootstrap from", n.id, bestPeerToCopy)
+		log.Printf("shard %v found peer %v to bootstrap from", s.id, bestPeerToCopy)
 	} else {
-		log.Printf("node %v found bootstrapping is not needed", n.id)
+		log.Printf("shard %v found bootstrapping is not needed", s.id)
 	}
 
 	return bestPeerToCopy, isNeeded
 }
 
-func (n *node) findPeerServerIds() (serverIds []int) {
+func (s *shard) findPeerServerIds() (serverIds []int) {
 
-	size := n.clusterRing.ExpectedSize()
+	size := s.clusterRing.ExpectedSize()
 
-	for i := 0; i < n.replicationFactor && i < size; i++ {
-		serverId := n.id + i
+	for i := 0; i < s.replicationFactor && i < size; i++ {
+		serverId := s.id + i
 		if serverId >= size {
 			serverId -= size
 		}
-		if serverId == n.serverId {
+		if serverId == s.serverId {
 			continue
 		}
 		serverIds = append(serverIds, serverId)
 	}
 
-	log.Printf("cluster size %d, node %d, server %d peers are: %v", n.clusterRing.ExpectedSize(), n.id, n.serverId, serverIds)
+	log.Printf("cluster size %d, shard %d, server %d peers are: %v", s.clusterRing.ExpectedSize(), s.id, s.serverId, serverIds)
 
 	return
 }

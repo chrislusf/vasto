@@ -10,21 +10,21 @@ import (
 )
 
 // follow keep trying all peers in the cluster and keep retrying to follow the peers
-func (n *node) follow() {
+func (s *shard) follow() {
 
-	for _, serverId := range n.findPeerServerIds() {
+	for _, serverId := range s.findPeerServerIds() {
 		sid := serverId
-		go util.RetryForever(fmt.Sprintf("server %d shard %d to server %d", n.serverId, n.id, sid), func() error {
-			return n.doFollow(sid)
+		go util.RetryForever(fmt.Sprintf("server %d shard %d to server %d", s.serverId, s.id, sid), func() error {
+			return s.doFollow(sid)
 		}, 2*time.Second)
 	}
 
 }
 
-func (n *node) doFollow(serverId int) error {
+func (s *shard) doFollow(serverId int) error {
 
-	return n.clusterRing.WithConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
-		return n.followChanges(node, grpcConnection)
+	return s.clusterRing.WithConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
+		return s.followChanges(node, grpcConnection)
 	})
 
 }

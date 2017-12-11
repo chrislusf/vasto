@@ -80,7 +80,7 @@ func (ss *storeServer) registerAtMasterServer() error {
 		for {
 			select {
 			case shardStatus := <-ss.shardStatusChan:
-				// collect current server's different cluster node status
+				// collect current server's different cluster shard status
 				// log.Println("shard status => ", shardStatus)
 				storeHeartbeat = &pb.StoreHeartbeat{
 					ShardStatus: shardStatus,

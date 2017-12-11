@@ -11,7 +11,7 @@ import (
 	"context"
 )
 
-type node struct {
+type shard struct {
 	keyspace          string
 	id                int
 	serverId          int
@@ -31,8 +31,8 @@ type node struct {
 	nextOffset                    uint64
 }
 
-func (n *node) String() string {
-	return fmt.Sprintf("%s.%d.%d", n.keyspace, n.serverId, n.id)
+func (s *shard) String() string {
+	return fmt.Sprintf("%s.%d.%d", s.keyspace, s.serverId, s.id)
 }
 
 func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.StoreStatusInCluster,
@@ -40,13 +40,12 @@ func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.S
 	cluster := clusterListener.GetClusterRing(keyspaceName)
 	for _, shardStatus := range storeStatus.ShardStatuses {
 		dir := fmt.Sprintf("%s/%s/%d", *ss.option.Dir, shardStatus.KeyspaceName, shardStatus.ShardId)
-		node := newNode(keyspaceName, dir, int(storeStatus.Id), int(shardStatus.ShardId), cluster, clusterListener,
+		node := newShard(keyspaceName, dir, int(storeStatus.Id), int(shardStatus.ShardId), cluster, clusterListener,
 			int(storeStatus.ReplicationFactor), *ss.option.LogFileSizeMb, *ss.option.LogFileCount)
+		println("loading shard", node.String())
 		ss.keyspaceShards.addShards(keyspaceName, node)
 		ss.RegisterPeriodicTask(node)
 		go node.startWithBootstrapAndFollow(*ss.option.Bootstrap)
-
-		println("size", node.db.Size())
 
 		// register the shard at master
 		t := shardStatus
@@ -54,13 +53,13 @@ func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.S
 	}
 }
 
-func newNode(keyspaceName, dir string, serverId, nodeId int, cluster *topology.ClusterRing,
+func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.ClusterRing,
 	clusterListener *cluster_listener.ClusterListener,
-	replicationFactor int, logFileSizeMb int, logFileCount int) *node {
+	replicationFactor int, logFileSizeMb int, logFileCount int) *shard {
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
-	n := &node{
+	n := &shard{
 		keyspace:          keyspaceName,
 		id:                nodeId,
 		serverId:          serverId,
@@ -82,29 +81,29 @@ func newNode(keyspaceName, dir string, serverId, nodeId int, cluster *topology.C
 	return n
 }
 
-func (n *node) startWithBootstrapAndFollow(mayBootstrap bool) {
+func (s *shard) startWithBootstrapAndFollow(mayBootstrap bool) {
 
-	if n.clusterRing != nil && mayBootstrap {
-		err := n.bootstrap()
+	if s.clusterRing != nil && mayBootstrap {
+		err := s.bootstrap()
 		if err != nil {
 			log.Printf("bootstrap: %v", err)
 		}
 	}
 
-	n.follow()
+	s.follow()
 
-	n.clusterListener.RegisterShardEventProcessor(n)
+	s.clusterListener.RegisterShardEventProcessor(s)
 
 }
 
-func (n *node) shutdownNode() {
+func (s *shard) shutdownNode() {
 
-	n.clusterListener.RemoveKeyspace(n.keyspace)
+	s.clusterListener.RemoveKeyspace(s.keyspace)
 
-	n.clusterListener.UnregisterShardEventProcessor(n)
+	s.clusterListener.UnregisterShardEventProcessor(s)
 
-	n.cancelFunc()
+	s.cancelFunc()
 
-	close(n.nodeFinishChan)
+	close(s.nodeFinishChan)
 
 }

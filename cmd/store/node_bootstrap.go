@@ -12,40 +12,40 @@ import (
 )
 
 /*
-bootstrap ensure current node is bootstrapped and can be synced by binlog tailing.
+bootstrap ensure current shard is bootstrapped and can be synced by binlog tailing.
 1. checks whether the binlog offset is behind any other nodes, if not, return
 2. delete all local data and binlog offset
 3. starts to add changes to sstable
 4. get the new offsets
 */
-func (n *node) bootstrap() error {
+func (s *shard) bootstrap() error {
 
-	bestPeerToCopy, isNeeded := n.isBootstrapNeeded()
+	bestPeerToCopy, isNeeded := s.isBootstrapNeeded()
 	if !isNeeded {
-		// log.Printf("bootstrap node %d is not needed", n.id)
+		// log.Printf("bootstrap shard %d is not needed", s.id)
 		return nil
 	}
 
 	log.Printf("bootstrap from server %d ...", bestPeerToCopy)
 
-	return n.clusterRing.WithConnection(bestPeerToCopy, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
-		_, canTailBinlog, err := n.checkBinlogAvailable(grpcConnection)
+	return s.clusterRing.WithConnection(bestPeerToCopy, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
+		_, canTailBinlog, err := s.checkBinlogAvailable(grpcConnection)
 		if err != nil {
 			return err
 		}
 		if !canTailBinlog {
-			return n.doBootstrapCopy(grpcConnection)
+			return s.doBootstrapCopy(grpcConnection)
 		}
 		return nil
 	})
 
 }
 
-func (n *node) checkBinlogAvailable(grpcConnection *grpc.ClientConn) (latestSegment uint32, canTailBinlog bool, err error) {
+func (s *shard) checkBinlogAvailable(grpcConnection *grpc.ClientConn) (latestSegment uint32, canTailBinlog bool, err error) {
 
-	segment, _, hasProgress, err := n.getProgress()
+	segment, _, hasProgress, err := s.getProgress()
 
-	// println("node", n.id, "segment", segment, "hasProgress", hasProgress, "err", err)
+	// println("shard", s.id, "segment", segment, "hasProgress", hasProgress, "err", err)
 
 	if !hasProgress {
 		return 0, false, nil
@@ -57,8 +57,9 @@ func (n *node) checkBinlogAvailable(grpcConnection *grpc.ClientConn) (latestSegm
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
-	resp, err := client.CheckBinlog(n.ctx, &pb.CheckBinlogRequest{
-		NodeId: uint32(n.id),
+	resp, err := client.CheckBinlog(s.ctx, &pb.CheckBinlogRequest{
+		Keyspace: s.keyspace,
+		NodeId:   uint32(s.id),
 	})
 	if err != nil {
 		return 0, false, err
@@ -68,38 +69,39 @@ func (n *node) checkBinlogAvailable(grpcConnection *grpc.ClientConn) (latestSegm
 
 }
 
-func (n *node) doBootstrapCopy(grpcConnection *grpc.ClientConn) error {
+func (s *shard) doBootstrapCopy(grpcConnection *grpc.ClientConn) error {
 
-	segment, offset, err := n.writeToSst(grpcConnection)
+	segment, offset, err := s.writeToSst(grpcConnection)
 
 	if err != nil {
 		return fmt.Errorf("writeToSst: %v", err)
 	}
 
-	return n.setProgress(segment, offset)
+	return s.setProgress(segment, offset)
 
 }
 
-func (n *node) writeToSst(grpcConnection *grpc.ClientConn) (segment uint32, offset uint64, err error) {
+func (s *shard) writeToSst(grpcConnection *grpc.ClientConn) (segment uint32, offset uint64, err error) {
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
 	request := &pb.BootstrapCopyRequest{
-		NodeId: uint32(n.id),
+		Keyspace: s.keyspace,
+		NodeId:   uint32(s.id),
 	}
 
-	stream, err := client.BootstrapCopy(n.ctx, request)
+	stream, err := client.BootstrapCopy(s.ctx, request)
 	if err != nil {
 		return 0, 0, fmt.Errorf("client.TailBinlog: %v", err)
 	}
 
-	err = n.db.AddSstByWriter(func(w *gorocksdb.SSTFileWriter) (int, error) {
+	err = s.db.AddSstByWriter(func(w *gorocksdb.SSTFileWriter) (int, error) {
 
 		var counter int
 
 		for {
 
-			// println("TailBinlog receive from", n.id)
+			// println("TailBinlog receive from", s.id)
 
 			response, err := stream.Recv()
 			if err == io.EOF {

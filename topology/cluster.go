@@ -147,8 +147,9 @@ func (cluster *ClusterRing) CurrentSize() int {
 
 func (cluster *ClusterRing) GetNode(index int, options ...AccessOption) (Node, int, bool) {
 	replica := 0
+	clusterSize := len(cluster.nodes)
 	for _, option := range options {
-		index, replica = option(index)
+		index, replica = option(index, clusterSize)
 	}
 	if index < 0 || index >= len(cluster.nodes) {
 		return nil, 0, false

@@ -11,6 +11,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
 	"google.golang.org/grpc"
+	"log"
 )
 
 func init() {
@@ -33,7 +34,7 @@ func (c *CommandDump) SetCilent(client *client.VastoClient) {
 	c.client = client
 }
 
-func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer) error {
+func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer) (doError error) {
 
 	r := c.client.ClusterListener.GetClusterRing(*c.client.Option.Keyspace)
 
@@ -54,7 +55,8 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 			client := pb.NewVastoStoreClient(grpcConnection)
 
 			request := &pb.BootstrapCopyRequest{
-				NodeId: uint32(n.GetId()),
+				Keyspace: *c.client.Option.Keyspace,
+				NodeId:   uint32(n.GetId()),
 			}
 
 			defer close(ch)
@@ -65,15 +67,14 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 			}
 
 			for {
-
-				// println("TailBinlog receive from", n.id)
-
 				response, err := stream.Recv()
 				if err == io.EOF {
 					return nil
 				}
 				if err != nil {
-					return fmt.Errorf("dump: %v", err)
+					doError = fmt.Errorf("dump: %v", err)
+					log.Printf("dump: %v", err)
+					return err
 				}
 
 				for _, keyValue := range response.KeyValues {
@@ -83,23 +84,25 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 					ch <- keyValue
 
 				}
-
 			}
-
+			println("TailBinlog stop 3 for", n.GetId())
+			return nil
 		})
 
 	}
 
-	pq := make(priorityQueue, r.ExpectedSize())
+	pq := make(priorityQueue, 0, r.ExpectedSize())
 
 	for i := 0; i < r.ExpectedSize(); i++ {
 		if chans[i] == nil {
 			continue
 		}
 		keyValue := <-chans[i]
-		pq[i] = &item{
-			KeyValue:  keyValue,
-			chanIndex: i,
+		if keyValue != nil {
+			pq = append(pq, &item{
+				KeyValue:  keyValue,
+				chanIndex: i,
+			})
 		}
 	}
 	heap.Init(&pq)
@@ -117,7 +120,7 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 		}
 	}
 
-	return nil
+	return
 
 }
 
@@ -149,6 +152,6 @@ func (pq *priorityQueue) Pop() interface{} {
 	old := *pq
 	n := len(old)
 	item := old[n-1]
-	*pq = old[0 : n-1]
+	*pq = old[0: n-1]
 	return item
 }

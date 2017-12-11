@@ -14,7 +14,7 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 
 	segment, offset := node.lm.GetSegmentOffset()
 
-	// println("server", node.serverId, "node", node.id, "segment", segment, "offset", offset)
+	// println("server", shard.serverId, "shard", shard.id, "segment", segment, "offset", offset)
 
 	err := node.db.FullScan(1024, func(rows []*pb.KeyValue) error {
 
@@ -40,7 +40,7 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 	return err
 }
 
-func (ss *storeServer) findDbReplica(keyspace string, nodeId uint32) (replica *node, found bool) {
+func (ss *storeServer) findDbReplica(keyspace string, nodeId uint32) (replica *shard, found bool) {
 
 	nodes := ss.keyspaceShards.getShards(keyspace)
 

@@ -16,58 +16,59 @@ const (
 )
 
 // implementing PeriodicTask
-func (n *node) Keyspace() string {
-	return n.keyspace
+func (s *shard) Keyspace() string {
+	return s.keyspace
 }
 
 // implementing PeriodicTask
-func (n *node) EverySecond() {
-	// log.Printf("%s every second", n)
-	if n.prevSegment != n.nextSegment || n.prevOffset != n.nextOffset {
-		n.setProgress(n.nextSegment, n.nextOffset)
-		n.prevSegment, n.prevOffset = n.nextSegment, n.nextOffset
+func (s *shard) EverySecond() {
+	// log.Printf("%s every second", s)
+	if s.prevSegment != s.nextSegment || s.prevOffset != s.nextOffset {
+		s.setProgress(s.nextSegment, s.nextOffset)
+		s.prevSegment, s.prevOffset = s.nextSegment, s.nextOffset
 	}
 }
 
-func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn) (err error) {
+func (s *shard) followChanges(node topology.Node, grpcConnection *grpc.ClientConn) (err error) {
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
-	n.nextSegment, n.nextOffset, _, err = n.getProgress()
+	s.nextSegment, s.nextOffset, _, err = s.getProgress()
 	if err != nil {
-		log.Printf("read node %d follow progress: %v", n.id, err)
+		log.Printf("read shard %d follow progress: %v", s.id, err)
 	}
 
-	log.Printf("Starting to follow from segment %d offset %d", n.nextSegment, n.nextOffset)
+	log.Printf("Starting to follow from segment %d offset %d", s.nextSegment, s.nextOffset)
 
 	request := &pb.PullUpdateRequest{
-		NodeId:  uint32(n.id),
-		Segment: n.nextSegment,
-		Offset:  n.nextOffset,
-		Limit:   8096,
+		Keyspace: s.keyspace,
+		NodeId:   uint32(s.id),
+		Segment:  s.nextSegment,
+		Offset:   s.nextOffset,
+		Limit:    8096,
 	}
 
-	stream, err := client.TailBinlog(n.ctx, request)
+	stream, err := client.TailBinlog(s.ctx, request)
 	if err != nil {
 		return fmt.Errorf("client.TailBinlog to server %d %s: %v", node.GetId(), node.GetAdminAddress(), err)
 	}
 
 	for {
 
-		// println("TailBinlog receive from", n.id)
+		// println("TailBinlog receive from", s.id)
 
 		changes, err := stream.Recv()
 		if err != nil {
 			return fmt.Errorf("pull changes: %v", err)
 		}
 
-		log.Printf("%s follow 0 entry: %d", n, len(changes.Entries))
+		log.Printf("%s follow 0 entry: %d", s, len(changes.Entries))
 
 		for _, entry := range changes.Entries {
 
-			// log.Printf("%s follow 1 entry: %v", n, string(entry.Key))
+			// log.Printf("%s follow 1 entry: %v", s, string(entry.Key))
 
-			b, err := n.db.Get(entry.Key)
+			b, err := s.db.Get(entry.Key)
 			if err != nil {
 				continue
 			}
@@ -82,12 +83,12 @@ func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn
 					if row.UpdatedAtNs > entry.UpdatedAtNs {
 						continue
 					}
-					n.db.Delete(entry.Key)
+					s.db.Delete(entry.Key)
 				}
 				continue
 			}
 
-			// log.Printf("%s follow 2 entry: %v, err: %v, len(b)=%d", n, string(entry.Key), err, len(b))
+			// log.Printf("%s follow 2 entry: %v, err: %v, len(b)=%d", s, string(entry.Key), err, len(b))
 
 			// process put
 			t := &codec.Entry{
@@ -98,16 +99,16 @@ func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn
 			}
 			if len(b) == 0 {
 				// no existing data found
-				n.db.Put(entry.Key, t.ToBytes())
+				s.db.Put(entry.Key, t.ToBytes())
 				continue
 			}
 
 			row := codec.FromBytes(b)
-			// log.Printf("%s follow 3 entry: %v, expired %v, %v", n, string(entry.Key), row.IsExpired(), t.IsExpired())
+			// log.Printf("%s follow 3 entry: %v, expired %v, %v", s, string(entry.Key), row.IsExpired(), t.IsExpired())
 			if row.IsExpired() {
 				if !t.IsExpired() {
-					log.Printf("%s follow 3 entry: %v", n, string(entry.Key))
-					n.db.Put(entry.Key, t.ToBytes())
+					log.Printf("%s follow 3 entry: %v", s, string(entry.Key))
+					s.db.Put(entry.Key, t.ToBytes())
 					continue
 				}
 			} else {
@@ -115,15 +116,15 @@ func (n *node) followChanges(node topology.Node, grpcConnection *grpc.ClientConn
 				if row.UpdatedAtNs > entry.UpdatedAtNs {
 					continue
 				}
-				n.db.Put(entry.Key, t.ToBytes())
+				s.db.Put(entry.Key, t.ToBytes())
 				continue
 			}
-			// log.Printf("%s follow 4 entry: %v", n, string(entry.Key))
+			// log.Printf("%s follow 4 entry: %v", s, string(entry.Key))
 
 		}
 
 		// set the nextSegment and nextOffset for OnInterrupt()
-		n.nextSegment, n.nextOffset = changes.NextSegment, changes.NextOffset
+		s.nextSegment, s.nextOffset = changes.NextSegment, changes.NextOffset
 
 	}
 
