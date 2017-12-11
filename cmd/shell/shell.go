@@ -2,6 +2,7 @@ package shell
 
 import (
 	"github.com/chrislusf/vasto/cmd/client"
+	"context"
 )
 
 type ShellOption struct {
@@ -32,7 +33,7 @@ func RunShell(option *ShellOption) {
 		),
 	}
 
-	b.vastoClient.StartClient()
+	b.vastoClient.StartClient(context.Background())
 
 	b.vastoClient.ClusterListener.RegisterShardEventProcessor(b)
 

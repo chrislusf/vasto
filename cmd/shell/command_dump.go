@@ -36,7 +36,10 @@ func (c *CommandDump) SetCilent(client *client.VastoClient) {
 
 func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer) (doError error) {
 
-	r := c.client.ClusterListener.GetClusterRing(*c.client.Option.Keyspace)
+	r, found := c.client.ClusterListener.GetClusterRing(*c.client.Option.Keyspace)
+	if !found {
+		return fmt.Errorf("no keyspace %s", *c.client.Option.Keyspace)
+	}
 
 	chans := make([]chan *pb.KeyValue, r.ExpectedSize())
 

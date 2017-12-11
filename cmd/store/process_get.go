@@ -14,7 +14,7 @@ func (ss *storeServer) processGet(nodes []*shard, getRequest *pb.GetRequest) *pb
 		}
 	}
 	key := getRequest.Key
-	println("replica", replica, "shard", nodes[replica].id, "keyspace", nodes[replica].keyspace, "server", nodes[replica].serverId, "request", getRequest.String())
+	// println("replica", replica, "shard", nodes[replica].id, "keyspace", nodes[replica].keyspace, "server", nodes[replica].serverId, "request", getRequest.String())
 	if b, err := nodes[replica].db.Get(key); err != nil {
 		return &pb.GetResponse{
 			Status: err.Error(),

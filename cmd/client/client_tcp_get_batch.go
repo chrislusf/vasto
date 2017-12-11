@@ -17,7 +17,10 @@ func (c *VastoClient) BatchGet(keyspace string, keys [][]byte, options ...topolo
 
 	bucketToRequests := make(map[int][]*pb.Request)
 
-	r := c.ClusterListener.GetClusterRing(keyspace)
+	r, found := c.ClusterListener.GetClusterRing(keyspace)
+	if !found {
+		return nil, fmt.Errorf("no keyspace %s", keyspace)
+	}
 	for _, key := range keys {
 		bucket := r.FindBucket(util.Hash(key))
 		if _, ok := bucketToRequests[bucket]; !ok {
@@ -46,7 +49,7 @@ func (c *VastoClient) BatchGet(keyspace string, keys [][]byte, options ...topolo
 				request.Get.Replica = uint32(replica)
 			}
 
-			requests := &pb.Requests{Keyspace:keyspace}
+			requests := &pb.Requests{Keyspace: keyspace}
 			requests.Requests = requestList
 
 			responses, err := pb.SendRequests(conn, requests)

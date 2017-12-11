@@ -12,14 +12,14 @@ import (
 // 1. if the shard is already created, do nothing
 func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardRequest) (*pb.CreateShardResponse, error) {
 
-	nodes, err := ss.createShards(request.Keyspace, int(request.ShardId), int(request.ClusterSize), int(request.ReplicationFactor))
+	log.Printf("create shard %v", request)
+	err := ss.createShards(request.Keyspace, int(request.ShardId), int(request.ClusterSize), int(request.ReplicationFactor))
 	if err != nil {
 		log.Printf("create keyspace %s: %v", request.Keyspace, err)
 		return &pb.CreateShardResponse{
 			Error: err.Error(),
 		}, nil
 	}
-	ss.keyspaceShards.addShards(request.Keyspace, nodes...)
 
 	return &pb.CreateShardResponse{
 		Error: "",
@@ -27,9 +27,10 @@ func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardR
 
 }
 
-func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, replicationFactor int) (nodes []*shard, err error) {
+func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, replicationFactor int) (err error) {
 
 	cluster := ss.clusterListener.AddNewKeyspace(keyspace, clusterSize, replicationFactor)
+	log.Printf("new cluster: %v", cluster)
 
 	status := &pb.StoreStatusInCluster{
 		Id:                uint32(serverId),
@@ -49,14 +50,14 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 		dir := fmt.Sprintf("%s/%s/%d", *ss.option.Dir, keyspace, shardId)
 		err := os.MkdirAll(dir, 0755)
 		if err != nil {
-			return nil, fmt.Errorf("mkdir %s: %v", dir, err)
+			return fmt.Errorf("mkdir %s: %v", dir, err)
 		}
-		node := newShard(keyspace, dir, serverId, shardId, cluster, ss.clusterListener,
+		ctx, node := newShard(keyspace, dir, serverId, shardId, cluster, ss.clusterListener,
 			replicationFactor, *ss.option.LogFileSizeMb, *ss.option.LogFileCount)
-		nodes = append(nodes, node)
 
+		ss.keyspaceShards.addShards(keyspace, node)
 		ss.RegisterPeriodicTask(node)
-		go node.startWithBootstrapAndFollow(false)
+		go node.startWithBootstrapAndFollow(ctx, false)
 
 		shardStatus := &pb.ShardStatus{
 			NodeId:            uint32(serverId),
@@ -67,6 +68,8 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 			ReplicationFactor: uint32(replicationFactor),
 		}
 
+		log.Printf("sending shard status %v", shardStatus)
+
 		status.ShardStatuses[uint32(shardId)] = shardStatus
 
 		// register the shard at master
@@ -75,5 +78,5 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 
 	ss.saveClusterConfig(status, keyspace)
 
-	return nodes, nil
+	return nil
 }

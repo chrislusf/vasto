@@ -9,6 +9,7 @@ import (
 	"github.com/chrislusf/vasto/storage/codec"
 	"github.com/chrislusf/vasto/topology"
 	"google.golang.org/grpc"
+	"context"
 )
 
 const (
@@ -29,7 +30,7 @@ func (s *shard) EverySecond() {
 	}
 }
 
-func (s *shard) followChanges(node topology.Node, grpcConnection *grpc.ClientConn) (err error) {
+func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConnection *grpc.ClientConn) (err error) {
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
@@ -48,7 +49,7 @@ func (s *shard) followChanges(node topology.Node, grpcConnection *grpc.ClientCon
 		Limit:    8096,
 	}
 
-	stream, err := client.TailBinlog(s.ctx, request)
+	stream, err := client.TailBinlog(ctx, request)
 	if err != nil {
 		return fmt.Errorf("client.TailBinlog to server %d %s: %v", node.GetId(), node.GetAdminAddress(), err)
 	}

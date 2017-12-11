@@ -8,6 +8,7 @@ import (
 	"context"
 	"sync"
 	"google.golang.org/grpc"
+	"log"
 )
 
 // allocateServers
@@ -79,7 +80,7 @@ func createShards(ctx context.Context, req *pb.CreateClusterRequest, stores []*p
 					ShardDiskSizeGb:   uint32(math.Ceil(float64(req.TotalDiskSizeGb) / float64(req.ClusterSize))),
 				}
 
-				// log.Printf("sending store %v: %v", store.AdminAddress, request)
+				log.Printf("create shard on %v: %v", store.AdminAddress, request)
 				resp, err := client.CreateShard(ctx, request)
 				if err != nil {
 					return err
@@ -115,7 +116,7 @@ func deleteShards(ctx context.Context, req *pb.DeleteClusterRequest, stores []*p
 					Keyspace: req.Keyspace,
 				}
 
-				// log.Printf("sending store %v: %v", store.AdminAddress, request)
+				log.Printf("delete shard on %v: %v", store.AdminAddress, request)
 				resp, err := client.DeleteKeyspace(ctx, request)
 				if err != nil {
 					return err

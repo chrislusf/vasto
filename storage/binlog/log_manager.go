@@ -23,6 +23,7 @@ type LogManager struct {
 	segment      uint32
 	offset       int64
 	followerCond *sync.Cond
+	hasShutdown  bool
 }
 
 const (
@@ -56,6 +57,20 @@ func (m *LogManager) Initialze() error {
 	return nil
 }
 
+func (m *LogManager) Shutdown() {
+
+	m.followerCond.L.Lock()
+	m.hasShutdown = true
+	m.followerCond.Broadcast()
+	m.followerCond.L.Unlock()
+
+	m.filesLock.RLock()
+	for _, file := range m.files {
+		file.close()
+	}
+	m.filesLock.RUnlock()
+}
+
 func (m *LogManager) AppendEntry(entry *LogEntry) error {
 	if m.lastLogFile.offset >= m.logFileMaxSize {
 		m.lastLogFile.close()
@@ -78,11 +93,15 @@ func (m *LogManager) ReadEntries(segment uint32, offset int64,
 
 	// wait until the new segment is ready
 	m.followerCond.L.Lock()
-	for !(segment <= m.segment) {
+	for !(segment <= m.segment && !m.hasShutdown) {
 		// println("waiting on segment change, read entries segment1", segment, "offset", offset)
 		m.followerCond.Wait()
 	}
 	m.followerCond.L.Unlock()
+
+	if m.hasShutdown {
+		return nil, 0, fmt.Errorf("%v shutdown in progress...", m.dir)
+	}
 
 	m.filesLock.Lock()
 	oneLogFile, ok := m.files[segment]

@@ -8,11 +8,12 @@ import (
 	"bytes"
 	"github.com/chrislusf/vasto/cmd/client"
 	"strings"
+	"context"
 )
 
-func (b *benchmarker) runBenchmarkerOnCluster(option *BenchmarkOption) {
+func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *BenchmarkOption) {
 
-	b.startThreadsWithClient(*option.Tests, func(hist *Histogram, c *client.VastoClient) {
+	b.startThreadsWithClient(ctx, *option.Tests, func(hist *Histogram, c *client.VastoClient) {
 		for _, t := range strings.Split(*option.Tests, ",") {
 			switch t {
 			case "put":

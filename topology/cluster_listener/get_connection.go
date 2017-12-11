@@ -13,14 +13,20 @@ func (clusterListener *ClusterListener) GetConnectionByPartitionKey(keyspace str
 }
 
 func (clusterListener *ClusterListener) GetConnectionByPartitionHash(keyspace string, partitionHash uint64, options ...topology.AccessOption) (net.Conn, int, error) {
-	r := clusterListener.GetClusterRing(keyspace)
+	r, found := clusterListener.GetClusterRing(keyspace)
+	if !found {
+		return nil, 0, fmt.Errorf("no keyspace %s", keyspace)
+	}
 	bucket := r.FindBucket(partitionHash)
 	return clusterListener.GetConnectionByBucket(keyspace, bucket, options...)
 }
 
 func (clusterListener *ClusterListener) GetConnectionByBucket(keyspace string, bucket int, options ...topology.AccessOption) (net.Conn, int, error) {
 
-	r := clusterListener.GetClusterRing(keyspace)
+	r, found := clusterListener.GetClusterRing(keyspace)
+	if !found {
+		return nil, 0, fmt.Errorf("no keyspace %s", keyspace)
+	}
 
 	n, replica, ok := r.GetNode(bucket, options...)
 	if !ok {

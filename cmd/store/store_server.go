@@ -12,6 +12,7 @@ import (
 	"github.com/chrislusf/vasto/util"
 	"github.com/tidwall/evio"
 	"encoding/binary"
+	"context"
 )
 
 type StoreOption struct {
@@ -52,6 +53,7 @@ type storeServer struct {
 
 func RunStore(option *StoreOption) {
 
+	ctx := context.Background()
 	clusterListener := cluster_listener.NewClusterClient(*option.DataCenter)
 
 	var ss = &storeServer{
@@ -72,11 +74,11 @@ func RunStore(option *StoreOption) {
 	if *option.FixedCluster != "" {
 		clusterListener.SetNodes(*option.Keyspace, *ss.option.FixedCluster)
 	} else if *option.Master != "" {
-		go ss.keepConnectedToMasterServer()
+		go ss.keepConnectedToMasterServer(ctx)
 		for keyspaceName, shardStatus := range ss.statusInCluster {
 			clusterListener.AddExistingKeyspace(keyspaceName, int(shardStatus.ClusterSize), int(shardStatus.ReplicationFactor))
 		}
-		clusterListener.StartListener(*ss.option.Master, *ss.option.DataCenter, false)
+		clusterListener.StartListener(ctx, *ss.option.Master, *ss.option.DataCenter, false)
 	}
 
 	for keyspaceName, storeStatus := range ss.statusInCluster {

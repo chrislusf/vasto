@@ -8,6 +8,7 @@ import (
 	"github.com/chrislusf/vasto/cmd/client"
 	"github.com/chrislusf/vasto/util/on_interrupt"
 	"os"
+	"context"
 )
 
 type GatewayOption struct {
@@ -63,7 +64,7 @@ func RunGateway(option *GatewayOption) {
 		go gs.serveTcp(unixSocketListener)
 	}
 
-	gs.vastoClient.StartClient()
+	gs.vastoClient.StartClient(context.Background())
 
 	fmt.Printf("Vasto gateway ready\n")
 	select {}

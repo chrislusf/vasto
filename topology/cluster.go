@@ -124,7 +124,9 @@ func (cluster *ClusterRing) ReplicationFactor() int {
 }
 
 func (cluster *ClusterRing) SetExpectedSize(expectedSize int) {
-	cluster.expectedSize = expectedSize
+	if expectedSize > 0 {
+		cluster.expectedSize = expectedSize
+	}
 }
 
 func (cluster *ClusterRing) SetNextSize(nextSize int) {
@@ -132,7 +134,9 @@ func (cluster *ClusterRing) SetNextSize(nextSize int) {
 }
 
 func (cluster *ClusterRing) SetReplicationFactor(replicationFactor int) {
-	cluster.replicationFactor = replicationFactor
+	if replicationFactor > 0 {
+		cluster.replicationFactor = replicationFactor
+	}
 }
 
 func (cluster *ClusterRing) CurrentSize() int {

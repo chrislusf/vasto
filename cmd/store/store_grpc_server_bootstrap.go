@@ -3,9 +3,12 @@ package store
 import (
 	"github.com/chrislusf/vasto/pb"
 	"fmt"
+	"log"
 )
 
 func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb.VastoStore_BootstrapCopyServer) error {
+
+	log.Printf("BootstrapCopy %v", request)
 
 	node, found := ss.findDbReplica(request.Keyspace, request.NodeId)
 	if !found {

@@ -4,9 +4,10 @@ import (
 	"github.com/chrislusf/vasto/topology"
 	"google.golang.org/grpc"
 	"log"
+	"context"
 )
 
-func (s *shard) isBootstrapNeeded() (bestPeerToCopy int, isNeeded bool) {
+func (s *shard) isBootstrapNeeded(ctx context.Context) (bestPeerToCopy int, isNeeded bool) {
 
 	peerServerIds := s.findPeerServerIds()
 
@@ -22,7 +23,7 @@ func (s *shard) isBootstrapNeeded() (bestPeerToCopy int, isNeeded bool) {
 		checkedServerCount++
 		go s.clusterRing.WithConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
 
-			latestSegment, canTailBinlog, err := s.checkBinlogAvailable(grpcConnection)
+			latestSegment, canTailBinlog, err := s.checkBinlogAvailable(ctx, grpcConnection)
 			if err != nil {
 				isBootstrapNeededChan <- false
 				return err

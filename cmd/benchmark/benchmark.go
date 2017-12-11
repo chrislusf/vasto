@@ -5,6 +5,7 @@ import (
 	"github.com/chrislusf/vasto/cmd/client"
 	"sync"
 	"time"
+	"context"
 )
 
 type BenchmarkOption struct {
@@ -35,7 +36,7 @@ func RunBenchmarker(option *BenchmarkOption) {
 
 	if *option.Master != "" {
 		println("benchmarking on cluster with master", *option.Master)
-		b.runBenchmarkerOnCluster(option)
+		b.runBenchmarkerOnCluster(context.Background(), option)
 	} else {
 		println("benchmarking on single store or gateway", *option.StoreAddress)
 		b.runBenchmarkerOnStore(option)
@@ -68,7 +69,7 @@ func (b *benchmarker) startThreads(name string, fn func(hist *Histogram)) {
 	fmt.Printf("Microseconds per op:\n%s\n", hist.ToString())
 }
 
-func (b *benchmarker) startThreadsWithClient(name string, fn func(hist *Histogram, c *client.VastoClient)) {
+func (b *benchmarker) startThreadsWithClient(ctx context.Context, name string, fn func(hist *Histogram, c *client.VastoClient)) {
 
 	b.startThreads(name, func(hist *Histogram) {
 		c := client.NewClient(&client.ClientOption{
@@ -77,7 +78,7 @@ func (b *benchmarker) startThreadsWithClient(name string, fn func(hist *Histogra
 			DataCenter:   b.option.DataCenter,
 			Keyspace:     b.option.Keyspace,
 		})
-		c.StartClient()
+		c.StartClient(ctx)
 		fn(hist, c)
 	})
 

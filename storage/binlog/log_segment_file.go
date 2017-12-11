@@ -18,6 +18,7 @@ type logSegmentFile struct {
 	sizeBufForRead  []byte
 	followerCond    *sync.Cond
 	logFileMaxSize  int64
+	hasShutdown     bool
 }
 
 func newLogSegmentFile(fillName string, segment uint32, logFileMaxSize int64) *logSegmentFile {
@@ -64,11 +65,15 @@ func (f *logSegmentFile) readEntries(offset int64, limit int) (entries []*LogEnt
 	}
 
 	f.followerCond.L.Lock()
-	for offset >= f.offset {
+	for offset >= f.offset && !f.hasShutdown {
 		// println("readEntries offset", offset, f.offset)
 		f.followerCond.Wait()
 	}
 	f.followerCond.L.Unlock()
+
+	if f.hasShutdown {
+		return nil, 0, fmt.Errorf("log file %v shutdown in progress...", f.fullName)
+	}
 
 	nextOffset = offset
 
@@ -133,7 +138,12 @@ func (f *logSegmentFile) open() error {
 }
 
 func (f *logSegmentFile) close() {
-	println("close file", f.fullName)
+
+	f.followerCond.L.Lock()
+	f.hasShutdown = true
+	f.followerCond.Broadcast()
+	f.followerCond.L.Unlock()
+
 	if f.file != nil {
 		f.file.Close()
 		f.file = nil

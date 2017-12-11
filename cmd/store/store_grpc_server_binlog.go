@@ -11,6 +11,8 @@ import (
 
 func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.VastoStore_TailBinlogServer) error {
 
+	log.Printf("TailBinlog %v", request)
+
 	node, found := ss.findDbReplica(request.Keyspace, request.NodeId)
 	if !found {
 		return fmt.Errorf("shard: %s.%d not found", request.Keyspace, request.NodeId)

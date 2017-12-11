@@ -13,9 +13,9 @@ import (
 	"strings"
 )
 
-func (ss *storeServer) keepConnectedToMasterServer() {
+func (ss *storeServer) keepConnectedToMasterServer(ctx context.Context) {
 
-	util.RetryForever("store connect to master", func() error {
+	util.RetryForever(ctx, "store connect to master", func() error {
 		return ss.registerAtMasterServer()
 	}, 2*time.Second)
 

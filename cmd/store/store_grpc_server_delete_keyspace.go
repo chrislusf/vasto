@@ -12,6 +12,7 @@ import (
 // 1. if the shard is already created, do nothing
 func (ss *storeServer) DeleteKeyspace(ctx context.Context, request *pb.DeleteKeyspaceRequest) (*pb.DeleteKeyspaceResponse, error) {
 
+	log.Printf("delete keyspace %v", request)
 	err := ss.deleteShards(request.Keyspace)
 	if err != nil {
 		log.Printf("delete keyspace %s: %v", request.Keyspace, err)

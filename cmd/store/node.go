@@ -21,7 +21,6 @@ type shard struct {
 	clusterListener   *cluster_listener.ClusterListener
 	replicationFactor int
 	nodeFinishChan    chan bool
-	ctx               context.Context
 	cancelFunc        context.CancelFunc
 	// just to avoid repeatedly create these variables
 	nextSegmentKey, nextOffsetKey []byte
@@ -37,15 +36,15 @@ func (s *shard) String() string {
 
 func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.StoreStatusInCluster,
 	clusterListener *cluster_listener.ClusterListener) {
-	cluster := clusterListener.GetClusterRing(keyspaceName)
+	cluster := clusterListener.GetOrSetClusterRing(keyspaceName, int(storeStatus.ClusterSize), int(storeStatus.ReplicationFactor))
 	for _, shardStatus := range storeStatus.ShardStatuses {
 		dir := fmt.Sprintf("%s/%s/%d", *ss.option.Dir, shardStatus.KeyspaceName, shardStatus.ShardId)
-		node := newShard(keyspaceName, dir, int(storeStatus.Id), int(shardStatus.ShardId), cluster, clusterListener,
+		ctx, node := newShard(keyspaceName, dir, int(storeStatus.Id), int(shardStatus.ShardId), cluster, clusterListener,
 			int(storeStatus.ReplicationFactor), *ss.option.LogFileSizeMb, *ss.option.LogFileCount)
-		println("loading shard", node.String())
+		// println("loading shard", node.String())
 		ss.keyspaceShards.addShards(keyspaceName, node)
 		ss.RegisterPeriodicTask(node)
-		go node.startWithBootstrapAndFollow(*ss.option.Bootstrap)
+		go node.startWithBootstrapAndFollow(ctx, *ss.option.Bootstrap)
 
 		// register the shard at master
 		t := shardStatus
@@ -55,11 +54,11 @@ func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.S
 
 func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.ClusterRing,
 	clusterListener *cluster_listener.ClusterListener,
-	replicationFactor int, logFileSizeMb int, logFileCount int) *shard {
+	replicationFactor int, logFileSizeMb int, logFileCount int) (context.Context, *shard) {
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
-	n := &shard{
+	s := &shard{
 		keyspace:          keyspaceName,
 		id:                nodeId,
 		serverId:          serverId,
@@ -68,29 +67,28 @@ func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.
 		clusterListener:   clusterListener,
 		replicationFactor: replicationFactor,
 		nodeFinishChan:    make(chan bool),
-		ctx:               ctx,
 		cancelFunc:        cancelFunc,
 	}
 	if logFileSizeMb > 0 {
-		n.lm = binlog.NewLogManager(dir, nodeId, int64(logFileSizeMb*1024*1024), logFileCount)
-		n.lm.Initialze()
+		s.lm = binlog.NewLogManager(dir, nodeId, int64(logFileSizeMb*1024*1024), logFileCount)
+		s.lm.Initialze()
 	}
-	n.nextSegmentKey = []byte(fmt.Sprintf("%d.next.segment", n.id))
-	n.nextOffsetKey = []byte(fmt.Sprintf("%d.next.offset", n.id))
+	s.nextSegmentKey = []byte(fmt.Sprintf("%d.next.segment", s.id))
+	s.nextOffsetKey = []byte(fmt.Sprintf("%d.next.offset", s.id))
 
-	return n
+	return ctx, s
 }
 
-func (s *shard) startWithBootstrapAndFollow(mayBootstrap bool) {
+func (s *shard) startWithBootstrapAndFollow(ctx context.Context, mayBootstrap bool) {
 
 	if s.clusterRing != nil && mayBootstrap {
-		err := s.bootstrap()
+		err := s.bootstrap(ctx)
 		if err != nil {
 			log.Printf("bootstrap: %v", err)
 		}
 	}
 
-	s.follow()
+	s.follow(ctx)
 
 	s.clusterListener.RegisterShardEventProcessor(s)
 
@@ -98,12 +96,16 @@ func (s *shard) startWithBootstrapAndFollow(mayBootstrap bool) {
 
 func (s *shard) shutdownNode() {
 
+	s.cancelFunc()
+
 	s.clusterListener.RemoveKeyspace(s.keyspace)
 
 	s.clusterListener.UnregisterShardEventProcessor(s)
 
-	s.cancelFunc()
-
 	close(s.nodeFinishChan)
+
+	if s.lm != nil {
+		s.lm.Shutdown()
+	}
 
 }

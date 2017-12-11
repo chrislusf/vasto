@@ -4,20 +4,30 @@ import (
 	"log"
 	"math/rand"
 	"time"
+	"context"
 )
 
 func Retry(fn func() error) error {
 	return timeDelayedRetry(fn, time.Second, 3*time.Second)
 }
 
-func RetryForever(name string, fn func() error, waitTimes time.Duration) {
+func RetryForever(ctx context.Context, name string, fn func() error, waitTimes time.Duration) {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for {
 		err := fn()
 		if err != nil {
+			log.Printf("%s failed: %v", name, err)
 		}
-		log.Printf("%s failed: %v", name, err)
+
 		time.Sleep(time.Duration((r.Float64() + 1) * float64(waitTimes)))
+
+		select {
+		case <-ctx.Done():
+			log.Printf("%s has finished", name)
+			return
+		default:
+			log.Printf("%s retrying...", name)
+		}
 	}
 }
 

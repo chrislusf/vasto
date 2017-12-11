@@ -2,6 +2,7 @@ package client
 
 import (
 	"github.com/chrislusf/vasto/topology/cluster_listener"
+	"context"
 )
 
 type ClientOption struct {
@@ -28,7 +29,7 @@ func (c *VastoClient) startWithFixedCluster() {
 	c.ClusterListener.SetNodes(*c.Option.Keyspace, *c.Option.FixedCluster)
 }
 
-func (c *VastoClient) StartClient() {
+func (c *VastoClient) StartClient(ctx context.Context) {
 
 	if *c.Option.FixedCluster != "" {
 		c.startWithFixedCluster()
@@ -36,5 +37,5 @@ func (c *VastoClient) StartClient() {
 	}
 
 	c.ClusterListener.AddExistingKeyspace(*c.Option.Keyspace, 0, 0)
-	c.ClusterListener.StartListener(*c.Option.Master, *c.Option.DataCenter, true)
+	c.ClusterListener.StartListener(ctx, *c.Option.Master, *c.Option.DataCenter, true)
 }
