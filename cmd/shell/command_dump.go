@@ -64,7 +64,7 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 
 			request := &pb.BootstrapCopyRequest{
 				Keyspace: *c.client.Option.Keyspace,
-				NodeId:   uint32(n.GetId()),
+				ShardId:  uint32(n.GetId()),
 			}
 
 			defer close(ch)

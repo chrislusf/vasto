@@ -88,7 +88,7 @@ func (s *shard) writeToSst(ctx context.Context, grpcConnection *grpc.ClientConn)
 
 	request := &pb.BootstrapCopyRequest{
 		Keyspace: s.keyspace,
-		NodeId:   uint32(s.id),
+		ShardId:  uint32(s.id),
 	}
 
 	stream, err := client.BootstrapCopy(ctx, request)

@@ -10,9 +10,9 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 
 	log.Printf("BootstrapCopy %v", request)
 
-	node, found := ss.findDbReplica(request.Keyspace, request.NodeId)
+	node, found := ss.findDbReplica(request.Keyspace, request.ShardId)
 	if !found {
-		return fmt.Errorf("shard: %s.%d not found", request.Keyspace, request.NodeId)
+		return fmt.Errorf("shard: %s.%d not found", request.Keyspace, request.ShardId)
 	}
 
 	segment, offset := node.lm.GetSegmentOffset()
