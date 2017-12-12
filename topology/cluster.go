@@ -101,14 +101,14 @@ func (cluster *ClusterRing) Remove(nodeId int) Node {
 	return nil
 }
 
-// calculates a Jump hash for the key provided
-func (cluster *ClusterRing) FindBucketGivenSize(key uint64, size int) int {
-	return int(jump.Hash(key, size))
+// calculates a Jump hash for the keyHash provided
+func (cluster *ClusterRing) FindBucketGivenSize(keyHash uint64, size int) int {
+	return int(jump.Hash(keyHash, size))
 }
 
-// calculates a Jump hash for the key provided
-func (cluster *ClusterRing) FindBucket(key uint64) int {
-	return int(jump.Hash(key, cluster.ExpectedSize()))
+// calculates a Jump hash for the keyHash provided
+func (cluster *ClusterRing) FindBucket(keyHash uint64) int {
+	return int(jump.Hash(keyHash, cluster.ExpectedSize()))
 }
 
 func (cluster *ClusterRing) ExpectedSize() int {
