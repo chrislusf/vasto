@@ -13,10 +13,12 @@ import (
 
 func (b *benchmarker) runBenchmarkerOnStore(option *BenchmarkOption) {
 
-	b.startThreads("put", func(hist *Histogram) {
+	requestCount := int(*b.option.RequestCount / *b.option.ClientCount)
+
+	b.startThreads("put", requestCount, func(hist *Histogram, start, stop int) {
 		b.startDirectClient(hist, func(r *rand.Rand) *pb.Requests {
 			requests := &pb.Requests{}
-			for i := 0; i < int(*b.option.BatchSize); i++ {
+			for i := start; i < stop; i++ {
 				request := &pb.Request{
 					Put: &pb.PutRequest{
 						KeyValue: &pb.KeyValue{

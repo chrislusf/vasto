@@ -18,11 +18,11 @@ func newKeyspaceShards() *keyspaceShards {
 	}
 }
 
-func (ks *keyspaceShards) getShards(keyspaceName string) []*shard {
+func (ks *keyspaceShards) getShards(keyspaceName string) (shards []*shard, found bool) {
 	ks.RLock()
-	t := ks.keyspaceToShards[keyspace_name(keyspaceName)]
+	shards, found = ks.keyspaceToShards[keyspace_name(keyspaceName)]
 	ks.RUnlock()
-	return t
+	return
 }
 
 func (ks *keyspaceShards) addShards(keyspaceName string, nodes ...*shard) {

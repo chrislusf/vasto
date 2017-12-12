@@ -30,7 +30,10 @@ func (ss *storeServer) DeleteKeyspace(ctx context.Context, request *pb.DeleteKey
 
 func (ss *storeServer) deleteShards(keyspace string) (err error) {
 
-	nodes := ss.keyspaceShards.getShards(keyspace)
+	nodes, found := ss.keyspaceShards.getShards(keyspace)
+	if !found {
+		return nil
+	}
 
 	for _, node := range nodes {
 		node.db.Close()

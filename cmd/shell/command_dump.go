@@ -27,7 +27,7 @@ func (c *CommandDump) Name() string {
 }
 
 func (c *CommandDump) Help() string {
-	return ""
+	return "keys|key_value"
 }
 
 func (c *CommandDump) SetCilent(client *client.VastoClient) {
@@ -35,6 +35,11 @@ func (c *CommandDump) SetCilent(client *client.VastoClient) {
 }
 
 func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer) (doError error) {
+
+	isKeysOnly := true
+	if len(args) > 0 && args[0] == "key_value" {
+		isKeysOnly = false
+	}
 
 	r, found := c.client.ClusterListener.GetClusterRing(*c.client.Option.Keyspace)
 	if !found {
@@ -112,7 +117,11 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 
 	for pq.Len() > 0 {
 		t := heap.Pop(&pq).(*item)
-		fmt.Fprintf(writer, "%v,%v\n", string(t.Key), string(t.Value))
+		if isKeysOnly {
+			fmt.Fprintf(writer, "%v\n", string(t.Key))
+		} else {
+			fmt.Fprintf(writer, "%v,%v\n", string(t.Key), string(t.Value))
+		}
 		newT, hasMore := <-chans[t.chanIndex]
 		if hasMore {
 			heap.Push(&pq, &item{

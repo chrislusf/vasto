@@ -45,7 +45,10 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 
 func (ss *storeServer) findDbReplica(keyspace string, nodeId uint32) (replica *shard, found bool) {
 
-	nodes := ss.keyspaceShards.getShards(keyspace)
+	nodes, found := ss.keyspaceShards.getShards(keyspace)
+	if !found {
+		return nil, false
+	}
 
 	for _, node := range nodes {
 		if node.id == int(nodeId) {

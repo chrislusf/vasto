@@ -90,6 +90,9 @@ func printGenericHelp() {
 Type:	"help <command>" for help on <command>
 `
 	fmt.Print(msg)
+	for _, c := range commands {
+		fmt.Printf("\t%s %s \n", c.Name(), c.Help())
+	}
 }
 
 func printHelp(cmds []string) {

@@ -103,7 +103,39 @@ func (ss *storeServer) handleInputOutput(input []byte) (output []byte, err error
 
 func (ss *storeServer) processRequest(keyspace string, command *pb.Request) *pb.Response {
 
-	nodes := ss.keyspaceShards.getShards(keyspace)
+	nodes, found := ss.keyspaceShards.getShards(keyspace)
+
+	if !found {
+		if command.GetGet() != nil {
+			return &pb.Response{
+				Get: &pb.GetResponse{
+					Ok:     false,
+					Status: fmt.Sprintf("keyspace %s not found", keyspace),
+				},
+			}
+		} else if command.GetPut() != nil {
+			return &pb.Response{
+				Put: &pb.PutResponse{
+					Ok:     false,
+					Status: fmt.Sprintf("keyspace %s not found", keyspace),
+				},
+			}
+		} else if command.GetDelete() != nil {
+			return &pb.Response{
+				Delete: &pb.DeleteResponse{
+					Ok:     false,
+					Status: fmt.Sprintf("keyspace %s not found", keyspace),
+				},
+			}
+		} else if command.GetGetByPrefix() != nil {
+			return &pb.Response{
+				GetByPrefix: &pb.GetByPrefixResponse{
+					Ok:     false,
+					Status: fmt.Sprintf("keyspace %s not found", keyspace),
+				},
+			}
+		}
+	}
 
 	if command.GetGet() != nil {
 		return &pb.Response{

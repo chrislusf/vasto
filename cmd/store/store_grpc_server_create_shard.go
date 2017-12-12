@@ -32,6 +32,11 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 	cluster := ss.clusterListener.AddNewKeyspace(keyspace, clusterSize, replicationFactor)
 	log.Printf("new cluster: %v", cluster)
 
+	_, found := ss.keyspaceShards.getShards(keyspace)
+	if found {
+		return nil
+	}
+
 	status := &pb.StoreStatusInCluster{
 		Id:                uint32(serverId),
 		ShardStatuses:     make(map[uint32]*pb.ShardStatus),
