@@ -35,6 +35,11 @@ func FromBytes(b []byte) *Entry {
 	return e
 }
 
+
+func GetPartitionHashFromBytes(b []byte) uint64{
+	return binary.LittleEndian.Uint64(b[0:8])
+}
+
 func (entry *Entry) IsExpired() bool {
 
 	return entry.TtlSecond > 0 &&

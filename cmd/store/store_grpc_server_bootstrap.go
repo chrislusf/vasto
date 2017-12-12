@@ -4,8 +4,12 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"fmt"
 	"log"
+	"github.com/chrislusf/vasto/storage/codec"
+	"github.com/dgryski/go-jump"
 )
 
+// BootstrapCopy sends all data if BootstrapCopyRequest's TargetClusterSize==0,
+// or sends all data belong to TargetShardId in cluster of TargetClusterSize
 func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb.VastoStore_BootstrapCopyServer) error {
 
 	log.Printf("BootstrapCopy %v", request)
@@ -19,10 +23,30 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 
 	// println("server", shard.serverId, "shard", shard.id, "segment", segment, "offset", offset)
 
-	err := node.db.FullScan(1024, func(rows []*pb.KeyValue) error {
+	targetShardId := int32(request.TargetShardId)
+	targetClusterSize := int(request.TargetClusterSize)
+	batchSize := 1024
+	if targetClusterSize > 0 && targetShardId != int32(request.ShardId) {
+		batchSize *= targetClusterSize
+	}
+
+	err := node.db.FullScan(batchSize, func(rows []*pb.KeyValue) error {
+
+		var filteredRows []*pb.KeyValue
+		if targetClusterSize > 0 {
+			for _, row := range rows {
+				partitioHash := codec.GetPartitionHashFromBytes(row.Value)
+				if jump.Hash(partitioHash, targetClusterSize) == targetShardId {
+					t := row
+					filteredRows = append(filteredRows, t)
+				}
+			}
+		} else {
+			filteredRows = rows
+		}
 
 		t := &pb.BootstrapCopyResponse{
-			KeyValues: rows,
+			KeyValues: filteredRows,
 		}
 		if err := stream.Send(t); err != nil {
 			return err
