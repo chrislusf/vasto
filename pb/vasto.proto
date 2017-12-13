@@ -74,7 +74,25 @@ message BalanceRequest {
     uint32 store_count = 3; // 0 means to use all existing nodes. can not be more than existing stores.
 }
 
+message StoreHeartbeat {
+    // only in the initial heartbeat
+    StoreResource store_resource = 1;
+    // sent to master one at a time, after the initial heartbeat
+    ShardStatus shardStatus = 2;
+}
+
 message StoreMessage {
+}
+
+message ClientHeartbeat {
+    string data_center = 1;
+
+    message ClusterFollowMessage {
+        string keyspace = 1;
+        bool is_unfollow = 2;
+    }
+    ClusterFollowMessage cluster_follow = 2;
+
 }
 
 message ClientMessage {
@@ -149,18 +167,6 @@ message ShardStatus {
 }
 
 //////////////////////////////////////////////////
-message StoreHeartbeat {
-    // only in the initial heartbeat
-    StoreResource store_resource = 1;
-    // sent to master one at a time, after the initial heartbeat
-    ShardStatus shardStatus = 2;
-}
-
-message ClientHeartbeat {
-    string data_center = 1;
-    string keyspace = 2;
-    bool is_unfollow = 3;
-}
 
 message Empty {
 }
@@ -271,10 +277,12 @@ message BootstrapCopyResponse {
 
 message PullUpdateRequest {
     string keyspace = 1;
-    uint32 node_id = 2;
+    uint32 shard_id = 2;
     uint32 segment = 3;
     uint64 offset = 4;
     uint32 limit = 5;
+    uint32 target_shard_id = 6;
+    uint32 target_cluster_size = 7;
 }
 
 message PullUpdateResponse {

@@ -43,7 +43,7 @@ func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConne
 
 	request := &pb.PullUpdateRequest{
 		Keyspace: s.keyspace,
-		NodeId:   uint32(s.id),
+		ShardId:  uint32(s.id),
 		Segment:  s.nextSegment,
 		Offset:   s.nextOffset,
 		Limit:    8096,

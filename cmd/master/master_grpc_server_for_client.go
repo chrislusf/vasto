@@ -55,42 +55,45 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 		}
 
 		dc := data_center_name(clientHeartbeat.DataCenter)
-		keyspace := keyspace_name(clientHeartbeat.Keyspace)
-		clusterKey := fmt.Sprintf("%s,%s", keyspace, dc)
 
-		if clientHeartbeat.IsUnfollow {
-			delete(clientWatchedKeyspaceAndDataCenters, clusterKey)
-			ms.clientChans.removeClient(keyspace, dc, serverAddress)
-			ms.OnClientDisconnectEvent(dc, keyspace, serverAddress)
-		} else {
-			clientWatchedKeyspaceAndDataCenters[clusterKey] = true
+		if clientHeartbeat.GetClusterFollow()!=nil{
+			keyspace := keyspace_name(clientHeartbeat.ClusterFollow.Keyspace)
+			clusterKey := fmt.Sprintf("%s,%s", keyspace, dc)
 
-			// for client, just set the expected cluster size to zero, and fix it when actual cluster is registered
-			clusterRing, _ := ms.topo.keyspaces.getOrCreateKeyspace(string(keyspace)).doGetOrCreateCluster(string(dc), 0, 0)
+			if clientHeartbeat.ClusterFollow.IsUnfollow {
+				delete(clientWatchedKeyspaceAndDataCenters, clusterKey)
+				ms.clientChans.removeClient(keyspace, dc, serverAddress)
+				ms.OnClientDisconnectEvent(dc, keyspace, serverAddress)
+			} else {
+				clientWatchedKeyspaceAndDataCenters[clusterKey] = true
 
-			if ch, err := ms.clientChans.addClient(keyspace, dc, serverAddress); err == nil {
-				// this is not added yet, start a goroutine that sends to the stream, until client disconnects
-				ms.OnClientConnectEvent(dc, keyspace, serverAddress)
-				go func() {
-					ms.clientChans.sendClientCluster(keyspace, dc, serverAddress, clusterRing)
-					for {
-						select {
-						case msg := <-ch:
-							// fmt.Printf("master received message %v\n", msg)
-							if msg == nil {
+				// for client, just set the expected cluster size to zero, and fix it when actual cluster is registered
+				clusterRing, _ := ms.topo.keyspaces.getOrCreateKeyspace(string(keyspace)).doGetOrCreateCluster(string(dc), 0, 0)
+
+				if ch, err := ms.clientChans.addClient(keyspace, dc, serverAddress); err == nil {
+					// this is not added yet, start a goroutine that sends to the stream, until client disconnects
+					ms.OnClientConnectEvent(dc, keyspace, serverAddress)
+					go func() {
+						ms.clientChans.sendClientCluster(keyspace, dc, serverAddress, clusterRing)
+						for {
+							select {
+							case msg := <-ch:
+								// fmt.Printf("master received message %v\n", msg)
+								if msg == nil {
+									return
+								}
+								if err := stream.Send(msg); err != nil {
+									log.Printf("send to client err: %v", err)
+									return
+								}
+							case <-clientDisconnectedChan:
 								return
 							}
-							if err := stream.Send(msg); err != nil {
-								log.Printf("send to client err: %v", err)
-								return
-							}
-						case <-clientDisconnectedChan:
-							return
 						}
-					}
-				}()
-			}
+					}()
+				}
 
+			}
 		}
 	}
 

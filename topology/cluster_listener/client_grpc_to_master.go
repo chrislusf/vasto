@@ -74,9 +74,11 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 
 func registerForClusterAtMaster(stream pb.VastoMaster_RegisterClientClient, keyspace, dataCenter string, isUnfollow bool) error {
 	clientHeartbeat := &pb.ClientHeartbeat{
-		Keyspace:   keyspace,
 		DataCenter: dataCenter,
-		IsUnfollow: isUnfollow,
+		ClusterFollow: &pb.ClientHeartbeat_ClusterFollowMessage{
+			Keyspace:   keyspace,
+			IsUnfollow: isUnfollow,
+		},
 	}
 
 	if err := stream.Send(clientHeartbeat); err != nil {

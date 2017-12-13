@@ -35,8 +35,8 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 		var filteredRows []*pb.KeyValue
 		if targetClusterSize > 0 {
 			for _, row := range rows {
-				partitioHash := codec.GetPartitionHashFromBytes(row.Value)
-				if jump.Hash(partitioHash, targetClusterSize) == targetShardId {
+				partitionHash := codec.GetPartitionHashFromBytes(row.Value)
+				if jump.Hash(partitionHash, targetClusterSize) == targetShardId {
 					t := row
 					filteredRows = append(filteredRows, t)
 				}
