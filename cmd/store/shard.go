@@ -112,3 +112,9 @@ func (s *shard) shutdownNode() {
 	}
 
 }
+
+func (s *shard) setCompactionFilterClusterSize(clusterSize int) {
+
+	s.db.SetCompactionForShard(s.id, clusterSize)
+
+}
