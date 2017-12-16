@@ -6,6 +6,7 @@ import (
 	"log"
 	"fmt"
 	"os"
+	"github.com/chrislusf/vasto/topology"
 )
 
 // CreateShard
@@ -44,20 +45,16 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 		ReplicationFactor: uint32(replicationFactor),
 	}
 
-	for i := 0; i < replicationFactor; i++ {
-		shardId := serverId - i
-		if shardId < 0 {
-			shardId += clusterSize
-		}
-		if i != 0 && shardId == serverId {
-			break
-		}
-		dir := fmt.Sprintf("%s/%s/%d", *ss.option.Dir, keyspace, shardId)
+	shards := topology.LocalShards(serverId, clusterSize, replicationFactor)
+
+	for _, shard := range shards {
+		dir := fmt.Sprintf("%s/%s/%d", *ss.option.Dir, keyspace, shard.ShardId)
 		err := os.MkdirAll(dir, 0755)
 		if err != nil {
 			return fmt.Errorf("mkdir %s: %v", dir, err)
 		}
-		ctx, node := newShard(keyspace, dir, serverId, shardId, cluster, ss.clusterListener,
+
+		ctx, node := newShard(keyspace, dir, serverId, shard.ShardId, cluster, ss.clusterListener,
 			replicationFactor, *ss.option.LogFileSizeMb, *ss.option.LogFileCount)
 
 		ss.keyspaceShards.addShards(keyspace, node)
@@ -66,7 +63,7 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 
 		shardStatus := &pb.ShardStatus{
 			NodeId:            uint32(serverId),
-			ShardId:           uint32(shardId),
+			ShardId:           uint32(shard.ShardId),
 			Status:            pb.ShardStatus_EMPTY,
 			KeyspaceName:      keyspace,
 			ClusterSize:       uint32(clusterSize),
@@ -75,10 +72,11 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 
 		log.Printf("sending shard status %v", shardStatus)
 
-		status.ShardStatuses[uint32(shardId)] = shardStatus
+		status.ShardStatuses[uint32(shard.ShardId)] = shardStatus
 
 		// register the shard at master
 		ss.shardStatusChan <- shardStatus
+
 	}
 
 	ss.saveClusterConfig(status, keyspace)
