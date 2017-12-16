@@ -5,12 +5,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"math"
 	"testing"
+	"github.com/chrislusf/vasto/pb"
 )
 
 // tests the GetAddress function on the Node interface
 func TestNode(t *testing.T) {
 	host := "localhost:7000"
-	n := NewNode(3, "tcp", host, host)
+	n := NewNode(3, &pb.StoreResource{
+		DataCenter:"dc1",
+		Network: "tcp",
+		Address:host,
+	})
 
 	// validate address name
 	assert.Equal(t, host, n.GetAddress())
@@ -21,7 +26,13 @@ func TestNode(t *testing.T) {
 func baselineBenchmark(hosts int) func(b *testing.B) {
 	ring := NewHashRing("ks1", "dc1", hosts, 2)
 	for i := 0; i < hosts; i++ {
-		ring.Add(NewNode(i, "tcp", fmt.Sprint("localhost:", 7000+i), fmt.Sprint("localhost:", 8000+i)))
+		n := NewNode(i, &pb.StoreResource{
+			DataCenter:"dc1",
+			Network: "tcp",
+			Address:fmt.Sprint("localhost:", 7000+i),
+			AdminAddress:fmt.Sprint("localhost:", 8000+i),
+		})
+		ring.Add(n)
 	}
 
 	return func(b *testing.B) {
@@ -81,7 +92,13 @@ func TestHashing(t *testing.T) {
 func createRing(hosts int) *ClusterRing {
 	ring := NewHashRing("ks1", "dc1", hosts, 2)
 	for i := 0; i < hosts; i++ {
-		ring.Add(NewNode(i, "tcp", fmt.Sprint("localhost:", 7000+i), fmt.Sprint("localhost:", 8000+i)))
+		n := NewNode(i, &pb.StoreResource{
+			DataCenter:"dc1",
+			Network: "tcp",
+			Address:fmt.Sprint("localhost:", 7000+i),
+			AdminAddress:fmt.Sprint("localhost:", 8000+i),
+		})
+		ring.Add(n)
 	}
 	return ring
 }
