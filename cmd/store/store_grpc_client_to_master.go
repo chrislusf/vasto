@@ -69,7 +69,7 @@ func (ss *storeServer) registerAtMasterServer() error {
 		// this is async, because
 		// each sendShardInfoToMaster is listening on the ss.ShardInfoChan
 		for _, storeStatus := range ss.statusInCluster {
-			for _, ShardInfo := range storeStatus.ShardInfoes {
+			for _, ShardInfo := range storeStatus.Shards {
 				ss.sendShardInfoToMaster(ShardInfo, pb.ShardInfo_READY)
 			}
 		}

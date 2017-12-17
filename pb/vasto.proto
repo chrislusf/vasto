@@ -142,7 +142,7 @@ message StoreResource {
 // StoreStatusInCluster is saved to and load from disk
 message StoreStatusInCluster {
     uint32 id = 1;
-    map<uint32, ShardInfo> shard_infoes = 2;
+    map<uint32, ShardInfo> shards = 2;
     // duplicated info, need to validate on master when reconvene
     uint32 cluster_size = 3;
     // duplicated info, need to validate on master when reconvene
