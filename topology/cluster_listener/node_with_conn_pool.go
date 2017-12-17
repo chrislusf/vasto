@@ -14,13 +14,14 @@ import (
 type shard_id uint32
 
 type NodeWithConnPool struct {
-	id            int
-	network       string
-	address       string
-	adminAddress  string
-	storeResource *pb.StoreResource
-	shards        map[shard_id]*pb.ShardStatus
-	p             pool.Pool
+	id              int
+	network         string
+	address         string
+	adminAddress    string
+	storeResource   *pb.StoreResource
+	shards          map[shard_id]*pb.ShardStatus
+	p               pool.Pool
+	alternativeNode topology.Node
 }
 
 func newNodeWithConnPool(id int, storeResource *pb.StoreResource) *NodeWithConnPool {
@@ -91,6 +92,14 @@ func (n *NodeWithConnPool) GetShardStatuses() []*pb.ShardStatus {
 		statuses = append(statuses, ss)
 	}
 	return statuses
+}
+
+func (n *NodeWithConnPool) GetAlternativeNode() topology.Node {
+	return n.alternativeNode
+}
+
+func (n *NodeWithConnPool) SetAlternativeNode(alt topology.Node) {
+	n.alternativeNode = alt
 }
 
 func (clusterListener *ClusterListener) AddNode(keyspace string, n *pb.ClusterNode) (oldShardStatus *pb.ShardStatus) {
