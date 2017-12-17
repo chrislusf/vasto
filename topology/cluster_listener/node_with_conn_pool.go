@@ -21,7 +21,6 @@ type NodeWithConnPool struct {
 	storeResource   *pb.StoreResource
 	shards          map[shard_id]*pb.ShardInfo
 	p               pool.Pool
-	alternativeNode topology.Node
 }
 
 func newNodeWithConnPool(id int, storeResource *pb.StoreResource) *NodeWithConnPool {
@@ -92,14 +91,6 @@ func (n *NodeWithConnPool) GetShardInfoList() []*pb.ShardInfo {
 		statuses = append(statuses, ss)
 	}
 	return statuses
-}
-
-func (n *NodeWithConnPool) GetAlternativeNode() topology.Node {
-	return n.alternativeNode
-}
-
-func (n *NodeWithConnPool) SetAlternativeNode(alt topology.Node) {
-	n.alternativeNode = alt
 }
 
 func (clusterListener *ClusterListener) AddNode(keyspace string, n *pb.ClusterNode) (oldShardInfo *pb.ShardInfo) {

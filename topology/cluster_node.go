@@ -13,15 +13,12 @@ type Node interface {
 	SetShardInfo(ShardInfo *pb.ShardInfo) (oldShardInfo *pb.ShardInfo)
 	RemoveShardInfo(ShardInfo *pb.ShardInfo)
 	GetShardInfoList() []*pb.ShardInfo
-	GetAlternativeNode() Node
-	SetAlternativeNode(Node)
 }
 
 type node struct {
 	id              int
 	store           *pb.StoreResource
 	shards          map[string]*pb.ShardInfo
-	alternativeNode Node
 }
 
 func (n *node) GetId() int {
@@ -65,12 +62,4 @@ func (n *node) GetShardInfoList() []*pb.ShardInfo {
 		statuses = append(statuses, ss)
 	}
 	return statuses
-}
-
-func (n *node) GetAlternativeNode() Node {
-	return n.alternativeNode
-}
-
-func (n *node) SetAlternativeNode(alt Node) {
-	n.alternativeNode = alt
 }
