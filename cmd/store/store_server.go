@@ -82,7 +82,7 @@ func RunStore(option *StoreOption) {
 	}
 
 	for keyspaceName, storeStatus := range ss.statusInCluster {
-		ss.startExistingNodes(keyspaceName, storeStatus, clusterListener)
+		ss.startExistingNodes(keyspaceName, storeStatus)
 	}
 
 	if *option.TcpPort != 0 {

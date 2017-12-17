@@ -48,38 +48,50 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 	shards := topology.LocalShards(serverId, clusterSize, replicationFactor)
 
 	for _, shard := range shards {
-		dir := fmt.Sprintf("%s/%s/%d", *ss.option.Dir, keyspace, shard.ShardId)
-		err := os.MkdirAll(dir, 0755)
-		if err != nil {
-			return fmt.Errorf("mkdir %s: %v", dir, err)
-		}
-
-		ctx, node := newShard(keyspace, dir, serverId, shard.ShardId, cluster, ss.clusterListener,
-			replicationFactor, *ss.option.LogFileSizeMb, *ss.option.LogFileCount)
-
-		ss.keyspaceShards.addShards(keyspace, node)
-		ss.RegisterPeriodicTask(node)
-		go node.startWithBootstrapAndFollow(ctx, false)
 
 		shardStatus := &pb.ShardStatus{
 			NodeId:            uint32(serverId),
 			ShardId:           uint32(shard.ShardId),
-			Status:            pb.ShardStatus_EMPTY,
 			KeyspaceName:      keyspace,
 			ClusterSize:       uint32(clusterSize),
 			ReplicationFactor: uint32(replicationFactor),
 		}
 
-		log.Printf("sending shard status %v", shardStatus)
+		ss.startShardDaemon(shardStatus, false)
 
 		status.ShardStatuses[uint32(shard.ShardId)] = shardStatus
 
-		// register the shard at master
-		ss.shardStatusChan <- shardStatus
+		ss.sendShardStatusToMaster(shardStatus)
 
 	}
 
 	ss.saveClusterConfig(status, keyspace)
 
 	return nil
+}
+
+func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.StoreStatusInCluster) {
+	for _, shardStatus := range storeStatus.ShardStatuses {
+		ss.startShardDaemon(shardStatus, *ss.option.Bootstrap)
+	}
+}
+
+func (ss *storeServer) startShardDaemon(shardStatus *pb.ShardStatus, needBootstrap bool) {
+
+	cluster := ss.clusterListener.GetOrSetClusterRing(shardStatus.KeyspaceName, int(shardStatus.ClusterSize), int(shardStatus.ReplicationFactor))
+
+	dir := fmt.Sprintf("%s/%s/%d", *ss.option.Dir, shardStatus.KeyspaceName, shardStatus.ShardId)
+	err := os.MkdirAll(dir, 0755)
+	if err != nil {
+		log.Printf("mkdir %s: %v", dir, err)
+		return
+	}
+
+	ctx, node := newShard(shardStatus.KeyspaceName, dir, int(shardStatus.NodeId), int(shardStatus.ShardId), cluster, ss.clusterListener,
+		int(shardStatus.ReplicationFactor), *ss.option.LogFileSizeMb, *ss.option.LogFileCount)
+	// println("loading shard", node.String())
+	ss.keyspaceShards.addShards(shardStatus.KeyspaceName, node)
+	ss.RegisterPeriodicTask(node)
+	go node.startWithBootstrapAndFollow(ctx, needBootstrap)
+
 }

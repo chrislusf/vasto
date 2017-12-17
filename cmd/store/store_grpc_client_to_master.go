@@ -66,9 +66,11 @@ func (ss *storeServer) registerAtMasterServer() error {
 
 	// send any existing shard status to the master and quit
 	go func() {
+		// this is async, because
+		// each sendShardStatusToMaster is listening on the ss.shardStatusChan
 		for _, storeStatus := range ss.statusInCluster {
 			for _, shardStatus := range storeStatus.ShardStatuses {
-				ss.shardStatusChan <- shardStatus
+				ss.sendShardStatusToMaster(shardStatus)
 			}
 		}
 	}()
@@ -109,6 +111,11 @@ func (ss *storeServer) registerAtMasterServer() error {
 
 	return err
 
+}
+
+func (ss *storeServer) sendShardStatusToMaster(status *pb.ShardStatus) {
+	log.Printf("Sending master: %v", status)
+	ss.shardStatusChan <- status
 }
 
 func (ss *storeServer) processStoreMessage(msg *pb.StoreMessage) {
