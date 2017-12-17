@@ -40,8 +40,8 @@ func (cluster *ClusterRing) toNodes() (nodes []*pb.ClusterNode) {
 			address = node.GetAddress()
 			adminAddress = node.GetAdminAddress()
 		}
-		for _, shardStatus := range node.GetShardStatuses() {
-			ss := shardStatus
+		for _, ShardInfo := range node.GetShardInfoes() {
+			ss := ShardInfo
 			nodes = append(
 				nodes,
 				&pb.ClusterNode{
@@ -51,7 +51,7 @@ func (cluster *ClusterRing) toNodes() (nodes []*pb.ClusterNode) {
 						Address:      address,
 						AdminAddress: adminAddress,
 					},
-					ShardStatus: ss,
+					ShardInfo: ss,
 				},
 			)
 		}

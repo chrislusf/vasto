@@ -14,7 +14,7 @@ import (
 func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardRequest) (*pb.CreateShardResponse, error) {
 
 	log.Printf("create shard %v", request)
-	err := ss.createShards(request.Keyspace, int(request.ShardId), int(request.ClusterSize), int(request.ReplicationFactor))
+	err := ss.createShards(request.Keyspace, int(request.ShardId), int(request.ClusterSize), int(request.ReplicationFactor), pb.ShardInfo_READY)
 	if err != nil {
 		log.Printf("create keyspace %s: %v", request.Keyspace, err)
 		return &pb.CreateShardResponse{
@@ -28,7 +28,7 @@ func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardR
 
 }
 
-func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, replicationFactor int) (err error) {
+func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, replicationFactor int, t pb.ShardInfo_Status) (err error) {
 
 	cluster := ss.clusterListener.AddNewKeyspace(keyspace, clusterSize, replicationFactor)
 	log.Printf("new cluster: %v", cluster)
@@ -40,7 +40,7 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 
 	status := &pb.StoreStatusInCluster{
 		Id:                uint32(serverId),
-		ShardStatuses:     make(map[uint32]*pb.ShardStatus),
+		ShardInfoes:     make(map[uint32]*pb.ShardInfo),
 		ClusterSize:       uint32(clusterSize),
 		ReplicationFactor: uint32(replicationFactor),
 	}
@@ -49,7 +49,7 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 
 	for _, shard := range shards {
 
-		shardStatus := &pb.ShardStatus{
+		ShardInfo := &pb.ShardInfo{
 			NodeId:            uint32(serverId),
 			ShardId:           uint32(shard.ShardId),
 			KeyspaceName:      keyspace,
@@ -57,11 +57,11 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 			ReplicationFactor: uint32(replicationFactor),
 		}
 
-		ss.startShardDaemon(shardStatus, false)
+		ss.startShardDaemon(ShardInfo, false)
 
-		status.ShardStatuses[uint32(shard.ShardId)] = shardStatus
+		status.ShardInfoes[uint32(shard.ShardId)] = ShardInfo
 
-		ss.sendShardStatusToMaster(shardStatus)
+		ss.sendShardInfoToMaster(ShardInfo, t)
 
 	}
 
@@ -71,26 +71,26 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 }
 
 func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.StoreStatusInCluster) {
-	for _, shardStatus := range storeStatus.ShardStatuses {
-		ss.startShardDaemon(shardStatus, *ss.option.Bootstrap)
+	for _, ShardInfo := range storeStatus.ShardInfoes {
+		ss.startShardDaemon(ShardInfo, *ss.option.Bootstrap)
 	}
 }
 
-func (ss *storeServer) startShardDaemon(shardStatus *pb.ShardStatus, needBootstrap bool) {
+func (ss *storeServer) startShardDaemon(ShardInfo *pb.ShardInfo, needBootstrap bool) {
 
-	cluster := ss.clusterListener.GetOrSetClusterRing(shardStatus.KeyspaceName, int(shardStatus.ClusterSize), int(shardStatus.ReplicationFactor))
+	cluster := ss.clusterListener.GetOrSetClusterRing(ShardInfo.KeyspaceName, int(ShardInfo.ClusterSize), int(ShardInfo.ReplicationFactor))
 
-	dir := fmt.Sprintf("%s/%s/%d", *ss.option.Dir, shardStatus.KeyspaceName, shardStatus.ShardId)
+	dir := fmt.Sprintf("%s/%s/%d", *ss.option.Dir, ShardInfo.KeyspaceName, ShardInfo.ShardId)
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
 		log.Printf("mkdir %s: %v", dir, err)
 		return
 	}
 
-	ctx, node := newShard(shardStatus.KeyspaceName, dir, int(shardStatus.NodeId), int(shardStatus.ShardId), cluster, ss.clusterListener,
-		int(shardStatus.ReplicationFactor), *ss.option.LogFileSizeMb, *ss.option.LogFileCount)
+	ctx, node := newShard(ShardInfo.KeyspaceName, dir, int(ShardInfo.NodeId), int(ShardInfo.ShardId), cluster, ss.clusterListener,
+		int(ShardInfo.ReplicationFactor), *ss.option.LogFileSizeMb, *ss.option.LogFileCount)
 	// println("loading shard", node.String())
-	ss.keyspaceShards.addShards(shardStatus.KeyspaceName, node)
+	ss.keyspaceShards.addShards(ShardInfo.KeyspaceName, node)
 	ss.RegisterPeriodicTask(node)
 	go node.startWithBootstrapAndFollow(ctx, needBootstrap)
 

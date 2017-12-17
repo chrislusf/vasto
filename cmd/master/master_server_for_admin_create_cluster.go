@@ -30,7 +30,7 @@ func (ms *masterServer) CreateCluster(ctx context.Context, req *pb.CreateCluster
 				Address:      server.Address,
 				AdminAddress: server.AdminAddress,
 			},
-			ShardStatus: &pb.ShardStatus{
+			ShardInfo: &pb.ShardInfo{
 				NodeId:  uint32(i),
 				ShardId: uint32(i),
 			},

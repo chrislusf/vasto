@@ -50,15 +50,13 @@ service VastoStore {
         // client pull data from server
     }
     rpc CheckBinlog (CheckBinlogRequest) returns (CheckBinlogResponse) {
-        // client pull data from server
     }
-
     rpc CreateShard (CreateShardRequest) returns (CreateShardResponse) {
-        // client pull data from server
+    }
+    rpc DeleteKeyspace (DeleteKeyspaceRequest) returns (DeleteKeyspaceResponse) {
     }
 
-    rpc DeleteKeyspace (DeleteKeyspaceRequest) returns (DeleteKeyspaceResponse) {
-        // client pull data from server
+    rpc ReplicateNode (ReplicateNodeRequest) returns (ReplicateNodeResponse) {
     }
 
 }
@@ -78,7 +76,7 @@ message StoreHeartbeat {
     // only in the initial heartbeat
     StoreResource store_resource = 1;
     // sent to master one at a time, after the initial heartbeat
-    ShardStatus shardStatus = 2;
+    ShardInfo ShardInfo = 2;
 }
 
 message StoreMessage {
@@ -128,7 +126,7 @@ message Cluster {
 // denormalized
 message ClusterNode {
     StoreResource store_resource = 1;
-    ShardStatus shard_status = 2;
+    ShardInfo shard_info = 2;
 }
 
 message StoreResource {
@@ -144,14 +142,14 @@ message StoreResource {
 // StoreStatusInCluster is saved to and load from disk
 message StoreStatusInCluster {
     uint32 id = 1;
-    map<uint32, ShardStatus> shard_statuses = 2;
+    map<uint32, ShardInfo> shard_infoes = 2;
     // duplicated info, need to validate on master when reconvene
     uint32 cluster_size = 3;
     // duplicated info, need to validate on master when reconvene
     uint32 replication_factor = 4;
 }
 
-message ShardStatus {
+message ShardInfo {
     string keyspace_name = 1;
     uint32 node_id = 2;
     uint32 shard_id = 3;
@@ -162,6 +160,7 @@ message ShardStatus {
         BOOTSTRAP = 1;
         READY = 2;
         DELETED = 3;
+        CANDIDATE = 4;
     }
     Status status = 6;
 }
@@ -405,6 +404,17 @@ message DeleteKeyspaceRequest {
 }
 
 message DeleteKeyspaceResponse {
+    string error = 1;
+}
+
+message ReplicateNodeRequest {
+    string keyspace = 1;
+    uint32 server_id = 2;
+    uint32 cluster_size = 3;
+    uint32 replication_factor = 4;
+}
+
+message ReplicateNodeResponse {
     string error = 1;
 }
 

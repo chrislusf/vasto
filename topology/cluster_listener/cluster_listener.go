@@ -88,7 +88,7 @@ func (clusterListener *ClusterListener) SetNodes(keyspace string, fixedCluster s
 				Network: parts[0],
 				Address: parts[1],
 			},
-			ShardStatus: &pb.ShardStatus{
+			ShardInfo: &pb.ShardInfo{
 				NodeId:  uint32(id),
 				ShardId: uint32(id),
 			},
@@ -131,7 +131,7 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 					for _, node := range msg.Cluster.Nodes {
 						clusterListener.AddNode(msg.Cluster.Keyspace, node)
 						for _, shardEventProcess := range clusterListener.shardEventProcessors {
-							shardEventProcess.OnShardCreateEvent(r, node.StoreResource, node.ShardStatus)
+							shardEventProcess.OnShardCreateEvent(r, node.StoreResource, node.ShardInfo)
 						}
 					}
 					if !clientConnected {
@@ -150,15 +150,15 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 						if msg.Updates.GetIsDelete() {
 							clusterListener.RemoveNode(msg.Updates.Keyspace, node)
 							for _, shardEventProcess := range clusterListener.shardEventProcessors {
-								shardEventProcess.OnShardRemoveEvent(r, node.StoreResource, node.ShardStatus)
+								shardEventProcess.OnShardRemoveEvent(r, node.StoreResource, node.ShardInfo)
 							}
 						} else {
-							oldShardStatus := clusterListener.AddNode(msg.Updates.Keyspace, node)
+							oldShardInfo := clusterListener.AddNode(msg.Updates.Keyspace, node)
 							for _, shardEventProcess := range clusterListener.shardEventProcessors {
-								if oldShardStatus == nil {
-									shardEventProcess.OnShardCreateEvent(r, node.StoreResource, node.ShardStatus)
-								} else if oldShardStatus.Status.String() != node.ShardStatus.String() {
-									shardEventProcess.OnShardUpdateEvent(r, node.StoreResource, node.ShardStatus, oldShardStatus)
+								if oldShardInfo == nil {
+									shardEventProcess.OnShardCreateEvent(r, node.StoreResource, node.ShardInfo)
+								} else if oldShardInfo.Status.String() != node.ShardInfo.String() {
+									shardEventProcess.OnShardUpdateEvent(r, node.StoreResource, node.ShardInfo, oldShardInfo)
 								}
 							}
 						}

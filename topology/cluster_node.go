@@ -10,9 +10,9 @@ type Node interface {
 	GetAddress() string
 	GetAdminAddress() string
 	GetStoreResource() *pb.StoreResource
-	SetShardStatus(shardStatus *pb.ShardStatus) (oldShardStatus *pb.ShardStatus)
-	RemoveShardStatus(shardStatus *pb.ShardStatus)
-	GetShardStatuses() []*pb.ShardStatus
+	SetShardInfo(ShardInfo *pb.ShardInfo) (oldShardInfo *pb.ShardInfo)
+	RemoveShardInfo(ShardInfo *pb.ShardInfo)
+	GetShardInfoes() []*pb.ShardInfo
 	GetAlternativeNode() Node
 	SetAlternativeNode(Node)
 }
@@ -20,7 +20,7 @@ type Node interface {
 type node struct {
 	id              int
 	store           *pb.StoreResource
-	shards          map[string]*pb.ShardStatus
+	shards          map[string]*pb.ShardInfo
 	alternativeNode Node
 }
 
@@ -45,21 +45,21 @@ func (n *node) GetStoreResource() *pb.StoreResource {
 }
 
 func NewNode(id int, store *pb.StoreResource) Node {
-	return &node{id: id, store: store, shards: make(map[string]*pb.ShardStatus)}
+	return &node{id: id, store: store, shards: make(map[string]*pb.ShardInfo)}
 }
 
-func (n *node) SetShardStatus(shardStatus *pb.ShardStatus) (oldShardStatus *pb.ShardStatus) {
-	oldShardStatus = n.shards[shardStatus.IdentifierOnThisServer()]
-	n.shards[shardStatus.IdentifierOnThisServer()] = shardStatus
+func (n *node) SetShardInfo(ShardInfo *pb.ShardInfo) (oldShardInfo *pb.ShardInfo) {
+	oldShardInfo = n.shards[ShardInfo.IdentifierOnThisServer()]
+	n.shards[ShardInfo.IdentifierOnThisServer()] = ShardInfo
 	return
 }
 
-func (n *node) RemoveShardStatus(shardStatus *pb.ShardStatus) {
-	delete(n.shards, shardStatus.IdentifierOnThisServer())
+func (n *node) RemoveShardInfo(ShardInfo *pb.ShardInfo) {
+	delete(n.shards, ShardInfo.IdentifierOnThisServer())
 }
 
-func (n *node) GetShardStatuses() []*pb.ShardStatus {
-	var statuses []*pb.ShardStatus
+func (n *node) GetShardInfoes() []*pb.ShardInfo {
+	var statuses []*pb.ShardInfo
 	for _, shard := range n.shards {
 		ss := shard
 		statuses = append(statuses, ss)

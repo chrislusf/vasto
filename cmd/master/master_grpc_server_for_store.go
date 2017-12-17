@@ -32,7 +32,7 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 	}
 	defer ms.topo.dataCenters.deleteServer(dc, storeResource)
 
-	seenShardsOnThisServer := make(map[string]*pb.ShardStatus)
+	seenShardsOnThisServer := make(map[string]*pb.ShardInfo)
 	defer ms.unRegisterShards(seenShardsOnThisServer, storeResource)
 
 	var e error
@@ -41,8 +41,8 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 		if e != nil {
 			break
 		}
-		if err := ms.processShardStatus(seenShardsOnThisServer, storeResource, beat.ShardStatus); err != nil {
-			log.Printf("process shard status %v: %v", beat.ShardStatus, err)
+		if err := ms.processShardInfo(seenShardsOnThisServer, storeResource, beat.ShardInfo); err != nil {
+			log.Printf("process shard status %v: %v", beat.ShardInfo, err)
 			log.Printf("- store datacenter(%s) %v: %v", storeResource.DataCenter, storeResource.Address, e)
 			return err
 		}
@@ -52,14 +52,14 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 	return nil
 }
 
-func (ms *masterServer) notifyUpdate(shardStatus *pb.ShardStatus, storeResource *pb.StoreResource, isDelete bool) error {
+func (ms *masterServer) notifyUpdate(ShardInfo *pb.ShardInfo, storeResource *pb.StoreResource, isDelete bool) error {
 	return ms.clientChans.notifyStoreResourceUpdate(
-		keyspace_name(shardStatus.KeyspaceName),
+		keyspace_name(ShardInfo.KeyspaceName),
 		data_center_name(storeResource.DataCenter),
 		[]*pb.ClusterNode{
 			&pb.ClusterNode{
 				StoreResource: storeResource,
-				ShardStatus:   shardStatus,
+				ShardInfo:   ShardInfo,
 			},
 		},
 		isDelete,
@@ -67,48 +67,48 @@ func (ms *masterServer) notifyUpdate(shardStatus *pb.ShardStatus, storeResource 
 
 }
 
-func (ms *masterServer) processShardStatus(seenShardsOnThisServer map[string]*pb.ShardStatus,
-	storeResource *pb.StoreResource, shardStatus *pb.ShardStatus) error {
-	keyspace := ms.topo.keyspaces.getOrCreateKeyspace(shardStatus.KeyspaceName)
-	cluster := keyspace.getOrCreateCluster(storeResource, int(shardStatus.ClusterSize), int(shardStatus.ReplicationFactor))
+func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.ShardInfo,
+	storeResource *pb.StoreResource, ShardInfo *pb.ShardInfo) error {
+	keyspace := ms.topo.keyspaces.getOrCreateKeyspace(ShardInfo.KeyspaceName)
+	cluster := keyspace.getOrCreateCluster(storeResource, int(ShardInfo.ClusterSize), int(ShardInfo.ReplicationFactor))
 
-	node, _, found := cluster.GetNode(int(shardStatus.NodeId))
-	if shardStatus.Status == pb.ShardStatus_DELETED && !found {
+	node, _, found := cluster.GetNode(int(ShardInfo.NodeId))
+	if ShardInfo.Status == pb.ShardInfo_DELETED && !found {
 		return nil
 	}
 	if !found {
-		node = topology.NewNodeFromStore(storeResource, shardStatus.NodeId)
+		node = topology.NewNodeFromStore(storeResource, ShardInfo.NodeId)
 		cluster.Add(node)
 	}
-	if shardStatus.Status == pb.ShardStatus_DELETED {
-		node.RemoveShardStatus(shardStatus)
-		ms.notifyUpdate(shardStatus, storeResource, true)
-		delete(seenShardsOnThisServer, shardStatus.IdentifierOnThisServer())
+	if ShardInfo.Status == pb.ShardInfo_DELETED {
+		node.RemoveShardInfo(ShardInfo)
+		ms.notifyUpdate(ShardInfo, storeResource, true)
+		delete(seenShardsOnThisServer, ShardInfo.IdentifierOnThisServer())
 		log.Printf("- dc %s keyspace %s node %d shard %d %s cluster %s", storeResource.DataCenter,
-			shardStatus.KeyspaceName, node.GetId(), shardStatus.ShardId, node.GetAddress(), cluster)
+			ShardInfo.KeyspaceName, node.GetId(), ShardInfo.ShardId, node.GetAddress(), cluster)
 	} else {
-		oldShardStatus := node.SetShardStatus(shardStatus)
-		ms.notifyUpdate(shardStatus, storeResource, false)
-		seenShardsOnThisServer[shardStatus.IdentifierOnThisServer()] = shardStatus
-		if oldShardStatus == nil {
+		oldShardInfo := node.SetShardInfo(ShardInfo)
+		ms.notifyUpdate(ShardInfo, storeResource, false)
+		seenShardsOnThisServer[ShardInfo.IdentifierOnThisServer()] = ShardInfo
+		if oldShardInfo == nil {
 			log.Printf("+ dc %s keyspace %s node %d shard %d %s cluster %s", storeResource.DataCenter,
-				shardStatus.KeyspaceName, node.GetId(), shardStatus.ShardId, node.GetAddress(), cluster)
-		} else if oldShardStatus.Status != shardStatus.Status {
+				ShardInfo.KeyspaceName, node.GetId(), ShardInfo.ShardId, node.GetAddress(), cluster)
+		} else if oldShardInfo.Status != ShardInfo.Status {
 			log.Printf("* dc %s keyspace %s node %d shard %d %s cluster %s status:%s=>%s", storeResource.DataCenter,
-				shardStatus.KeyspaceName, node.GetId(), shardStatus.ShardId, node.GetAddress(), cluster,
-				oldShardStatus.Status, shardStatus.Status)
+				ShardInfo.KeyspaceName, node.GetId(), ShardInfo.ShardId, node.GetAddress(), cluster,
+				oldShardInfo.Status, ShardInfo.Status)
 		}
 	}
 
 	return nil
 }
 
-func (ms *masterServer) unRegisterShards(seenShardsOnThisServer map[string]*pb.ShardStatus, storeResource *pb.StoreResource) {
-	for _, shardStatus := range seenShardsOnThisServer {
-		keyspace := ms.topo.keyspaces.getOrCreateKeyspace(string(shardStatus.KeyspaceName))
+func (ms *masterServer) unRegisterShards(seenShardsOnThisServer map[string]*pb.ShardInfo, storeResource *pb.StoreResource) {
+	for _, ShardInfo := range seenShardsOnThisServer {
+		keyspace := ms.topo.keyspaces.getOrCreateKeyspace(string(ShardInfo.KeyspaceName))
 		if cluster, found := keyspace.getCluster(storeResource.DataCenter); found {
-			cluster.Remove(int(shardStatus.NodeId)) // just remove the whole node
-			ms.notifyUpdate(shardStatus, storeResource, true)
+			cluster.Remove(int(ShardInfo.NodeId)) // just remove the whole node
+			ms.notifyUpdate(ShardInfo, storeResource, true)
 		}
 	}
 }

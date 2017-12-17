@@ -67,10 +67,10 @@ func (ss *storeServer) registerAtMasterServer() error {
 	// send any existing shard status to the master and quit
 	go func() {
 		// this is async, because
-		// each sendShardStatusToMaster is listening on the ss.shardStatusChan
+		// each sendShardInfoToMaster is listening on the ss.ShardInfoChan
 		for _, storeStatus := range ss.statusInCluster {
-			for _, shardStatus := range storeStatus.ShardStatuses {
-				ss.sendShardStatusToMaster(shardStatus)
+			for _, ShardInfo := range storeStatus.ShardInfoes {
+				ss.sendShardInfoToMaster(ShardInfo, pb.ShardInfo_READY)
 			}
 		}
 	}()
@@ -81,14 +81,14 @@ func (ss *storeServer) registerAtMasterServer() error {
 	go func() {
 		for {
 			select {
-			case shardStatus := <-ss.shardStatusChan:
+			case ShardInfo := <-ss.ShardInfoChan:
 				// collect current server's different cluster shard status
-				// log.Println("shard status => ", shardStatus)
+				// log.Println("shard status => ", ShardInfo)
 				storeHeartbeat = &pb.StoreHeartbeat{
-					ShardStatus: shardStatus,
+					ShardInfo: ShardInfo,
 				}
 				if err := stream.Send(storeHeartbeat); err != nil {
-					log.Printf("send shard status: %v", storeHeartbeat, err)
+					log.Printf("send shard status %v: %v", storeHeartbeat, err)
 					return
 				}
 			case <-finishChan:
@@ -113,9 +113,11 @@ func (ss *storeServer) registerAtMasterServer() error {
 
 }
 
-func (ss *storeServer) sendShardStatusToMaster(status *pb.ShardStatus) {
-	log.Printf("Sending master: %v", status)
-	ss.shardStatusChan <- status
+func (ss *storeServer) sendShardInfoToMaster(ShardInfo *pb.ShardInfo, status pb.ShardInfo_Status) {
+	t := ShardInfo.Clone()
+	t.Status = status
+	log.Printf("Sending master: %v", t)
+	ss.ShardInfoChan <- t
 }
 
 func (ss *storeServer) processStoreMessage(msg *pb.StoreMessage) {

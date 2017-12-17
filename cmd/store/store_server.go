@@ -45,7 +45,7 @@ func (o *StoreOption) GetAdminPort() int32 {
 type storeServer struct {
 	option          *StoreOption
 	clusterListener *cluster_listener.ClusterListener
-	shardStatusChan chan *pb.ShardStatus
+	ShardInfoChan chan *pb.ShardInfo
 	statusInCluster map[string]*pb.StoreStatusInCluster // saved to disk
 	periodTasks     []PeriodicTask
 	keyspaceShards  *keyspaceShards
@@ -59,7 +59,7 @@ func RunStore(option *StoreOption) {
 	var ss = &storeServer{
 		option:          option,
 		clusterListener: clusterListener,
-		shardStatusChan: make(chan *pb.ShardStatus),
+		ShardInfoChan: make(chan *pb.ShardInfo),
 		statusInCluster: make(map[string]*pb.StoreStatusInCluster),
 		keyspaceShards:  newKeyspaceShards(),
 	}
@@ -75,8 +75,8 @@ func RunStore(option *StoreOption) {
 		clusterListener.SetNodes(*option.Keyspace, *ss.option.FixedCluster)
 	} else if *option.Master != "" {
 		go ss.keepConnectedToMasterServer(ctx)
-		for keyspaceName, shardStatus := range ss.statusInCluster {
-			clusterListener.AddExistingKeyspace(keyspaceName, int(shardStatus.ClusterSize), int(shardStatus.ReplicationFactor))
+		for keyspaceName, ShardInfo := range ss.statusInCluster {
+			clusterListener.AddExistingKeyspace(keyspaceName, int(ShardInfo.ClusterSize), int(ShardInfo.ReplicationFactor))
 		}
 		clusterListener.StartListener(ctx, *ss.option.Master, *ss.option.DataCenter, false)
 	}

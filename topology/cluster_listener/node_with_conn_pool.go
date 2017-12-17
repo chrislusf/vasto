@@ -19,7 +19,7 @@ type NodeWithConnPool struct {
 	address         string
 	adminAddress    string
 	storeResource   *pb.StoreResource
-	shards          map[shard_id]*pb.ShardStatus
+	shards          map[shard_id]*pb.ShardInfo
 	p               pool.Pool
 	alternativeNode topology.Node
 }
@@ -46,7 +46,7 @@ func newNodeWithConnPool(id int, storeResource *pb.StoreResource) *NodeWithConnP
 	return &NodeWithConnPool{
 		id:            id,
 		storeResource: storeResource,
-		shards:        make(map[shard_id]*pb.ShardStatus),
+		shards:        make(map[shard_id]*pb.ShardInfo),
 		p:             p,
 	}
 }
@@ -75,18 +75,18 @@ func (n *NodeWithConnPool) GetConnection() (net.Conn, error) {
 	return n.p.Get()
 }
 
-func (n *NodeWithConnPool) SetShardStatus(shardStatus *pb.ShardStatus) (oldShardStatus *pb.ShardStatus) {
-	oldShardStatus = n.shards[shard_id(shardStatus.ShardId)]
-	n.shards[shard_id(shardStatus.ShardId)] = shardStatus
+func (n *NodeWithConnPool) SetShardInfo(ShardInfo *pb.ShardInfo) (oldShardInfo *pb.ShardInfo) {
+	oldShardInfo = n.shards[shard_id(ShardInfo.ShardId)]
+	n.shards[shard_id(ShardInfo.ShardId)] = ShardInfo
 	return
 }
 
-func (n *NodeWithConnPool) RemoveShardStatus(shardStatus *pb.ShardStatus) {
-	delete(n.shards, shard_id(shardStatus.ShardId))
+func (n *NodeWithConnPool) RemoveShardInfo(ShardInfo *pb.ShardInfo) {
+	delete(n.shards, shard_id(ShardInfo.ShardId))
 }
 
-func (n *NodeWithConnPool) GetShardStatuses() []*pb.ShardStatus {
-	var statuses []*pb.ShardStatus
+func (n *NodeWithConnPool) GetShardInfoes() []*pb.ShardInfo {
+	var statuses []*pb.ShardInfo
 	for _, shard := range n.shards {
 		ss := shard
 		statuses = append(statuses, ss)
@@ -102,16 +102,16 @@ func (n *NodeWithConnPool) SetAlternativeNode(alt topology.Node) {
 	n.alternativeNode = alt
 }
 
-func (clusterListener *ClusterListener) AddNode(keyspace string, n *pb.ClusterNode) (oldShardStatus *pb.ShardStatus) {
-	cluster := clusterListener.GetOrSetClusterRing(keyspace, int(n.ShardStatus.ClusterSize), int(n.ShardStatus.ReplicationFactor))
-	st, ss := n.StoreResource, n.ShardStatus
+func (clusterListener *ClusterListener) AddNode(keyspace string, n *pb.ClusterNode) (oldShardInfo *pb.ShardInfo) {
+	cluster := clusterListener.GetOrSetClusterRing(keyspace, int(n.ShardInfo.ClusterSize), int(n.ShardInfo.ReplicationFactor))
+	st, ss := n.StoreResource, n.ShardInfo
 	node, _, found := cluster.GetNode(int(ss.NodeId))
 	if !found {
 		node = topology.Node(newNodeWithConnPool(int(ss.NodeId), st))
 	}
-	oldShardStatus = node.SetShardStatus(ss)
+	oldShardInfo = node.SetShardInfo(ss)
 	cluster.Add(node)
-	return oldShardStatus
+	return oldShardInfo
 }
 
 func (clusterListener *ClusterListener) RemoveNode(keyspace string, n *pb.ClusterNode) {
@@ -119,11 +119,11 @@ func (clusterListener *ClusterListener) RemoveNode(keyspace string, n *pb.Cluste
 	if !found {
 		return
 	}
-	ss := n.ShardStatus
+	ss := n.ShardInfo
 	if n != nil {
 		node := r.Remove(int(ss.NodeId))
 		if node != nil {
-			node.RemoveShardStatus(ss)
+			node.RemoveShardInfo(ss)
 			if t, ok := node.(*NodeWithConnPool); ok {
 				if len(t.shards) == 0 {
 					t.p.Close()

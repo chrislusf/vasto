@@ -9,20 +9,20 @@ import (
 type ClusterEventLogger struct {
 }
 
-func (l *ClusterEventLogger) OnShardCreateEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, shardStatus *pb.ShardStatus) {
+func (l *ClusterEventLogger) OnShardCreateEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, ShardInfo *pb.ShardInfo) {
 	log.Printf("+ dc %s keyspace %s node %d shard %d %s cluster %s", resource.DataCenter,
-		shardStatus.KeyspaceName, shardStatus.NodeId, shardStatus.ShardId, resource.Address, cluster)
+		ShardInfo.KeyspaceName, ShardInfo.NodeId, ShardInfo.ShardId, resource.Address, cluster)
 }
 
-func (l *ClusterEventLogger) OnShardUpdateEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, shardStatus *pb.ShardStatus, oldShardStatus *pb.ShardStatus) {
-	if oldShardStatus == nil {
-	} else if oldShardStatus.Status != shardStatus.Status {
+func (l *ClusterEventLogger) OnShardUpdateEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, ShardInfo *pb.ShardInfo, oldShardInfo *pb.ShardInfo) {
+	if oldShardInfo == nil {
+	} else if oldShardInfo.Status != ShardInfo.Status {
 		log.Printf("* dc %s keyspace %s node %d shard %d %s cluster %s status:%s=>%s", resource.DataCenter,
-			shardStatus.KeyspaceName, shardStatus.NodeId, shardStatus.ShardId, resource.GetAddress(), cluster,
-			oldShardStatus.Status, shardStatus.Status)
+			ShardInfo.KeyspaceName, ShardInfo.NodeId, ShardInfo.ShardId, resource.GetAddress(), cluster,
+			oldShardInfo.Status, ShardInfo.Status)
 	}
 }
-func (l *ClusterEventLogger) OnShardRemoveEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, shardStatus *pb.ShardStatus) {
+func (l *ClusterEventLogger) OnShardRemoveEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, ShardInfo *pb.ShardInfo) {
 	log.Printf("- dc %s keyspace %s node %d shard %d %s cluster %s", resource.DataCenter,
-		shardStatus.KeyspaceName, shardStatus.NodeId, shardStatus.ShardId, resource.Address, cluster)
+		ShardInfo.KeyspaceName, ShardInfo.NodeId, ShardInfo.ShardId, resource.Address, cluster)
 }
