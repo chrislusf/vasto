@@ -85,7 +85,7 @@ func (n *NodeWithConnPool) RemoveShardInfo(ShardInfo *pb.ShardInfo) {
 	delete(n.shards, shard_id(ShardInfo.ShardId))
 }
 
-func (n *NodeWithConnPool) GetShardInfoes() []*pb.ShardInfo {
+func (n *NodeWithConnPool) GetShardInfoList() []*pb.ShardInfo {
 	var statuses []*pb.ShardInfo
 	for _, shard := range n.shards {
 		ss := shard

@@ -12,7 +12,7 @@ type Node interface {
 	GetStoreResource() *pb.StoreResource
 	SetShardInfo(ShardInfo *pb.ShardInfo) (oldShardInfo *pb.ShardInfo)
 	RemoveShardInfo(ShardInfo *pb.ShardInfo)
-	GetShardInfoes() []*pb.ShardInfo
+	GetShardInfoList() []*pb.ShardInfo
 	GetAlternativeNode() Node
 	SetAlternativeNode(Node)
 }
@@ -58,7 +58,7 @@ func (n *node) RemoveShardInfo(ShardInfo *pb.ShardInfo) {
 	delete(n.shards, ShardInfo.IdentifierOnThisServer())
 }
 
-func (n *node) GetShardInfoes() []*pb.ShardInfo {
+func (n *node) GetShardInfoList() []*pb.ShardInfo {
 	var statuses []*pb.ShardInfo
 	for _, shard := range n.shards {
 		ss := shard
