@@ -46,7 +46,7 @@ type storeServer struct {
 	option          *StoreOption
 	clusterListener *cluster_listener.ClusterListener
 	ShardInfoChan chan *pb.ShardInfo
-	statusInCluster map[string]*pb.StoreStatusInCluster // saved to disk
+	statusInCluster map[string]*pb.LocalShardsInCluster // saved to disk
 	periodTasks     []PeriodicTask
 	keyspaceShards  *keyspaceShards
 }
@@ -60,7 +60,7 @@ func RunStore(option *StoreOption) {
 		option:          option,
 		clusterListener: clusterListener,
 		ShardInfoChan: make(chan *pb.ShardInfo),
-		statusInCluster: make(map[string]*pb.StoreStatusInCluster),
+		statusInCluster: make(map[string]*pb.LocalShardsInCluster),
 		keyspaceShards:  newKeyspaceShards(),
 	}
 	go ss.startPeriodTasks()

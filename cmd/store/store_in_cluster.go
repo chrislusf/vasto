@@ -32,7 +32,7 @@ func (ss *storeServer) listExistingClusters() error {
 		}
 		log.Printf("load cluster %s config from %s", keyspaceName, fullPath)
 
-		status := &pb.StoreStatusInCluster{}
+		status := &pb.LocalShardsInCluster{}
 
 		if err = proto.UnmarshalText(string(txt), status); err != nil {
 			log.Printf("parse file %s: %v", fullPath, err)
@@ -46,7 +46,7 @@ func (ss *storeServer) listExistingClusters() error {
 	return nil
 }
 
-func (ss *storeServer) saveClusterConfig(status *pb.StoreStatusInCluster, keyspaceName string) error {
+func (ss *storeServer) saveClusterConfig(status *pb.LocalShardsInCluster, keyspaceName string) error {
 
 	txt := proto.MarshalTextString(status)
 

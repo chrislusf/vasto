@@ -139,10 +139,10 @@ message StoreResource {
     uint32 allocated_size_gb = 9;
 }
 
-// StoreStatusInCluster is saved to and load from disk
-message StoreStatusInCluster {
+// LocalShardsInCluster is saved to and load from disk
+message LocalShardsInCluster {
     uint32 id = 1;
-    map<uint32, ShardInfo> shards = 2;
+    map<uint32, ShardInfo> shard_map = 2;
     // duplicated info, need to validate on master when reconvene
     uint32 cluster_size = 3;
     // duplicated info, need to validate on master when reconvene

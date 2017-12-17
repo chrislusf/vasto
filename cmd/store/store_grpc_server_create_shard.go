@@ -38,9 +38,9 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 		return nil
 	}
 
-	status := &pb.StoreStatusInCluster{
+	status := &pb.LocalShardsInCluster{
 		Id:                uint32(serverId),
-		Shards:            make(map[uint32]*pb.ShardInfo),
+		ShardMap:          make(map[uint32]*pb.ShardInfo),
 		ClusterSize:       uint32(clusterSize),
 		ReplicationFactor: uint32(replicationFactor),
 	}
@@ -59,7 +59,7 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 
 		ss.startShardDaemon(ShardInfo, false)
 
-		status.Shards[uint32(shard.ShardId)] = ShardInfo
+		status.ShardMap[uint32(shard.ShardId)] = ShardInfo
 
 		ss.sendShardInfoToMaster(ShardInfo, t)
 
@@ -70,8 +70,8 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 	return nil
 }
 
-func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.StoreStatusInCluster) {
-	for _, ShardInfo := range storeStatus.Shards {
+func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.LocalShardsInCluster) {
+	for _, ShardInfo := range storeStatus.ShardMap {
 		ss.startShardDaemon(ShardInfo, *ss.option.Bootstrap)
 	}
 }
