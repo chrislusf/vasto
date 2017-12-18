@@ -24,28 +24,33 @@ func (s *shard) Keyspace() string {
 // implementing PeriodicTask
 func (s *shard) EverySecond() {
 	// log.Printf("%s every second", s)
-	if s.prevSegment != s.nextSegment || s.prevOffset != s.nextOffset {
-		s.setProgress(s.nextSegment, s.nextOffset)
-		s.prevSegment, s.prevOffset = s.nextSegment, s.nextOffset
+	s.followProgressLock.Lock()
+	for pk, pv := range s.followProgress {
+		if segment, offset, hasProgress, err := s.getProgress(pk.serverId); err == nil {
+			if !hasProgress || segment != pv.segment || offset != pv.offset {
+				s.setProgress(pk.serverId, pv.segment, pv.offset)
+			}
+		}
 	}
+	s.followProgressLock.Unlock()
 }
 
-func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConnection *grpc.ClientConn) (err error) {
+func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConnection *grpc.ClientConn) (error) {
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
-	s.nextSegment, s.nextOffset, _, err = s.getProgress()
+	nextSegment, nextOffset, _, err := s.getProgress(server_id(node.GetId()))
 	if err != nil {
 		log.Printf("read shard %d follow progress: %v", s.id, err)
 	}
 
-	log.Printf("shard %v follows from segment %d offset %d", s.String(), s.nextSegment, s.nextOffset)
+	log.Printf("shard %v follows server %d from segment %d offset %d", s.String(), node.GetId(), nextSegment, nextOffset)
 
 	request := &pb.PullUpdateRequest{
 		Keyspace: s.keyspace,
 		ShardId:  uint32(s.id),
-		Segment:  s.nextSegment,
-		Offset:   s.nextOffset,
+		Segment:  nextSegment,
+		Offset:   nextOffset,
 		Limit:    8096,
 	}
 
@@ -125,7 +130,10 @@ func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConne
 		}
 
 		// set the nextSegment and nextOffset for OnInterrupt()
-		s.nextSegment, s.nextOffset = changes.NextSegment, changes.NextOffset
+		nextSegment, nextOffset = changes.NextSegment, changes.NextOffset
+		s.followProgressLock.Lock()
+		s.followProgress[progressKey{s.id, server_id(node.GetId())}] = progressValue{nextSegment, nextOffset}
+		s.followProgressLock.Unlock()
 
 	}
 

@@ -23,7 +23,7 @@ func (s *shard) isBootstrapNeeded(ctx context.Context) (bestPeerToCopy int, isNe
 		checkedServerCount++
 		go s.clusterRing.WithConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
 
-			latestSegment, canTailBinlog, err := s.checkBinlogAvailable(ctx, grpcConnection)
+			latestSegment, canTailBinlog, err := s.checkBinlogAvailable(ctx, grpcConnection, node)
 			if err != nil {
 				isBootstrapNeededChan <- false
 				return err

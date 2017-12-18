@@ -30,21 +30,21 @@ func (s *shard) bootstrap(ctx context.Context) error {
 	log.Printf("bootstrap from server %d ...", bestPeerToCopy)
 
 	return s.clusterRing.WithConnection(bestPeerToCopy, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
-		_, canTailBinlog, err := s.checkBinlogAvailable(ctx, grpcConnection)
+		_, canTailBinlog, err := s.checkBinlogAvailable(ctx, grpcConnection, node)
 		if err != nil {
 			return err
 		}
 		if !canTailBinlog {
-			return s.doBootstrapCopy(ctx, grpcConnection)
+			return s.doBootstrapCopy(ctx, grpcConnection, node)
 		}
 		return nil
 	})
 
 }
 
-func (s *shard) checkBinlogAvailable(ctx context.Context, grpcConnection *grpc.ClientConn) (latestSegment uint32, canTailBinlog bool, err error) {
+func (s *shard) checkBinlogAvailable(ctx context.Context, grpcConnection *grpc.ClientConn, node topology.Node) (latestSegment uint32, canTailBinlog bool, err error) {
 
-	segment, _, hasProgress, err := s.getProgress()
+	segment, _, hasProgress, err := s.getProgress(server_id(node.GetId()))
 
 	// println("shard", s.id, "segment", segment, "hasProgress", hasProgress, "err", err)
 
@@ -70,7 +70,7 @@ func (s *shard) checkBinlogAvailable(ctx context.Context, grpcConnection *grpc.C
 
 }
 
-func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.ClientConn) error {
+func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.ClientConn, node topology.Node) error {
 
 	segment, offset, err := s.writeToSst(ctx, grpcConnection)
 
@@ -78,7 +78,7 @@ func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.Client
 		return fmt.Errorf("writeToSst: %v", err)
 	}
 
-	return s.setProgress(segment, offset)
+	return s.setProgress(server_id(node.GetId()), segment, offset)
 
 }
 

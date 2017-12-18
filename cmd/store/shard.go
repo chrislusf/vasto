@@ -8,29 +8,26 @@ import (
 	"github.com/chrislusf/vasto/topology/cluster_listener"
 	"log"
 	"context"
+	"sync"
 )
 
 type shard_id int
 type server_id int
 
 type shard struct {
-	keyspace          string
-	id                shard_id
-	serverId          server_id
-	db                *rocks.Rocks
-	lm                *binlog.LogManager
-	clusterRing       *topology.ClusterRing
-	clusterListener   *cluster_listener.ClusterListener
-	replicationFactor int
-	nodeFinishChan    chan bool
-	cancelFunc        context.CancelFunc
-	isShutdown        bool
-	// just to avoid repeatedly create these variables
-	nextSegmentKey, nextOffsetKey []byte
-	prevSegment                   uint32
-	prevOffset                    uint64
-	nextSegment                   uint32
-	nextOffset                    uint64
+	keyspace           string
+	id                 shard_id
+	serverId           server_id
+	db                 *rocks.Rocks
+	lm                 *binlog.LogManager
+	clusterRing        *topology.ClusterRing
+	clusterListener    *cluster_listener.ClusterListener
+	replicationFactor  int
+	nodeFinishChan     chan bool
+	cancelFunc         context.CancelFunc
+	isShutdown         bool
+	followProgress     map[progressKey]progressValue
+	followProgressLock sync.Mutex
 }
 
 func (s *shard) String() string {
@@ -53,13 +50,12 @@ func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.
 		replicationFactor: replicationFactor,
 		nodeFinishChan:    make(chan bool),
 		cancelFunc:        cancelFunc,
+		followProgress:    make(map[progressKey]progressValue),
 	}
 	if logFileSizeMb > 0 {
 		s.lm = binlog.NewLogManager(dir, nodeId, int64(logFileSizeMb*1024*1024), logFileCount)
 		s.lm.Initialze()
 	}
-	s.nextSegmentKey = []byte(fmt.Sprintf("%d.next.segment", s.id))
-	s.nextOffsetKey = []byte(fmt.Sprintf("%d.next.offset", s.id))
 
 	return ctx, s
 }
