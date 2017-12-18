@@ -68,7 +68,7 @@ func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConne
 			return fmt.Errorf("pull changes: %v", err)
 		}
 
-		log.Printf("%s follow 0 entry: %d", s, len(changes.Entries))
+		// log.Printf("%s follow 0 entry: %d", s, len(changes.Entries))
 
 		for _, entry := range changes.Entries {
 
@@ -113,7 +113,7 @@ func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConne
 			// log.Printf("%s follow 3 entry: %v, expired %v, %v", s, string(entry.Key), row.IsExpired(), t.IsExpired())
 			if row.IsExpired() {
 				if !t.IsExpired() {
-					log.Printf("%s follow 3 entry: %v", s, string(entry.Key))
+					// log.Printf("%s follow 3 entry: %v", s, string(entry.Key))
 					s.db.Put(entry.Key, t.ToBytes())
 					continue
 				}
