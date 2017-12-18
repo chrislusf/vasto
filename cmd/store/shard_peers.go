@@ -56,11 +56,11 @@ func (s *shard) findPeerServerIds() (serverIds []int) {
 	size := s.clusterRing.ExpectedSize()
 
 	for i := 0; i < s.replicationFactor && i < size; i++ {
-		serverId := s.id + i
+		serverId := int(s.id) + i
 		if serverId >= size {
 			serverId -= size
 		}
-		if serverId == s.serverId {
+		if serverId == int(s.serverId) {
 			continue
 		}
 		serverIds = append(serverIds, serverId)

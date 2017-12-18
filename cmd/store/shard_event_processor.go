@@ -14,7 +14,7 @@ func (s *shard) OnShardCreateEvent(cluster *topology.ClusterRing, resource *pb.S
 	if s.keyspace != ShardInfo.KeyspaceName {
 		return
 	}
-	if s.id == int(ShardInfo.ShardId) {
+	if int(s.id) == int(ShardInfo.ShardId) {
 		return
 	}
 	log.Printf("+ peer keyspace %s shard %d found peer shard %d",

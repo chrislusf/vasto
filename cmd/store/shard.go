@@ -10,10 +10,13 @@ import (
 	"context"
 )
 
+type shard_id int
+type server_id int
+
 type shard struct {
 	keyspace          string
-	id                int
-	serverId          int
+	id                shard_id
+	serverId          server_id
 	db                *rocks.Rocks
 	lm                *binlog.LogManager
 	clusterRing       *topology.ClusterRing
@@ -42,8 +45,8 @@ func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.
 
 	s := &shard{
 		keyspace:          keyspaceName,
-		id:                nodeId,
-		serverId:          serverId,
+		id:                shard_id(nodeId),
+		serverId:          server_id(serverId),
 		db:                rocks.New(dir),
 		clusterRing:       cluster,
 		clusterListener:   clusterListener,
@@ -96,6 +99,6 @@ func (s *shard) shutdownNode() {
 
 func (s *shard) setCompactionFilterClusterSize(clusterSize int) {
 
-	s.db.SetCompactionForShard(s.id, clusterSize)
+	s.db.SetCompactionForShard(int(s.id), clusterSize)
 
 }

@@ -39,7 +39,7 @@ func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConne
 		log.Printf("read shard %d follow progress: %v", s.id, err)
 	}
 
-	log.Printf("Starting to follow from segment %d offset %d", s.nextSegment, s.nextOffset)
+	log.Printf("shard %v follows from segment %d offset %d", s.String(), s.nextSegment, s.nextOffset)
 
 	request := &pb.PullUpdateRequest{
 		Keyspace: s.keyspace,

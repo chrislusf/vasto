@@ -35,11 +35,11 @@ func (ks *keyspaceShards) addShards(keyspaceName string, nodes ...*shard) {
 	}
 	// sort the shards so that the primary shard is the first, and secondary shard is the second, etc.
 	sort.Slice(shards, func(i, j int) bool {
-		x := int(shards[i].serverId - shards[i].id)
+		x := int(shards[i].serverId) - int(shards[i].id)
 		if x < 0 {
 			x += len(shards)
 		}
-		y := int(shards[j].serverId - shards[j].id)
+		y := int(shards[j].serverId) - int(shards[j].id)
 		if y < 0 {
 			y += len(shards)
 		}
