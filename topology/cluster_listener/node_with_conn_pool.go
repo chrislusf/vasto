@@ -14,13 +14,13 @@ import (
 type shard_id uint32
 
 type NodeWithConnPool struct {
-	id              int
-	network         string
-	address         string
-	adminAddress    string
-	storeResource   *pb.StoreResource
-	shards          map[shard_id]*pb.ShardInfo
-	p               pool.Pool
+	id            int
+	network       string
+	address       string
+	adminAddress  string
+	storeResource *pb.StoreResource
+	shards        map[shard_id]*pb.ShardInfo
+	p             pool.Pool
 }
 
 func newNodeWithConnPool(id int, storeResource *pb.StoreResource) *NodeWithConnPool {
@@ -95,6 +95,14 @@ func (n *NodeWithConnPool) GetShardInfoList() []*pb.ShardInfo {
 
 func (clusterListener *ClusterListener) AddNode(keyspace string, n *pb.ClusterNode) (oldShardInfo *pb.ShardInfo) {
 	cluster := clusterListener.GetOrSetClusterRing(keyspace, int(n.ShardInfo.ClusterSize), int(n.ShardInfo.ReplicationFactor))
+
+	if n.ShardInfo.Status == pb.ShardInfo_CANDIDATE {
+		if cluster.GetNextClusterRing() == nil {
+			cluster.SetNextClusterRing(int(n.ShardInfo.ClusterSize), int(n.ShardInfo.ReplicationFactor))
+		}
+		cluster = cluster.GetNextClusterRing()
+	}
+
 	st, ss := n.StoreResource, n.ShardInfo
 	node, _, found := cluster.GetNode(int(ss.NodeId))
 	if !found {
@@ -106,13 +114,19 @@ func (clusterListener *ClusterListener) AddNode(keyspace string, n *pb.ClusterNo
 }
 
 func (clusterListener *ClusterListener) RemoveNode(keyspace string, n *pb.ClusterNode) {
-	r, found := clusterListener.GetClusterRing(keyspace)
+	cluster, found := clusterListener.GetClusterRing(keyspace)
 	if !found {
 		return
 	}
+	if n.ShardInfo.Status == pb.ShardInfo_CANDIDATE {
+		if cluster.GetNextClusterRing() == nil {
+			return
+		}
+		cluster = cluster.GetNextClusterRing()
+	}
 	ss := n.ShardInfo
 	if n != nil {
-		node := r.RemoveNode(int(ss.NodeId))
+		node := cluster.RemoveNode(int(ss.NodeId))
 		if node != nil {
 			node.RemoveShardInfo(ss)
 			if t, ok := node.(*NodeWithConnPool); ok {

@@ -356,6 +356,7 @@ message DescribeResponse {
 
     message DescCluster {
         Cluster cluster = 1;
+        Cluster next_cluster = 2;
         uint32 client_count = 3;
     }
     DescCluster desc_cluster = 3;

@@ -104,6 +104,19 @@ func (c *CommandDesc) Do(args []string, out io.Writer) error {
 
 		fmt.Fprintf(out, "Cluster Client Count : %d\n", descResponse.DescCluster.ClientCount)
 		printCluster(out, descResponse.DescCluster.GetCluster())
+		if descResponse.DescCluster.GetNextCluster() != nil {
+			nextCluster := descResponse.DescCluster.GetNextCluster()
+			fmt.Fprintf(out, "=> Cluster Size: %d\n", nextCluster.ExpectedClusterSize)
+			if nextCluster.ExpectedClusterSize >= descResponse.DescCluster.GetCluster().ExpectedClusterSize {
+				for _, node := range nextCluster.Nodes {
+					if node.StoreResource.Address == "" {
+						continue
+					}
+					fmt.Fprintf(out, "        + node %v shard %v %v\n",
+						node.ShardInfo.NodeId, node.ShardInfo.ShardId, node.StoreResource.Address)
+				}
+			}
+		}
 
 	}
 
@@ -119,5 +132,6 @@ func printCluster(out io.Writer, cluster *pb.Cluster) {
 			fmt.Fprintf(out, "        * node %v shard %v %v\n",
 				node.ShardInfo.NodeId, node.ShardInfo.ShardId, node.StoreResource.Address)
 		}
+
 	}
 }

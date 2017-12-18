@@ -72,6 +72,13 @@ func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.S
 	keyspace := ms.topo.keyspaces.getOrCreateKeyspace(shardInfo.KeyspaceName)
 	cluster := keyspace.getOrCreateCluster(storeResource, int(shardInfo.ClusterSize), int(shardInfo.ReplicationFactor))
 
+	if shardInfo.Status == pb.ShardInfo_CANDIDATE {
+		if cluster.GetNextClusterRing() == nil {
+			cluster.SetNextClusterRing(int(shardInfo.ClusterSize), int(shardInfo.ReplicationFactor))
+		}
+		cluster = cluster.GetNextClusterRing()
+	}
+
 	node, _, found := cluster.GetNode(int(shardInfo.NodeId))
 	if shardInfo.Status == pb.ShardInfo_DELETED && !found {
 		return nil
