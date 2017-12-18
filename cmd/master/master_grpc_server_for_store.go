@@ -78,7 +78,7 @@ func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.S
 	}
 	if !found {
 		node = topology.NewNodeFromStore(storeResource, shardInfo.NodeId)
-		cluster.Add(node)
+		cluster.SetNode(node)
 	}
 	if shardInfo.Status == pb.ShardInfo_DELETED {
 		node.RemoveShardInfo(shardInfo)
@@ -107,7 +107,7 @@ func (ms *masterServer) unRegisterShards(seenShardsOnThisServer map[string]*pb.S
 	for _, ShardInfo := range seenShardsOnThisServer {
 		keyspace := ms.topo.keyspaces.getOrCreateKeyspace(string(ShardInfo.KeyspaceName))
 		if cluster, found := keyspace.getCluster(storeResource.DataCenter); found {
-			cluster.Remove(int(ShardInfo.NodeId)) // just remove the whole node
+			cluster.RemoveNode(int(ShardInfo.NodeId)) // just remove the whole node
 			ms.notifyUpdate(ShardInfo, storeResource, true)
 		}
 	}

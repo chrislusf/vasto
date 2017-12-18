@@ -101,7 +101,7 @@ func (clusterListener *ClusterListener) AddNode(keyspace string, n *pb.ClusterNo
 		node = topology.Node(newNodeWithConnPool(int(ss.NodeId), st))
 	}
 	oldShardInfo = node.SetShardInfo(ss)
-	cluster.Add(node)
+	cluster.SetNode(node)
 	return oldShardInfo
 }
 
@@ -112,7 +112,7 @@ func (clusterListener *ClusterListener) RemoveNode(keyspace string, n *pb.Cluste
 	}
 	ss := n.ShardInfo
 	if n != nil {
-		node := r.Remove(int(ss.NodeId))
+		node := r.RemoveNode(int(ss.NodeId))
 		if node != nil {
 			node.RemoveShardInfo(ss)
 			if t, ok := node.(*NodeWithConnPool); ok {

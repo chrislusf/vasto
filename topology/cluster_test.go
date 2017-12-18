@@ -32,7 +32,7 @@ func baselineBenchmark(hosts int) func(b *testing.B) {
 			Address:fmt.Sprint("localhost:", 7000+i),
 			AdminAddress:fmt.Sprint("localhost:", 8000+i),
 		})
-		ring.Add(n)
+		ring.SetNode(n)
 	}
 
 	return func(b *testing.B) {
@@ -98,7 +98,7 @@ func createRing(hosts int) *ClusterRing {
 			Address:fmt.Sprint("localhost:", 7000+i),
 			AdminAddress:fmt.Sprint("localhost:", 8000+i),
 		})
-		ring.Add(n)
+		ring.SetNode(n)
 	}
 	return ring
 }

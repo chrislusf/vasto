@@ -22,17 +22,11 @@ type ClusterRing struct {
 }
 
 // adds a address (+virtual hosts to the ring)
-func (cluster *ClusterRing) Add(n Node) {
-	if len(cluster.nodes) < n.GetId()+1 {
-		capacity := n.GetId() + 1
-		nodes := make([]Node, capacity)
-		copy(nodes, cluster.nodes)
-		cluster.nodes = nodes
-	}
+func (cluster *ClusterRing) SetNode(n Node) {
 	cluster.nodes[n.GetId()] = n
 }
 
-func (cluster *ClusterRing) Remove(nodeId int) Node {
+func (cluster *ClusterRing) RemoveNode(nodeId int) Node {
 	if nodeId < len(cluster.nodes) {
 		n := cluster.nodes[nodeId]
 		cluster.nodes[nodeId] = nil
