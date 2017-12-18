@@ -21,7 +21,6 @@ func (cluster *ClusterRing) ToCluster() *pb.Cluster {
 		Nodes:               cluster.toNodes(),
 		ExpectedClusterSize: uint32(cluster.ExpectedSize()),
 		CurrentClusterSize:  uint32(cluster.CurrentSize()),
-		NextClusterSize:     uint32(cluster.NextSize()),
 	}
 }
 

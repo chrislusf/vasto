@@ -114,9 +114,6 @@ func printCluster(out io.Writer, cluster *pb.Cluster) {
 	if cluster != nil {
 		fmt.Fprintf(out, "Cluster Expected Size: %d\n", cluster.ExpectedClusterSize)
 		fmt.Fprintf(out, "Cluster Current  Size: %d\n", cluster.CurrentClusterSize)
-		if cluster.NextClusterSize != 0 {
-			fmt.Fprintf(out, "Cluster is changing to: %d\n", cluster.NextClusterSize)
-		}
 
 		for _, node := range cluster.Nodes {
 			fmt.Fprintf(out, "        * node %v shard %v %v\n",

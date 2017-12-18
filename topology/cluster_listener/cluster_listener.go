@@ -127,7 +127,6 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 			case msg := <-clientMessageChan:
 				if msg.GetCluster() != nil {
 					r := clusterListener.GetOrSetClusterRing(msg.Cluster.Keyspace, int(msg.Cluster.ExpectedClusterSize), int(msg.Cluster.ReplicationFactor))
-					r.SetNextSize(int(msg.Cluster.NextClusterSize))
 					for _, node := range msg.Cluster.Nodes {
 						clusterListener.AddNode(msg.Cluster.Keyspace, node)
 						for _, shardEventProcess := range clusterListener.shardEventProcessors {
@@ -170,11 +169,8 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 						continue
 					}
 					r.SetExpectedSize(int(msg.Resize.CurrentClusterSize))
-					r.SetNextSize(int(msg.Resize.NextClusterSize))
-					if r.NextSize() == 0 {
-						fmt.Printf("keyspace %s dc %s resized to %d\n", msg.Resize.Keyspace, clusterListener.dataCenter, r.CurrentSize())
-					} else {
-						fmt.Printf("keyspace %s dc %s resizing %d => %d\n", msg.Resize.Keyspace, clusterListener.dataCenter, r.ExpectedSize(), r.NextSize())
+					if msg.Resize.NextClusterSize != 0 {
+						fmt.Printf("keyspace %s dc %s resizing %d => %d\n", msg.Resize.Keyspace, clusterListener.dataCenter, r.ExpectedSize(), msg.Resize.NextClusterSize)
 					}
 				} else {
 					fmt.Printf("unknown message %v\n", msg)

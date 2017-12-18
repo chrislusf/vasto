@@ -18,6 +18,7 @@ type ClusterRing struct {
 	expectedSize      int
 	nextSize          int
 	replicationFactor int
+	nextClusterRing   *ClusterRing
 }
 
 // adds a address (+virtual hosts to the ring)
@@ -54,10 +55,6 @@ func (cluster *ClusterRing) ExpectedSize() int {
 	return cluster.expectedSize
 }
 
-func (cluster *ClusterRing) NextSize() int {
-	return cluster.nextSize
-}
-
 func (cluster *ClusterRing) ReplicationFactor() int {
 	return cluster.replicationFactor
 }
@@ -68,8 +65,13 @@ func (cluster *ClusterRing) SetExpectedSize(expectedSize int) {
 	}
 }
 
-func (cluster *ClusterRing) SetNextSize(nextSize int) {
-	cluster.nextSize = nextSize
+func (cluster *ClusterRing) SetNextClusterRing(expectedSize int, replicationFactor int) *ClusterRing {
+	cluster.nextClusterRing = NewHashRing(cluster.keyspace, cluster.dataCenter, expectedSize, replicationFactor)
+	return cluster.nextClusterRing
+}
+
+func (cluster *ClusterRing) GetNextClusterRing() *ClusterRing {
+	return cluster.nextClusterRing
 }
 
 func (cluster *ClusterRing) SetReplicationFactor(replicationFactor int) {
@@ -103,36 +105,12 @@ func (cluster *ClusterRing) GetNode(index int, options ...AccessOption) (Node, i
 	return cluster.nodes[index], replica, true
 }
 
-func (cluster *ClusterRing) MissingAndFreeNodeIds() (missingList, freeList []int) {
-	max := len(cluster.nodes)
-	currentClusterSize := cluster.CurrentSize()
-	if max < currentClusterSize {
-		max = currentClusterSize
-	}
-	for i := 0; i < max; i++ {
-		var n Node
-		if i < len(cluster.nodes) {
-			n = cluster.nodes[i]
-		}
-		if n == nil || n.GetAddress() == "" {
-			if i < currentClusterSize {
-				missingList = append(missingList, i)
-			}
-		} else {
-			if i >= currentClusterSize {
-				freeList = append(freeList, i)
-			}
-		}
-	}
-	return
-}
-
 // NewHashRing creates a new hash ring.
 func NewHashRing(keyspace, dataCenter string, expectedSize int, replicationFactor int) *ClusterRing {
 	return &ClusterRing{
 		keyspace:          keyspace,
 		dataCenter:        dataCenter,
-		nodes:             make([]Node, 0, 16),
+		nodes:             make([]Node, expectedSize),
 		expectedSize:      expectedSize,
 		replicationFactor: replicationFactor,
 	}
@@ -141,55 +119,19 @@ func NewHashRing(keyspace, dataCenter string, expectedSize int, replicationFacto
 func (cluster *ClusterRing) String() string {
 	var output bytes.Buffer
 	output.Write([]byte{'['})
-	nodeCount := cluster.CurrentSize()
-	max := len(cluster.nodes)
-	if max < cluster.expectedSize {
-		max = cluster.expectedSize
-	}
-	for i := 0; i < max; i++ {
-		var n Node
-		if i < len(cluster.nodes) {
-			n = cluster.nodes[i]
+	for i := 0; i < len(cluster.nodes); i++ {
+		if i != 0 {
+			output.Write([]byte{' '})
 		}
+		n := cluster.nodes[i]
 		if n == nil || n.GetAddress() == "" {
-			if i < cluster.expectedSize || i < nodeCount {
-				if i != 0 {
-					output.Write([]byte{' '})
-				}
-				output.Write([]byte{'_'})
-			}
+			output.Write([]byte{'_'})
 		} else {
-			if i != 0 {
-				output.Write([]byte{' '})
-			}
 			output.WriteString(fmt.Sprintf("%d", n.GetId()))
 		}
 	}
 	output.Write([]byte{']'})
-	if cluster.nextSize == 0 {
-		if cluster.CurrentSize() != cluster.expectedSize && cluster.expectedSize != 0 {
-			output.WriteString(fmt.Sprintf(" size %d->%d ", cluster.CurrentSize(), cluster.expectedSize))
-		} else {
-			output.WriteString(fmt.Sprintf(" size %d ", cluster.CurrentSize()))
-		}
-	} else {
-		output.WriteString(fmt.Sprintf(" size %d=>%d ", cluster.CurrentSize(), cluster.nextSize))
-	}
+	output.WriteString(fmt.Sprintf(" size %d/%d ", cluster.CurrentSize(), cluster.ExpectedSize()))
 
-	missingList, freeList := cluster.MissingAndFreeNodeIds()
-
-	if len(missingList) > 0 || len(freeList) > 0 {
-		output.Write([]byte{'('})
-		if len(missingList) > 0 {
-			output.WriteString(fmt.Sprintf("%d missing %v", len(missingList), missingList))
-		}
-		if len(freeList) > 0 {
-			if len(missingList) > 0 {
-				output.Write([]byte{',', ' '})
-			}
-			output.WriteString(fmt.Sprintf("%d free %v", len(freeList), freeList))
-		}
-		output.Write([]byte{')'})
-	}
 	return output.String()
 }

@@ -119,8 +119,7 @@ message Cluster {
     repeated ClusterNode nodes = 3;
     uint32 expected_cluster_size = 4;
     uint32 current_cluster_size = 5;
-    uint32 next_cluster_size = 6;
-    uint32 replication_factor = 7;
+    uint32 replication_factor = 6;
 }
 
 // denormalized
