@@ -56,6 +56,9 @@ func (cluster *ClusterRing) ReplicationFactor() int {
 func (cluster *ClusterRing) SetExpectedSize(expectedSize int) {
 	if expectedSize > 0 {
 		cluster.expectedSize = expectedSize
+		if len(cluster.nodes) == 0 {
+			cluster.nodes = make([]Node, expectedSize)
+		}
 	}
 }
 
