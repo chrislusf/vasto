@@ -10,43 +10,37 @@ import (
 )
 
 func init() {
-	commands = append(commands, &CommandResizeCluster{})
+	commands = append(commands, &CommandClusterReplaceNode{})
 }
 
-type CommandResizeCluster struct {
+type CommandClusterReplaceNode struct {
 	masterClient pb.VastoMasterClient
 }
 
-func (c *CommandResizeCluster) Name() string {
-	return "resize"
+func (c *CommandClusterReplaceNode) Name() string {
+	return "replace"
 }
 
-func (c *CommandResizeCluster) Help() string {
-	return "dataCenter newClusterSize"
+func (c *CommandClusterReplaceNode) Help() string {
+	return "<keyspace> <data_center> <node_id> <new_server_ip:new_server_por>"
 }
 
-func (c *CommandResizeCluster) SetMasterCilent(masterClient pb.VastoMasterClient) {
+func (c *CommandClusterReplaceNode) SetMasterCilent(masterClient pb.VastoMasterClient) {
 	c.masterClient = masterClient
 }
 
-func (c *CommandResizeCluster) Do(args []string, out io.Writer) (err error) {
+func (c *CommandClusterReplaceNode) Do(args []string, out io.Writer) (err error) {
 
-	dc := "defaultDataCenter"
-	if len(args) > 0 {
-		dc = args[0]
-	} else {
+	if len(args) != 4 {
 		return InvalidArguments
 	}
-
-	var clusterSize uint64
-	if len(args) > 1 {
-		clusterSize, err = strconv.ParseUint(args[1], 10, 32)
-		if err != nil {
-			return InvalidArguments
-		}
-	} else {
+	dc := args[0]
+	keyspace := args[1]
+	nodeId, err := strconv.ParseUint(args[2], 10, 32)
+	if err != nil {
 		return InvalidArguments
 	}
+	address := args[3]
 
 	stream, err := c.masterClient.ResizeCluster(
 		context.Background(),
