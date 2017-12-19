@@ -27,7 +27,7 @@ func (ss *storeServer) ReplicateNode(ctx context.Context, request *pb.ReplicateN
 
 func (ss *storeServer) replicateNode(request *pb.ReplicateNodeRequest) (err error) {
 
-	err = ss.createShards(request.Keyspace, int(request.ServerId), int(request.ClusterSize), int(request.ReplicationFactor), pb.ShardInfo_CANDIDATE)
+	err = ss.createShards(request.Keyspace, int(request.ServerId), int(request.ClusterSize), int(request.ReplicationFactor), true, pb.ShardInfo_READY)
 	if err != nil {
 		return
 	}

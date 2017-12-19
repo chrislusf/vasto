@@ -3,72 +3,78 @@ package master
 import (
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
+	"context"
+	"strings"
+	"strconv"
+	"google.golang.org/grpc"
+	"log"
 )
 
-func (ms *masterServer) ResizeCluster(req *pb.ResizeRequest, stream pb.VastoMaster_ResizeClusterServer) error {
+func (ms *masterServer) ReplaceNode(ctx context.Context, req *pb.ReplaceNodeRequest) (resp *pb.ReplaceNodeResponse, err error) {
 
-	keyspace, dc := keyspace_name(req.Keyspace), data_center_name(req.DataCenter)
+	resp = &pb.ReplaceNodeResponse{}
 
-	r, found := ms.topo.keyspaces.getOrCreateKeyspace(string(keyspace)).getCluster(string(dc))
-
-	resp := &pb.ResizeProgress{}
-
+	keyspace, found := ms.topo.keyspaces.getKeyspace(req.Keyspace)
 	if !found {
-		resp.Error = fmt.Sprintf("cluster %s not found", dc)
-		if err := stream.Send(resp); err != nil {
-			return err
-		}
-		return nil
+		resp.Error = fmt.Sprintf("no keyspace %v found", req.Keyspace)
+		return
 	}
 
-	if r.GetNextClusterRing() != nil {
-		resp.Error = fmt.Sprintf(
-			"cluster %s is resizing %d => %d in progress ...",
-			dc, r.CurrentSize(), r.GetNextClusterRing().ExpectedSize())
-		if err := stream.Send(resp); err != nil {
-			return err
-		}
-		return nil
+	cluster, found := keyspace.getCluster(req.DataCenter)
+	if !found {
+		resp.Error = fmt.Sprintf("no datacenter %v found", req.DataCenter)
+		return
 	}
 
-	if r.CurrentSize() < int(req.GetClusterSize()) {
-		resp.Error = fmt.Sprintf("cluster %s has size %d, less than requested %d", dc, r.CurrentSize(), req.GetClusterSize())
-		if err := stream.Send(resp); err != nil {
-			return err
-		}
-		return nil
+	oldServer, _, found := cluster.GetNode(int(req.NodeId))
+	if !found {
+		resp.Error = fmt.Sprintf("no server %v found", req.NodeId)
+		return
 	}
 
-	if r.CurrentSize() == int(req.GetClusterSize()) {
-		resp.Error = fmt.Sprintf("cluster %s is already size %d", dc, r.CurrentSize())
-		if err := stream.Send(resp); err != nil {
-			return err
-		}
-		return nil
-	} else if r.CurrentSize() > int(req.GetClusterSize()) {
-		resp.Error = fmt.Sprintf("cluster %s size %d => %d downsizing is not supported yet.",
-			dc, r.CurrentSize(), req.GetClusterSize())
-		if err := stream.Send(resp); err != nil {
-			return err
-		}
-		return nil
-	} else {
-		resp.Progress = fmt.Sprintf("start cluster %s size %d => %d",
-			dc, r.CurrentSize(), req.GetClusterSize())
-		if err := stream.Send(resp); err != nil {
-			return err
-		}
+	adminAddress, err := addressToAdminAddress(req.NewAddress)
+	if err != nil {
+		resp.Error = err.Error()
+		return
 	}
 
-	/*
-	r.SetNextSize(int(req.GetClusterSize()))
-	ms.clientChans.notifyClusterSize(keyspace, dc, uint32(r.CurrentSize()), uint32(r.NextSize()))
+	newStore := &pb.StoreResource{
+		AdminAddress: adminAddress,
+	}
 
-	ms.clientChans.notifyClusterSize(keyspace, dc, uint32(r.NextSize()), 0)
-	r.SetExpectedSize(r.NextSize())
-	r.SetNextSize(0)
+	err = withConnection(newStore, func(grpcConnection *grpc.ClientConn) error {
 
-	*/
+		client := pb.NewVastoStoreClient(grpcConnection)
+		request := &pb.ReplicateNodeRequest{
+			Keyspace:          req.Keyspace,
+			ServerId:          req.NodeId,
+			ClusterSize:       uint32(cluster.ExpectedSize()),
+			ReplicationFactor: uint32(cluster.ReplicationFactor()),
+		}
 
-	return nil
+		log.Printf("replicate keyspace %s from %s to %v: %v", req.Keyspace, oldServer.GetAdminAddress(), newStore.AdminAddress, request)
+		resp, err := client.ReplicateNode(ctx, request)
+		if err != nil {
+			return err
+		}
+		if resp.Error != "" {
+			return fmt.Errorf("replicate keyspace %s from %s to %v: %s", req.Keyspace, oldServer.GetAdminAddress(), newStore.AdminAddress, resp.Error)
+		}
+		return nil
+	});
+	if err != nil {
+		resp.Error = err.Error()
+	}
+
+	return resp, nil
+}
+
+func addressToAdminAddress(address string) (string, error) {
+	parts := strings.SplitN(address, ":", 2)
+	port, err := strconv.ParseUint(parts[1], 10, 32)
+	if err != nil {
+		return "", fmt.Errorf("parse address %v: %v", address, err)
+	}
+	port += 10000
+	return fmt.Sprintf("%s:%d", parts[0], port), nil
 }

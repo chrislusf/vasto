@@ -13,6 +13,7 @@ func (s *ShardInfo) Clone() *ShardInfo {
 		ShardId:           s.ShardId,
 		ClusterSize:       s.ClusterSize,
 		ReplicationFactor: s.ReplicationFactor,
+		IsCandidate:       s.IsCandidate,
 		Status:            s.Status,
 	}
 }

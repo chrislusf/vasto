@@ -72,7 +72,7 @@ func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.S
 	keyspace := ms.topo.keyspaces.getOrCreateKeyspace(shardInfo.KeyspaceName)
 	cluster := keyspace.getOrCreateCluster(storeResource, int(shardInfo.ClusterSize), int(shardInfo.ReplicationFactor))
 
-	if shardInfo.Status == pb.ShardInfo_CANDIDATE {
+	if shardInfo.IsCandidate {
 		if cluster.GetNextClusterRing() == nil {
 			cluster.SetNextClusterRing(int(shardInfo.ClusterSize), int(shardInfo.ReplicationFactor))
 		}
@@ -98,8 +98,13 @@ func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.S
 		ms.notifyUpdate(shardInfo, storeResource, false)
 		seenShardsOnThisServer[shardInfo.IdentifierOnThisServer()] = shardInfo
 		if oldShardInfo == nil {
-			log.Printf("+ dc %s keyspace %s node %d shard %d %s cluster %s", storeResource.DataCenter,
-				shardInfo.KeyspaceName, node.GetId(), shardInfo.ShardId, node.GetAddress(), cluster)
+			if shardInfo.IsCandidate {
+				log.Printf("=>dc %s keyspace %s node %d shard %d %s cluster %s", storeResource.DataCenter,
+					shardInfo.KeyspaceName, node.GetId(), shardInfo.ShardId, node.GetAddress(), cluster)
+			}else{
+				log.Printf("+ dc %s keyspace %s node %d shard %d %s cluster %s", storeResource.DataCenter,
+					shardInfo.KeyspaceName, node.GetId(), shardInfo.ShardId, node.GetAddress(), cluster)
+			}
 		} else if oldShardInfo.Status != shardInfo.Status {
 			log.Printf("* dc %s keyspace %s node %d shard %d %s cluster %s status:%s=>%s", storeResource.DataCenter,
 				shardInfo.KeyspaceName, node.GetId(), shardInfo.ShardId, node.GetAddress(), cluster,
@@ -111,11 +116,17 @@ func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.S
 }
 
 func (ms *masterServer) unRegisterShards(seenShardsOnThisServer map[string]*pb.ShardInfo, storeResource *pb.StoreResource) {
-	for _, ShardInfo := range seenShardsOnThisServer {
-		keyspace := ms.topo.keyspaces.getOrCreateKeyspace(string(ShardInfo.KeyspaceName))
+	for _, shardInfo := range seenShardsOnThisServer {
+		keyspace := ms.topo.keyspaces.getOrCreateKeyspace(string(shardInfo.KeyspaceName))
 		if cluster, found := keyspace.getCluster(storeResource.DataCenter); found {
-			cluster.RemoveNode(int(ShardInfo.NodeId)) // just remove the whole node
-			ms.notifyUpdate(ShardInfo, storeResource, true)
+			if shardInfo.IsCandidate {
+				if cluster.GetNextClusterRing() == nil {
+					continue
+				}
+				cluster = cluster.GetNextClusterRing()
+			}
+			cluster.RemoveNode(int(shardInfo.NodeId)) // just remove the whole node
+			ms.notifyUpdate(shardInfo, storeResource, true)
 		}
 	}
 }

@@ -96,7 +96,7 @@ func (n *NodeWithConnPool) GetShardInfoList() []*pb.ShardInfo {
 func (clusterListener *ClusterListener) AddNode(keyspace string, n *pb.ClusterNode) (oldShardInfo *pb.ShardInfo) {
 	cluster := clusterListener.GetOrSetClusterRing(keyspace, int(n.ShardInfo.ClusterSize), int(n.ShardInfo.ReplicationFactor))
 
-	if n.ShardInfo.Status == pb.ShardInfo_CANDIDATE {
+	if n.ShardInfo.IsCandidate {
 		if cluster.GetNextClusterRing() == nil {
 			cluster.SetNextClusterRing(int(n.ShardInfo.ClusterSize), int(n.ShardInfo.ReplicationFactor))
 		}
@@ -118,7 +118,7 @@ func (clusterListener *ClusterListener) RemoveNode(keyspace string, n *pb.Cluste
 	if !found {
 		return
 	}
-	if n.ShardInfo.Status == pb.ShardInfo_CANDIDATE {
+	if n.ShardInfo.IsCandidate {
 		if cluster.GetNextClusterRing() == nil {
 			return
 		}

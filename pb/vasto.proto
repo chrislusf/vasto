@@ -27,6 +27,9 @@ service VastoMaster {
     rpc ResizeCluster (ResizeRequest) returns (stream ResizeProgress) {
     }
 
+    rpc ReplaceNode (ReplaceNodeRequest) returns (ReplaceNodeResponse) {
+    }
+
 }
 
 service VastoStore {
@@ -159,9 +162,9 @@ message ShardInfo {
         BOOTSTRAP = 1;
         READY = 2;
         DELETED = 3;
-        CANDIDATE = 4;
     }
     Status status = 6;
+    bool is_candidate = 7;
 }
 
 //////////////////////////////////////////////////
@@ -387,6 +390,16 @@ message DeleteClusterResponse {
     string error = 1;
 }
 
+message ReplaceNodeRequest {
+    string data_center = 1;
+    string keyspace = 2;
+    uint32 node_id = 3;
+    string new_address = 4;
+}
+message ReplaceNodeResponse {
+    string error = 1;
+}
+////////  request response with store
 message CreateShardRequest {
     string keyspace = 1;
     uint32 shard_id = 2;

@@ -14,7 +14,7 @@ import (
 func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardRequest) (*pb.CreateShardResponse, error) {
 
 	log.Printf("create shard %v", request)
-	err := ss.createShards(request.Keyspace, int(request.ShardId), int(request.ClusterSize), int(request.ReplicationFactor), pb.ShardInfo_READY)
+	err := ss.createShards(request.Keyspace, int(request.ShardId), int(request.ClusterSize), int(request.ReplicationFactor), false, pb.ShardInfo_READY)
 	if err != nil {
 		log.Printf("create keyspace %s: %v", request.Keyspace, err)
 		return &pb.CreateShardResponse{
@@ -28,7 +28,7 @@ func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardR
 
 }
 
-func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, replicationFactor int, t pb.ShardInfo_Status) (err error) {
+func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, replicationFactor int, isCandidate bool, shardStatus pb.ShardInfo_Status) (err error) {
 
 	cluster := ss.clusterListener.AddNewKeyspace(keyspace, clusterSize, replicationFactor)
 	log.Printf("new cluster: %v", cluster)
@@ -49,19 +49,20 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 
 	for _, shard := range shards {
 
-		ShardInfo := &pb.ShardInfo{
+		shardInfo := &pb.ShardInfo{
 			NodeId:            uint32(serverId),
 			ShardId:           uint32(shard.ShardId),
 			KeyspaceName:      keyspace,
 			ClusterSize:       uint32(clusterSize),
 			ReplicationFactor: uint32(replicationFactor),
+			IsCandidate:       isCandidate,
 		}
 
-		ss.startShardDaemon(ShardInfo, false)
+		ss.startShardDaemon(shardInfo, false)
 
-		status.ShardMap[uint32(shard.ShardId)] = ShardInfo
+		status.ShardMap[uint32(shard.ShardId)] = shardInfo
 
-		ss.sendShardInfoToMaster(ShardInfo, t)
+		ss.sendShardInfoToMaster(shardInfo, shardStatus)
 
 	}
 
