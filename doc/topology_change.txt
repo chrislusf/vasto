@@ -32,7 +32,6 @@ Notation:
 3.2 shard B shuts down the effort to follow A
 
 TODO:
-2. normal clients should use Candidate if possible
 3. shard A needs to stop if it is deleted
 4. shard B needs to shutdown following shard A
 

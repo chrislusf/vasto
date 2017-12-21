@@ -7,6 +7,11 @@ import (
 	"net"
 )
 
+/*
+ * Functions here are used by clients to read/write with the data store.
+ * If a shard has a candidate, use the candidate.
+ */
+
 func (clusterListener *ClusterListener) GetConnectionByPartitionKey(keyspace string, partitionKey []byte, options ...topology.AccessOption) (net.Conn, int, error) {
 	partitionHash := util.Hash(partitionKey)
 	return clusterListener.GetConnectionByPartitionHash(keyspace, partitionHash, options...)
@@ -33,6 +38,15 @@ func (clusterListener *ClusterListener) GetConnectionByBucket(keyspace string, b
 		return nil, 0, fmt.Errorf("bucket %d not found", bucket)
 	}
 
+	if r.GetNextClusterRing() != nil {
+		candidate, _, found := r.GetNextClusterRing().GetNode(bucket, options...)
+		if found {
+			// TODO remove this
+			println("connecting to candidate", candidate.GetAddress())
+			n = candidate
+		}
+	}
+
 	node, ok := n.(*NodeWithConnPool)
 	if !ok {
 		return nil, 0, fmt.Errorf("unexpected node %+v", n)
@@ -44,6 +58,7 @@ func (clusterListener *ClusterListener) GetConnectionByBucket(keyspace string, b
 	}
 
 	if replica > 0 {
+		// TODO remove this
 		println("connecting to", node.id, node.GetAddress(), "replica =", replica)
 	}
 
