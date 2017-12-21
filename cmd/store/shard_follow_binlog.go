@@ -26,9 +26,9 @@ func (s *shard) EverySecond() {
 	// log.Printf("%s every second", s)
 	s.followProgressLock.Lock()
 	for pk, pv := range s.followProgress {
-		if segment, offset, hasProgress, err := s.getProgress(pk.serverId); err == nil {
+		if segment, offset, hasProgress, err := s.getProgress(pk.serverAdminAddress); err == nil {
 			if !hasProgress || segment != pv.segment || offset != pv.offset {
-				s.setProgress(pk.serverId, pv.segment, pv.offset)
+				s.setProgress(pk.serverAdminAddress, pv.segment, pv.offset)
 			}
 		}
 	}
@@ -39,7 +39,7 @@ func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConne
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
-	nextSegment, nextOffset, _, err := s.getProgress(server_id(node.GetId()))
+	nextSegment, nextOffset, _, err := s.getProgress(node.GetAdminAddress())
 	if err != nil {
 		log.Printf("read shard %d follow progress: %v", s.id, err)
 	}
@@ -132,7 +132,7 @@ func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConne
 		// set the nextSegment and nextOffset for OnInterrupt()
 		nextSegment, nextOffset = changes.NextSegment, changes.NextOffset
 		s.followProgressLock.Lock()
-		s.followProgress[progressKey{s.id, server_id(node.GetId())}] = progressValue{nextSegment, nextOffset}
+		s.followProgress[progressKey{s.id, node.GetAdminAddress()}] = progressValue{nextSegment, nextOffset}
 		s.followProgressLock.Unlock()
 
 	}

@@ -1,0 +1,52 @@
+Topology Change
+===============
+
+A cluster is a set of servers in a data center and serves data from one keyspace.
+One server can have multiple keyspaces. Here we only covers topology change in one cluster.
+
+This design covers replacing a server in a keyspace, adding servers to a cluster, removing servers from a cluster.
+
+Replace a server in a keyspace
+--------------------------------
+Assuming there are a list of nodes with replicated shards.
+There are existing shard A and B. Shard C is a new shard that's going to replace A.
+B is just one of the peer shards of A.
+
+Notation:
+<=> means follow each other
+=> means unidirectional follow.
+-> means clients read/write to the shard.
+
+0. at beginning,
+    -> A, A <=> B
+1. master tell a server to create shard C, and unidirectionally follow A.
+1.1 the server creates shard C, and follows A, and follow other peer shards
+    -> A, A <=> B, A => C, B => C
+2. master changes layout, adding C as candidate to replace A
+2.1 for normal clients, read/write both switch from A to C.
+    (possibly some slow clients) -> A, -> C, A <=> B, A => C, B => C
+2.2 for store clients, shard B as a client detected this change, and starts to follow C from beginning
+    (possibly some slow clients) -> A, -> C, A <=> B, A => C, B <=> C
+3. master wait a period of time, remove shard A, which announces A is going to shutdown
+3.1 shard A wait until no traffic, shuts down
+3.2 shard B shuts down the effort to follow A
+
+TODO:
+2. normal clients should use Candidate if possible
+3. shard A needs to stop if it is deleted
+4. shard B needs to shutdown following shard A
+
+
+Remove servers from a cluster
+--------------------------------
+
+
+
+
+
+Notes
+-----
+1. follow progress is stored with key as (server_address, shard_id), so
+    any new following always starts from beginning.
+    new shard needs to warm up and following from source shard for a while.
+

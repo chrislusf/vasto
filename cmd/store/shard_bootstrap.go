@@ -44,7 +44,7 @@ func (s *shard) bootstrap(ctx context.Context) error {
 
 func (s *shard) checkBinlogAvailable(ctx context.Context, grpcConnection *grpc.ClientConn, node topology.Node) (latestSegment uint32, canTailBinlog bool, err error) {
 
-	segment, _, hasProgress, err := s.getProgress(server_id(node.GetId()))
+	segment, _, hasProgress, err := s.getProgress(node.GetAdminAddress())
 
 	// println("shard", s.id, "segment", segment, "hasProgress", hasProgress, "err", err)
 
@@ -78,7 +78,7 @@ func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.Client
 		return fmt.Errorf("writeToSst: %v", err)
 	}
 
-	return s.setProgress(server_id(node.GetId()), segment, offset)
+	return s.setProgress(node.GetAdminAddress(), segment, offset)
 
 }
 
