@@ -10,9 +10,9 @@ import (
 	"log"
 )
 
-func (ms *masterServer) ReplaceNodePrepare(ctx context.Context, req *pb.ReplaceNodePrepareRequest) (resp *pb.ReplaceNodePrepareResponse, err error) {
+func (ms *masterServer) ReplaceNode(ctx context.Context, req *pb.ReplaceNodeRequest) (resp *pb.ReplaceNodeResponse, err error) {
 
-	resp = &pb.ReplaceNodePrepareResponse{}
+	resp = &pb.ReplaceNodeResponse{}
 
 	keyspace, found := ms.topo.keyspaces.getKeyspace(req.Keyspace)
 	if !found {
