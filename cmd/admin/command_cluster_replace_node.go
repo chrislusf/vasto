@@ -42,9 +42,9 @@ func (c *CommandClusterReplaceNode) Do(args []string, out io.Writer) (err error)
 	}
 	address := args[3]
 
-	resp, err := c.masterClient.ReplaceNode(
+	resp, err := c.masterClient.ReplaceNodePrepare(
 		context.Background(),
-		&pb.ReplaceNodeRequest{
+		&pb.ReplaceNodePrepareRequest{
 			DataCenter: dc,
 			Keyspace:   keyspace,
 			NodeId:     uint32(nodeId),

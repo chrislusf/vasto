@@ -27,7 +27,7 @@ service VastoMaster {
     rpc ResizeCluster (ResizeRequest) returns (stream ResizeProgress) {
     }
 
-    rpc ReplaceNode (ReplaceNodeRequest) returns (ReplaceNodeResponse) {
+    rpc ReplaceNodePrepare (ReplaceNodePrepareRequest) returns (ReplaceNodePrepareResponse) {
     }
 
 }
@@ -390,13 +390,13 @@ message DeleteClusterResponse {
     string error = 1;
 }
 
-message ReplaceNodeRequest {
+message ReplaceNodePrepareRequest {
     string data_center = 1;
     string keyspace = 2;
     uint32 node_id = 3;
     string new_address = 4;
 }
-message ReplaceNodeResponse {
+message ReplaceNodePrepareResponse {
     string error = 1;
 }
 ////////  request response with store
