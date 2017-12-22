@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"github.com/chrislusf/vasto/topology"
-	"time"
 )
 
 // CreateShard
