@@ -22,16 +22,18 @@ Notation:
 1. master tell a server to create shard C, and unidirectionally follow A.
 1.1 the server creates shard C, and follows A, and follow other peer shards
     -> A, A <=> B, A => C, B => C
-2. master changes layout, adding C as candidate to replace A
-2.1 for normal clients, read/write both switch from A to C.
+2. master wait until all "replicate shard" requests are completed, and tell shard Cs to promote themselves, (but not sending shard status to master)
+3. master set these shards status to READY, and remove old shard, and add the new shard
+3.1 for normal clients, read/write both switch from A to C.
     (possibly some slow clients) -> A, -> C, A <=> B, A => C, B => C
-2.2 for store clients, shard B as a client detected this change, and starts to follow C from beginning
+3.2 for store clients, shard B as a client detected this change, and starts to follow C from beginning
     (possibly some slow clients) -> A, -> C, A <=> B, A => C, B <=> C
-3. master wait a period of time, remove shard A, which announces A is going to shutdown
-3.1 shard A wait until no traffic, shuts down
-3.2 shard B shuts down the effort to follow A
+4. master wait a period of time, remove shard A, which announces A is going to shutdown
+4.1 shard A wait until no traffic, shuts down
+4.2 shard B shuts down the effort to follow A
 
 TODO:
+1. add API to tell store servers to promote shard C
 3. shard A needs to stop if it is deleted
 4. shard B needs to shutdown following shard A
 
