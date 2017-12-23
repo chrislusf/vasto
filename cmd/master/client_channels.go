@@ -69,15 +69,16 @@ func (cc *clientChannels) notifyClients(keyspace keyspace_name, dataCenter data_
 	return nil
 }
 
-func (cc *clientChannels) notifyStoreResourceUpdate(keyspace keyspace_name, dataCenter data_center_name, nodes []*pb.ClusterNode, isDelete bool) error {
+func (cc *clientChannels) notifyStoreResourceUpdate(keyspace keyspace_name, dataCenter data_center_name, nodes []*pb.ClusterNode, isDelete bool, isPromotion bool) error {
 	return cc.notifyClients(
 		keyspace,
 		dataCenter,
 		&pb.ClientMessage{
 			Updates: &pb.ClientMessage_StoreResourceUpdate{
-				Nodes:    nodes,
-				IsDelete: isDelete,
-				Keyspace: string(keyspace),
+				Nodes:       nodes,
+				IsDelete:    isDelete,
+				Keyspace:    string(keyspace),
+				IsPromotion: isPromotion,
 			},
 		},
 	)

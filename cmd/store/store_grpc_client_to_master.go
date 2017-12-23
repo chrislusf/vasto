@@ -21,6 +21,14 @@ func (ss *storeServer) keepConnectedToMasterServer(ctx context.Context) {
 
 }
 
+func (ss *storeServer) selfAddress() string {
+	return fmt.Sprintf("%s:%d", *ss.option.Host, int32(*ss.option.TcpPort))
+}
+
+func (ss *storeServer) selfAdminAddress() string {
+	return fmt.Sprintf("%s:%d", *ss.option.Host, ss.option.GetAdminPort())
+}
+
 func (ss *storeServer) registerAtMasterServer() error {
 	grpcConnection, err := grpc.Dial(*ss.option.Master, grpc.WithInsecure())
 	if err != nil {
@@ -40,20 +48,12 @@ func (ss *storeServer) registerAtMasterServer() error {
 
 	storeHeartbeat := &pb.StoreHeartbeat{
 		StoreResource: &pb.StoreResource{
-			DataCenter: *ss.option.DataCenter,
-			Network:    "tcp",
-			Address: fmt.Sprintf(
-				"%s:%d",
-				*ss.option.Host,
-				int32(*ss.option.TcpPort),
-			),
-			AdminAddress: fmt.Sprintf(
-				"%s:%d",
-				*ss.option.Host,
-				ss.option.GetAdminPort(),
-			),
-			DiskSizeGb: uint32(*ss.option.DiskSizeGb),
-			Tags:       strings.Split(*ss.option.Tags, ","),
+			DataCenter:   *ss.option.DataCenter,
+			Network:      "tcp",
+			Address:      ss.selfAddress(),
+			AdminAddress: ss.selfAdminAddress(),
+			DiskSizeGb:   uint32(*ss.option.DiskSizeGb),
+			Tags:         strings.Split(*ss.option.Tags, ","),
 		},
 	}
 

@@ -50,9 +50,11 @@ func (clusterListener *ClusterListener) AddNewKeyspace(keyspace string, clusterS
 
 func (clusterListener *ClusterListener) RemoveKeyspace(keyspace string) {
 	clusterListener.Lock()
-	delete(clusterListener.clusters, keyspace_name(keyspace))
+	if _, found := clusterListener.clusters[keyspace_name(keyspace)]; found {
+		delete(clusterListener.clusters, keyspace_name(keyspace))
+		clusterListener.keyspaceFollowMessageChan <- keyspace_follow_message{keyspace: keyspace_name(keyspace), isUnfollow: true}
+	}
 	clusterListener.Unlock()
-	clusterListener.keyspaceFollowMessageChan <- keyspace_follow_message{keyspace: keyspace_name(keyspace), isUnfollow: true}
 }
 
 func (clusterListener *ClusterListener) GetClusterRing(keyspace string) (r *topology.ClusterRing, found bool) {
@@ -126,6 +128,7 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 			select {
 			case msg := <-clientMessageChan:
 				if msg.GetCluster() != nil {
+					// log.Printf("listener get cluster: %v", msg.GetCluster())
 					r := clusterListener.GetOrSetClusterRing(msg.Cluster.Keyspace, int(msg.Cluster.ExpectedClusterSize), int(msg.Cluster.ReplicationFactor))
 					for _, node := range msg.Cluster.Nodes {
 						clusterListener.AddNode(msg.Cluster.Keyspace, node)
@@ -140,29 +143,37 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 						}
 					}
 				} else if msg.GetUpdates() != nil {
-					r, found := clusterListener.GetClusterRing(msg.Updates.Keyspace)
+					// log.Printf("listener get update: %v", msg.GetUpdates())
+					cluster, found := clusterListener.GetClusterRing(msg.Updates.Keyspace)
 					if !found {
 						log.Printf("no keyspace %s found to update", msg.Updates.Keyspace)
 						continue
 					}
 					for _, node := range msg.Updates.Nodes {
-						if msg.Updates.GetIsDelete() {
+						if msg.Updates.GetIsPromotion() {
+							cluster.SetExpectedSize(int(node.ShardInfo.ClusterSize))
+							clusterListener.PromoteNode(msg.Updates.Keyspace, node)
+							for _, shardEventProcess := range clusterListener.shardEventProcessors {
+								shardEventProcess.OnShardPromoteEvent(cluster, node.StoreResource, node.ShardInfo)
+							}
+						} else if msg.Updates.GetIsDelete() {
 							clusterListener.RemoveNode(msg.Updates.Keyspace, node)
 							for _, shardEventProcess := range clusterListener.shardEventProcessors {
-								shardEventProcess.OnShardRemoveEvent(r, node.StoreResource, node.ShardInfo)
+								shardEventProcess.OnShardRemoveEvent(cluster, node.StoreResource, node.ShardInfo)
 							}
 						} else {
 							oldShardInfo := clusterListener.AddNode(msg.Updates.Keyspace, node)
 							for _, shardEventProcess := range clusterListener.shardEventProcessors {
 								if oldShardInfo == nil {
-									shardEventProcess.OnShardCreateEvent(r, node.StoreResource, node.ShardInfo)
+									shardEventProcess.OnShardCreateEvent(cluster, node.StoreResource, node.ShardInfo)
 								} else if oldShardInfo.Status.String() != node.ShardInfo.String() {
-									shardEventProcess.OnShardUpdateEvent(r, node.StoreResource, node.ShardInfo, oldShardInfo)
+									shardEventProcess.OnShardUpdateEvent(cluster, node.StoreResource, node.ShardInfo, oldShardInfo)
 								}
 							}
 						}
 					}
 				} else if msg.GetResize() != nil {
+					// log.Printf("listener get resize: %v", msg.GetResize())
 					r, found := clusterListener.GetClusterRing(msg.Resize.Keyspace)
 					if !found {
 						log.Printf("no keyspace %s found to resize", msg.Resize.Keyspace)

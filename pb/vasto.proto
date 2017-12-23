@@ -59,7 +59,11 @@ service VastoStore {
     rpc DeleteKeyspace (DeleteKeyspaceRequest) returns (DeleteKeyspaceResponse) {
     }
 
-    rpc ReplicateNode (ReplicateNodeRequest) returns (ReplicateNodeResponse) {
+    rpc ReplicateNodePrepare (ReplicateNodePrepareRequest) returns (ReplicateNodePrepareResponse) {
+    }
+    rpc ReplicateNodeCommit (ReplicateNodeCommitRequest) returns (ReplicateNodeCommitResponse) {
+    }
+    rpc ReplicateNodeCleanup (ReplicateNodeCleanupRequest) returns (ReplicateNodeCleanupResponse) {
     }
 
 }
@@ -104,6 +108,7 @@ message ClientMessage {
         repeated ClusterNode nodes = 1;
         bool is_delete = 2;
         string keyspace = 3;
+        bool is_promotion = 4;
     }
     StoreResourceUpdate updates = 2;
 
@@ -420,14 +425,28 @@ message DeleteKeyspaceResponse {
     string error = 1;
 }
 
-message ReplicateNodeRequest {
+message ReplicateNodePrepareRequest {
     string keyspace = 1;
     uint32 server_id = 2;
     uint32 cluster_size = 3;
     uint32 replication_factor = 4;
 }
 
-message ReplicateNodeResponse {
+message ReplicateNodePrepareResponse {
+    string error = 1;
+}
+
+message ReplicateNodeCommitRequest {
+    string keyspace = 1;
+}
+message ReplicateNodeCommitResponse {
+    string error = 1;
+}
+
+message ReplicateNodeCleanupRequest {
+    string keyspace = 1;
+}
+message ReplicateNodeCleanupResponse {
     string error = 1;
 }
 

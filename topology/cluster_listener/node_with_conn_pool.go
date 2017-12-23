@@ -137,3 +137,29 @@ func (clusterListener *ClusterListener) RemoveNode(keyspace string, n *pb.Cluste
 		}
 	}
 }
+
+func (clusterListener *ClusterListener) PromoteNode(keyspace string, n *pb.ClusterNode) {
+	cluster, found := clusterListener.GetClusterRing(keyspace)
+	if !found {
+		return
+	}
+	if cluster.GetNextClusterRing() == nil {
+		return
+	}
+
+	candidateCluster := cluster.GetNextClusterRing()
+
+	if n != nil {
+		ss := n.ShardInfo
+		node := candidateCluster.RemoveNode(int(ss.NodeId))
+		if candidateCluster.CurrentSize() == 0 {
+			cluster.RemoveNextClusterRing()
+		}
+		if node != nil {
+			// since one node can have multiple shards
+			// this node may have been set already
+			cluster.SetNode(node)
+			// println(node.GetAddress(), "from candidate => cluster")
+		}
+	}
+}

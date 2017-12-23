@@ -14,7 +14,7 @@ import (
 func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardRequest) (*pb.CreateShardResponse, error) {
 
 	log.Printf("create shard %v", request)
-	err := ss.createShards(request.Keyspace, int(request.ShardId), int(request.ClusterSize), int(request.ReplicationFactor), false, pb.ShardInfo_READY)
+	err := ss.createShards(request.Keyspace, int(request.ShardId), int(request.ClusterSize), int(request.ReplicationFactor), false, false, pb.ShardInfo_READY)
 	if err != nil {
 		log.Printf("create keyspace %s: %v", request.Keyspace, err)
 		return &pb.CreateShardResponse{
@@ -28,7 +28,7 @@ func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardR
 
 }
 
-func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, replicationFactor int, isCandidate bool, shardStatus pb.ShardInfo_Status) (err error) {
+func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, replicationFactor int, isCandidate bool, needBootstrap bool, shardStatus pb.ShardInfo_Status) (err error) {
 
 	cluster := ss.clusterListener.AddNewKeyspace(keyspace, clusterSize, replicationFactor)
 	log.Printf("new cluster: %v", cluster)
@@ -57,8 +57,6 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 			ReplicationFactor: uint32(replicationFactor),
 			IsCandidate:       isCandidate,
 		}
-
-		needBootstrap := isCandidate
 
 		ss.startShardDaemon(shardInfo, needBootstrap)
 
@@ -95,6 +93,6 @@ func (ss *storeServer) startShardDaemon(shardInfo *pb.ShardInfo, needBootstrap b
 	// println("loading shard", node.String())
 	ss.keyspaceShards.addShards(shardInfo.KeyspaceName, node)
 	ss.RegisterPeriodicTask(node)
-	go node.startWithBootstrapAndFollow(ctx, needBootstrap)
+	go node.startWithBootstrapAndFollow(ctx, ss.selfAdminAddress(), needBootstrap)
 
 }

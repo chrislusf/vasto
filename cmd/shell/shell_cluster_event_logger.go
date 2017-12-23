@@ -30,11 +30,21 @@ func (s *shell) OnShardUpdateEvent(cluster *topology.ClusterRing, resource *pb.S
 		}
 	}
 }
+
 func (s *shell) OnShardRemoveEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, ShardInfo *pb.ShardInfo) {
 	if *s.option.DataCenter == resource.DataCenter && *s.option.Keyspace == ShardInfo.KeyspaceName {
 		fmt.Printf("\n- node %d shard %d %s cluster %s\n> ", ShardInfo.NodeId, ShardInfo.ShardId, resource.Address, cluster)
 	} else {
 		fmt.Printf("\n- dc %s keyspace %s node %d shard %d %s cluster %s\n> ", resource.DataCenter,
+			ShardInfo.KeyspaceName, ShardInfo.NodeId, ShardInfo.ShardId, resource.Address, cluster)
+	}
+}
+
+func (s *shell) OnShardPromoteEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, ShardInfo *pb.ShardInfo) {
+	if *s.option.DataCenter == resource.DataCenter && *s.option.Keyspace == ShardInfo.KeyspaceName {
+		fmt.Printf("\n=> node %d shard %d %s cluster %s\n> ", ShardInfo.NodeId, ShardInfo.ShardId, resource.Address, cluster)
+	} else {
+		fmt.Printf("\n=> dc %s keyspace %s node %d shard %d %s cluster %s\n> ", resource.DataCenter,
 			ShardInfo.KeyspaceName, ShardInfo.NodeId, ShardInfo.ShardId, resource.Address, cluster)
 	}
 }

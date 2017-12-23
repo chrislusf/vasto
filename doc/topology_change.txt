@@ -22,20 +22,16 @@ Notation:
 1. master tell a server to create shard C, and unidirectionally follow A.
 1.1 the server creates shard C, and follows A, and follow other peer shards
     -> A, A <=> B, A => C, B => C
-2. master wait until all "replicate shard" requests are completed, and tell shard Cs to promote themselves, (but not sending shard status to master)
-3. master set these shards status to READY, and remove old shard, and add the new shard
-3.1 for normal clients, read/write both switch from A to C.
+1.2 the new shard is marked is_candidate, for normal clients, read/write both switch from A to C.
     (possibly some slow clients) -> A, -> C, A <=> B, A => C, B => C
-3.2 for store clients, shard B as a client detected this change, and starts to follow C from beginning
-    (possibly some slow clients) -> A, -> C, A <=> B, A => C, B <=> C
-4. master wait a period of time, remove shard A, which announces A is going to shutdown
+2. master wait until all "replicate shard prepare" requests are completed, and tell shard Cs to promote themselves, (but not sending shard status to master)
+3. master set these shards status to READY, and remove old shard, and add the new shard. Broadcast this to all clients for this keyspace
+3.1 all clients remove the old server, and move the candidate server to the right position.
+4. master wait a period of time for the slow clients, tell shard A to cleanup
 4.1 shard A wait until no traffic, shuts down
-4.2 shard B shuts down the effort to follow A
-
-TODO:
-1. add API to tell store servers to promote shard C
-3. shard A needs to stop if it is deleted
-4. shard B needs to shutdown following shard A
+4.2 shard C found A is gone, and not going to follow shard A any more.
+4.3 for store clients, shard B as a client detected this change, and starts to follow C from beginning
+    -> C, B <=> C
 
 
 Remove servers from a cluster

@@ -16,13 +16,18 @@ type ClusterRing struct {
 	dataCenter        string
 	nodes             []Node
 	expectedSize      int
-	nextSize          int
 	replicationFactor int
 	nextClusterRing   *ClusterRing
 }
 
 // adds a address (+virtual hosts to the ring)
 func (cluster *ClusterRing) SetNode(n Node) {
+	if len(cluster.nodes) < n.GetId()+1 {
+		capacity := n.GetId() + 1
+		nodes := make([]Node, capacity)
+		copy(nodes, cluster.nodes)
+		cluster.nodes = nodes
+	}
 	cluster.nodes[n.GetId()] = n
 }
 
@@ -64,6 +69,10 @@ func (cluster *ClusterRing) SetNextClusterRing(expectedSize int, replicationFact
 
 func (cluster *ClusterRing) GetNextClusterRing() *ClusterRing {
 	return cluster.nextClusterRing
+}
+
+func (cluster *ClusterRing) RemoveNextClusterRing() {
+	cluster.nextClusterRing = nil
 }
 
 func (cluster *ClusterRing) SetReplicationFactor(replicationFactor int) {

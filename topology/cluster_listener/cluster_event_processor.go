@@ -9,6 +9,7 @@ type ShardEventProcessor interface {
 	OnShardCreateEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, ShardInfo *pb.ShardInfo)
 	OnShardUpdateEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, ShardInfo *pb.ShardInfo, oldShardInfo *pb.ShardInfo)
 	OnShardRemoveEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, ShardInfo *pb.ShardInfo)
+	OnShardPromoteEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, ShardInfo *pb.ShardInfo)
 	// OnShardResizeEvent(resource *pb.StoreResource, status *pb.ShardInfo)
 }
 

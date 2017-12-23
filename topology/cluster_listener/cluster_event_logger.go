@@ -22,7 +22,13 @@ func (l *ClusterEventLogger) OnShardUpdateEvent(cluster *topology.ClusterRing, r
 			oldShardInfo.Status, ShardInfo.Status)
 	}
 }
+
 func (l *ClusterEventLogger) OnShardRemoveEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, ShardInfo *pb.ShardInfo) {
 	log.Printf("- dc %s keyspace %s node %d shard %d %s cluster %s", resource.DataCenter,
+		ShardInfo.KeyspaceName, ShardInfo.NodeId, ShardInfo.ShardId, resource.Address, cluster)
+}
+
+func (l *ClusterEventLogger) OnShardPromoteEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, ShardInfo *pb.ShardInfo) {
+	log.Printf("=> dc %s keyspace %s node %d shard %d %s cluster %s", resource.DataCenter,
 		ShardInfo.KeyspaceName, ShardInfo.NodeId, ShardInfo.ShardId, resource.Address, cluster)
 }

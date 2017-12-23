@@ -38,7 +38,7 @@ func (s *shard) getProgress(serverAdminAddress string) (segment uint32, offset u
 
 func (s *shard) setProgress(serverAdminAddress string, segment uint32, offset uint64) (err error) {
 
-	log.Printf("shard %s follow server %d next segment %d offset %d", s, serverAdminAddress, segment, offset)
+	log.Printf("shard %s follow server %v next segment %d offset %d", s, serverAdminAddress, segment, offset)
 
 	segmentKey := []byte(fmt.Sprintf("%s.%d.next.segment", serverAdminAddress, s.id))
 	offsetKey := []byte(fmt.Sprintf("%s.%d.next.offset", serverAdminAddress, s.id))

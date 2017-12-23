@@ -22,7 +22,6 @@ type shard struct {
 	lm                 *binlog.LogManager
 	clusterRing        *topology.ClusterRing
 	clusterListener    *cluster_listener.ClusterListener
-	replicationFactor  int
 	nodeFinishChan     chan bool
 	cancelFunc         context.CancelFunc
 	isShutdown         bool
@@ -41,16 +40,15 @@ func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
 	s := &shard{
-		keyspace:          keyspaceName,
-		id:                shard_id(nodeId),
-		serverId:          server_id(serverId),
-		db:                rocks.New(dir),
-		clusterRing:       cluster,
-		clusterListener:   clusterListener,
-		replicationFactor: replicationFactor,
-		nodeFinishChan:    make(chan bool),
-		cancelFunc:        cancelFunc,
-		followProgress:    make(map[progressKey]progressValue),
+		keyspace:        keyspaceName,
+		id:              shard_id(nodeId),
+		serverId:        server_id(serverId),
+		db:              rocks.New(dir),
+		clusterRing:     cluster,
+		clusterListener: clusterListener,
+		nodeFinishChan:  make(chan bool),
+		cancelFunc:      cancelFunc,
+		followProgress:  make(map[progressKey]progressValue),
 	}
 	if logFileSizeMb > 0 {
 		s.lm = binlog.NewLogManager(dir, nodeId, int64(logFileSizeMb*1024*1024), logFileCount)
@@ -60,7 +58,7 @@ func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.
 	return ctx, s
 }
 
-func (s *shard) startWithBootstrapAndFollow(ctx context.Context, mayBootstrap bool) {
+func (s *shard) startWithBootstrapAndFollow(ctx context.Context, selfAdminAddress string, mayBootstrap bool) {
 
 	if s.clusterRing != nil && mayBootstrap {
 		err := s.bootstrap(ctx)
@@ -69,7 +67,7 @@ func (s *shard) startWithBootstrapAndFollow(ctx context.Context, mayBootstrap bo
 		}
 	}
 
-	s.follow(ctx)
+	s.follow(ctx, selfAdminAddress)
 
 	s.clusterListener.RegisterShardEventProcessor(s)
 

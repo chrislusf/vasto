@@ -52,7 +52,7 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 	return nil
 }
 
-func (ms *masterServer) notifyUpdate(ShardInfo *pb.ShardInfo, storeResource *pb.StoreResource, isDelete bool) error {
+func (ms *masterServer) notifyUpdate(ShardInfo *pb.ShardInfo, storeResource *pb.StoreResource) error {
 	return ms.clientChans.notifyStoreResourceUpdate(
 		keyspace_name(ShardInfo.KeyspaceName),
 		data_center_name(storeResource.DataCenter),
@@ -62,9 +62,39 @@ func (ms *masterServer) notifyUpdate(ShardInfo *pb.ShardInfo, storeResource *pb.
 				ShardInfo:     ShardInfo,
 			},
 		},
-		isDelete,
+		false,
+		false,
 	)
+}
 
+func (ms *masterServer) notifyDeletion(ShardInfo *pb.ShardInfo, storeResource *pb.StoreResource) error {
+	return ms.clientChans.notifyStoreResourceUpdate(
+		keyspace_name(ShardInfo.KeyspaceName),
+		data_center_name(storeResource.DataCenter),
+		[]*pb.ClusterNode{
+			&pb.ClusterNode{
+				StoreResource: storeResource,
+				ShardInfo:     ShardInfo,
+			},
+		},
+		true,
+		false,
+	)
+}
+
+func (ms *masterServer) notifyPromotion(ShardInfo *pb.ShardInfo, storeResource *pb.StoreResource) error {
+	return ms.clientChans.notifyStoreResourceUpdate(
+		keyspace_name(ShardInfo.KeyspaceName),
+		data_center_name(storeResource.DataCenter),
+		[]*pb.ClusterNode{
+			&pb.ClusterNode{
+				StoreResource: storeResource,
+				ShardInfo:     ShardInfo,
+			},
+		},
+		false,
+		true,
+	)
 }
 
 func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.ShardInfo,
@@ -89,19 +119,19 @@ func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.S
 	}
 	if shardInfo.Status == pb.ShardInfo_DELETED {
 		node.RemoveShardInfo(shardInfo)
-		ms.notifyUpdate(shardInfo, storeResource, true)
+		ms.notifyDeletion(shardInfo, storeResource)
 		delete(seenShardsOnThisServer, shardInfo.IdentifierOnThisServer())
 		log.Printf("- dc %s keyspace %s node %d shard %d %s cluster %s", storeResource.DataCenter,
 			shardInfo.KeyspaceName, node.GetId(), shardInfo.ShardId, node.GetAddress(), cluster)
 	} else {
 		oldShardInfo := node.SetShardInfo(shardInfo)
-		ms.notifyUpdate(shardInfo, storeResource, false)
+		ms.notifyUpdate(shardInfo, storeResource)
 		seenShardsOnThisServer[shardInfo.IdentifierOnThisServer()] = shardInfo
 		if oldShardInfo == nil {
 			if shardInfo.IsCandidate {
 				log.Printf("=>dc %s keyspace %s node %d shard %d %s cluster %s", storeResource.DataCenter,
 					shardInfo.KeyspaceName, node.GetId(), shardInfo.ShardId, node.GetAddress(), cluster)
-			}else{
+			} else {
 				log.Printf("+ dc %s keyspace %s node %d shard %d %s cluster %s", storeResource.DataCenter,
 					shardInfo.KeyspaceName, node.GetId(), shardInfo.ShardId, node.GetAddress(), cluster)
 			}
@@ -126,7 +156,7 @@ func (ms *masterServer) unRegisterShards(seenShardsOnThisServer map[string]*pb.S
 				cluster = cluster.GetNextClusterRing()
 			}
 			cluster.RemoveNode(int(shardInfo.NodeId)) // just remove the whole node
-			ms.notifyUpdate(shardInfo, storeResource, true)
+			ms.notifyDeletion(shardInfo, storeResource)
 		}
 	}
 }

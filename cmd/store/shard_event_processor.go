@@ -36,16 +36,16 @@ func (s *shard) OnShardUpdateEvent(cluster *topology.ClusterRing, resource *pb.S
 
 	if shardInfo.IsCandidate {
 		if int(s.id) == int(shardInfo.ShardId) {
-			log.Printf("~ shard %v found updated candidate shard %s", s.String(), shardInfo.IdentifierOnThisServer())
+			log.Printf("~ found updated candidate shard %s", shardInfo.IdentifierOnThisServer())
 		} else {
-			log.Printf("~ shard %v found updated candidate peer shard %s", s.String(), shardInfo.IdentifierOnThisServer())
+			log.Printf("~ found updated candidate peer shard %s", shardInfo.IdentifierOnThisServer())
 		}
 		return
 	} else {
 		if oldShardInfo == nil {
 		} else if oldShardInfo.Status != shardInfo.Status {
-			log.Printf("~ shard %s found updated shard %v cluster %s status:%s=>%s",
-				s.String(), shardInfo.IdentifierOnThisServer(), cluster, oldShardInfo.Status, shardInfo.Status)
+			log.Printf("~ found updated shard %v cluster %s status:%s=>%s",
+				shardInfo.IdentifierOnThisServer(), cluster, oldShardInfo.Status, shardInfo.Status)
 		}
 		if int(s.id) == int(shardInfo.ShardId) {
 		} else {
@@ -53,6 +53,7 @@ func (s *shard) OnShardUpdateEvent(cluster *topology.ClusterRing, resource *pb.S
 	}
 
 }
+
 func (s *shard) OnShardRemoveEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, shardInfo *pb.ShardInfo) {
 
 	if s.keyspace != shardInfo.KeyspaceName {
@@ -61,15 +62,28 @@ func (s *shard) OnShardRemoveEvent(cluster *topology.ClusterRing, resource *pb.S
 
 	if shardInfo.IsCandidate {
 		if int(s.id) == int(shardInfo.ShardId) {
-			log.Printf("- shard %v removed new candidate shard %s", s.String(), shardInfo.IdentifierOnThisServer())
+			log.Printf("- removed candidate shard %s", shardInfo.IdentifierOnThisServer())
 		} else {
 		}
 		return
 	} else {
 		if int(s.id) == int(shardInfo.ShardId) {
-			log.Printf("- shard %v removed shard %v from cluster %s", s.String(), shardInfo.IdentifierOnThisServer(), cluster)
+			log.Printf("- removed shard %v from cluster %s", shardInfo.IdentifierOnThisServer(), cluster)
 		} else {
 		}
+	}
+
+}
+
+func (s *shard) OnShardPromoteEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, shardInfo *pb.ShardInfo) {
+
+	if s.keyspace != shardInfo.KeyspaceName {
+		return
+	}
+
+	if int(s.id) == int(shardInfo.ShardId) {
+		log.Printf("=> shard %v promoted in cluster %s", shardInfo.IdentifierOnThisServer(), cluster)
+	} else {
 	}
 
 }
