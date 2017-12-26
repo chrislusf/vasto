@@ -13,6 +13,7 @@ import (
 	"github.com/tidwall/evio"
 	"encoding/binary"
 	"context"
+	"sync"
 )
 
 type StoreOption struct {
@@ -43,12 +44,13 @@ func (o *StoreOption) GetAdminPort() int32 {
 }
 
 type storeServer struct {
-	option          *StoreOption
-	clusterListener *cluster_listener.ClusterListener
-	ShardInfoChan chan *pb.ShardInfo
-	statusInCluster map[string]*pb.LocalShardsInCluster // saved to disk
-	periodTasks     []PeriodicTask
-	keyspaceShards  *keyspaceShards
+	option              *StoreOption
+	clusterListener     *cluster_listener.ClusterListener
+	ShardInfoChan       chan *pb.ShardInfo
+	statusInCluster     map[string]*pb.LocalShardsInCluster // saved to disk
+	statusInClusterLock sync.RWMutex
+	periodTasks         []PeriodicTask
+	keyspaceShards      *keyspaceShards
 }
 
 func RunStore(option *StoreOption) {
@@ -59,7 +61,7 @@ func RunStore(option *StoreOption) {
 	var ss = &storeServer{
 		option:          option,
 		clusterListener: clusterListener,
-		ShardInfoChan: make(chan *pb.ShardInfo),
+		ShardInfoChan:   make(chan *pb.ShardInfo),
 		statusInCluster: make(map[string]*pb.LocalShardsInCluster),
 		keyspaceShards:  newKeyspaceShards(),
 	}

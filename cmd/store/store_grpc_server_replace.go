@@ -5,6 +5,7 @@ import (
 	"golang.org/x/net/context"
 	"log"
 	"fmt"
+	"github.com/chrislusf/vasto/topology"
 )
 
 // ReplicateNodePrepare
@@ -66,7 +67,12 @@ func (ss *storeServer) ReplicateNodeCleanup(ctx context.Context, request *pb.Rep
 
 func (ss *storeServer) replicateNode(request *pb.ReplicateNodePrepareRequest) (err error) {
 
-	err = ss.createShards(request.Keyspace, int(request.ServerId), int(request.ClusterSize), int(request.ReplicationFactor), true, true, pb.ShardInfo_READY)
+	err = ss.createShards(request.Keyspace, int(request.ServerId), int(request.ClusterSize), int(request.ReplicationFactor), true, func(shardId int) *topology.BootstrapPlan {
+		return &topology.BootstrapPlan{
+			BootstrapSource:         topology.PartitionShards(int(request.ServerId), shardId, int(request.ClusterSize), int(request.ReplicationFactor)),
+			PickBestBootstrapSource: true,
+		}
+	})
 	if err != nil {
 		return
 	}
@@ -76,7 +82,7 @@ func (ss *storeServer) replicateNode(request *pb.ReplicateNodePrepareRequest) (e
 
 func (ss *storeServer) setShardStatus(request *pb.ReplicateNodeCommitRequest) (err error) {
 
-	localShardsStatus, found := ss.statusInCluster[request.Keyspace]
+	localShardsStatus, found := ss.getServerStatusInCluster(request.Keyspace)
 	if !found {
 		return fmt.Errorf("not found keyspace %s", request.Keyspace)
 	}

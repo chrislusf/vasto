@@ -48,6 +48,9 @@ func (ss *storeServer) listExistingClusters() error {
 
 func (ss *storeServer) saveClusterConfig(status *pb.LocalShardsInCluster, keyspaceName string) error {
 
+	ss.statusInClusterLock.Lock()
+	defer ss.statusInClusterLock.Unlock()
+
 	txt := proto.MarshalTextString(status)
 
 	fullPath := fmt.Sprintf("%s/%s/%s", *ss.option.Dir, keyspaceName, ClusterConfigFile)
@@ -61,5 +64,35 @@ func (ss *storeServer) saveClusterConfig(status *pb.LocalShardsInCluster, keyspa
 	}
 
 	return nil
+
+}
+
+func (ss *storeServer) getServerStatusInCluster(keyspace string) (statusInCluster *pb.LocalShardsInCluster, found bool) {
+
+	ss.statusInClusterLock.RLock()
+	defer ss.statusInClusterLock.RUnlock()
+
+	statusInCluster, found = ss.statusInCluster[keyspace]
+
+	return
+
+}
+
+func (ss *storeServer) getOrCreateServerStatusInCluster(keyspace string, serverId, clusterSize, replicationFactor int) (*pb.LocalShardsInCluster) {
+
+	ss.statusInClusterLock.Lock()
+	defer ss.statusInClusterLock.Unlock()
+
+	statusInCluster, found := ss.statusInCluster[keyspace]
+	if !found{
+		statusInCluster = &pb.LocalShardsInCluster{
+			Id:                uint32(serverId),
+			ShardMap:          make(map[uint32]*pb.ShardInfo),
+			ClusterSize:       uint32(clusterSize),
+			ReplicationFactor: uint32(replicationFactor),
+		}
+	}
+
+	return statusInCluster
 
 }

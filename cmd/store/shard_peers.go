@@ -7,9 +7,9 @@ import (
 	"context"
 )
 
-func (s *shard) isBootstrapNeeded(ctx context.Context) (bestPeerToCopy int, isNeeded bool) {
+func (s *shard) isBootstrapNeeded(ctx context.Context, bootstrapOption *topology.BootstrapPlan) (bestPeerToCopy int, isNeeded bool) {
 
-	peerShards := s.peerShards()
+	peerShards := bootstrapOption.BootstrapSource
 
 	isBootstrapNeededChan := make(chan bool, len(peerShards))
 	maxSegment := uint32(0)

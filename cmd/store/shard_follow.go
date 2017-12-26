@@ -34,7 +34,7 @@ func (s *shard) follow(ctx context.Context, selfAdminAddress string) {
 func (s *shard) doFollow(ctx context.Context, serverId int) error {
 
 	return s.clusterRing.WithConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
-		return s.followChanges(ctx, node, grpcConnection)
+		return s.followChanges(ctx, node, grpcConnection, 0, 0)
 	})
 
 }

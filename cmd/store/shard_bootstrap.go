@@ -19,9 +19,12 @@ bootstrap ensure current shard is bootstrapped and can be synced by binlog taili
 3. starts to add changes to sstable
 4. get the new offsets
 */
-func (s *shard) bootstrap(ctx context.Context) error {
+func (s *shard) maybeBootstrapAfterRestart(ctx context.Context) error {
 
-	bestPeerToCopy, isNeeded := s.isBootstrapNeeded(ctx)
+	bestPeerToCopy, isNeeded := s.isBootstrapNeeded(ctx, &topology.BootstrapPlan{
+		BootstrapSource: s.peerShards(),
+	})
+
 	if !isNeeded {
 		// log.Printf("bootstrap shard %d is not needed", s.id)
 		return nil
@@ -38,6 +41,39 @@ func (s *shard) bootstrap(ctx context.Context) error {
 			return s.doBootstrapCopy(ctx, grpcConnection, node)
 		}
 		return nil
+	})
+
+}
+
+func (s *shard) bootstrap(ctx context.Context, bootstrapOption *topology.BootstrapPlan) error {
+
+	if bootstrapOption == nil {
+		return nil
+	}
+
+	if bootstrapOption.PickBestBootstrapSource {
+
+		bestPeerToCopy, isNeeded := s.isBootstrapNeeded(ctx, bootstrapOption)
+		if !isNeeded {
+			// log.Printf("bootstrap shard %d is not needed", s.id)
+			return nil
+		}
+
+		log.Printf("bootstrap from server %d ...", bestPeerToCopy)
+
+		return s.clusterRing.WithConnection(bestPeerToCopy, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
+			return s.doBootstrapCopy(ctx, grpcConnection, node)
+		})
+	}
+
+	var bootstrapSourceServerIds []int
+	for _, shard := range bootstrapOption.BootstrapSource {
+		bootstrapSourceServerIds = append(bootstrapSourceServerIds, shard.ServerId)
+	}
+	return eachInt(bootstrapSourceServerIds, func(serverId int) error {
+		return s.clusterRing.WithConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
+			return s.doBootstrapCopy(ctx, grpcConnection, node)
+		})
 	})
 
 }
@@ -72,7 +108,7 @@ func (s *shard) checkBinlogAvailable(ctx context.Context, grpcConnection *grpc.C
 
 func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.ClientConn, node topology.Node) error {
 
-	segment, offset, err := s.writeToSst(ctx, grpcConnection)
+	segment, offset, err := s.writeToSst(ctx, grpcConnection, 0, 0)
 
 	if err != nil {
 		return fmt.Errorf("writeToSst: %v", err)
@@ -82,13 +118,15 @@ func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.Client
 
 }
 
-func (s *shard) writeToSst(ctx context.Context, grpcConnection *grpc.ClientConn) (segment uint32, offset uint64, err error) {
+func (s *shard) writeToSst(ctx context.Context, grpcConnection *grpc.ClientConn, targetClusterSize uint32, targetShardId int) (segment uint32, offset uint64, err error) {
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
 	request := &pb.BootstrapCopyRequest{
-		Keyspace: s.keyspace,
-		ShardId:  uint32(s.id),
+		Keyspace:          s.keyspace,
+		ShardId:           uint32(s.id),
+		TargetClusterSize: targetClusterSize,
+		TargetShardId:     uint32(targetShardId),
 	}
 
 	stream, err := client.BootstrapCopy(ctx, request)

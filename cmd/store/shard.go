@@ -61,7 +61,7 @@ func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.
 func (s *shard) startWithBootstrapAndFollow(ctx context.Context, selfAdminAddress string, mayBootstrap bool) {
 
 	if s.clusterRing != nil && mayBootstrap {
-		err := s.bootstrap(ctx)
+		err := s.maybeBootstrapAfterRestart(ctx)
 		if err != nil {
 			log.Printf("bootstrap: %v", err)
 		}
@@ -94,5 +94,17 @@ func (s *shard) shutdownNode() {
 func (s *shard) setCompactionFilterClusterSize(clusterSize int) {
 
 	s.db.SetCompactionForShard(int(s.id), clusterSize)
+
+}
+
+func (s *shard) startWithBootstrapPlan(ctx context.Context, bootstrapOption *topology.BootstrapPlan, selfAdminAddress string) {
+
+	if err := s.bootstrap(ctx, bootstrapOption); err != nil {
+		log.Printf("bootstrap: %v", err)
+	}
+
+	s.follow(ctx, selfAdminAddress)
+
+	s.clusterListener.RegisterShardEventProcessor(s)
 
 }

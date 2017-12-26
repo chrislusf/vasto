@@ -35,7 +35,7 @@ func (s *shard) EverySecond() {
 	s.followProgressLock.Unlock()
 }
 
-func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConnection *grpc.ClientConn) (error) {
+func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConnection *grpc.ClientConn, targetClusterSize uint32, targetShardId int) (error) {
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
@@ -47,11 +47,13 @@ func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConne
 	log.Printf("shard %v follows server %d from segment %d offset %d", s.String(), node.GetId(), nextSegment, nextOffset)
 
 	request := &pb.PullUpdateRequest{
-		Keyspace: s.keyspace,
-		ShardId:  uint32(s.id),
-		Segment:  nextSegment,
-		Offset:   nextOffset,
-		Limit:    8096,
+		Keyspace:          s.keyspace,
+		ShardId:           uint32(s.id),
+		Segment:           nextSegment,
+		Offset:            nextOffset,
+		Limit:             8096,
+		TargetClusterSize: targetClusterSize,
+		TargetShardId:     uint32(targetShardId),
 	}
 
 	stream, err := client.TailBinlog(ctx, request)

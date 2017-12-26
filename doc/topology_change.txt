@@ -17,7 +17,7 @@ Notation:
 => means unidirectional follow.
 -> means clients read/write to the shard.
 
-0. at beginning,
+0. at the beginning,
     -> A, A <=> B
 1. master tell a server to create shard C, and unidirectionally follow A.
 1.1 the server creates shard C, and follows A, and follow other peer shards
@@ -36,10 +36,50 @@ Notation:
 
 Remove servers from a cluster
 --------------------------------
+There are existing shard A and B.
+B is on one to-be-removed server.
+Cluster size is going to change from m to n.
+
+B =>(i/n) A means A pull data on B that matches ith node on the new cluster with size n.
+
+0. at the beginning,
+    -> A, -> B
+1. master tell all m servers the new cluster size *
+1.1. there are new shards to be created in the first and second servers, they should be bootstrapped from the existing shard first.
+1.2 shard A follows all main shards on to-be-removed servers.
+    -> A, -> B, B =>(i/n) A
+2. master change the cluster size to n.
+2.1 normal clients will read/write by new cluster size n.
+3. master tell shard A to commit the cluster size to disk
+4. master tell shard B to stop, some servers may have a few shards to be removed.
+
+Add servers to a cluster
+--------------------------------
+There are existing shard A.
+shard B is on one to-be-added server.
+Cluster size is going to change from m to n.
+
+B =>(i/n) A means A pull data on B that matches ith node on the new cluster with size n.
+
+0.1 allocate new servers, assign shard ids.
+0.2 at the beginning
+    -> A
+1. master tell all n servers the new cluster size *
+1.1. there are new shards to be created.
+    if the shard is a copy of an existing shard, bootstrap from that shard first.
+    if the shard is new, (with m <= shard_id < n), bootstrap from existing m shard As.
+1.2 shard B follows all m shard As.
+    -> A, -> B, B =>(i/n) A
+2. master change the cluster size to n.
+2.1 normal clients will read/write by new cluster size n.
+3. master tell new cluster servers to commit the cluster size to disk
+4. master tell shard B to stop, some servers may have a few shards to be removed.
 
 
 
-
+TODO:
+3. tell cluster listener change cluster size
+1.1. there are new shards to be created in the first and second servers, they should be bootstrapped from the existing shard first.
 
 Notes
 -----
@@ -47,3 +87,9 @@ Notes
     any new following always starts from beginning.
     new shard needs to warm up and following from source shard for a while.
 
+
+0 1 2
+1 2 0
+
+0 1
+1 0
