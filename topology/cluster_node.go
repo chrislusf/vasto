@@ -16,9 +16,9 @@ type Node interface {
 }
 
 type node struct {
-	id              int
-	store           *pb.StoreResource
-	shards          map[string]*pb.ShardInfo
+	id            int
+	storeResource *pb.StoreResource
+	shards        map[string]*pb.ShardInfo
 }
 
 func (n *node) GetId() int {
@@ -26,23 +26,23 @@ func (n *node) GetId() int {
 }
 
 func (n *node) GetNetwork() string {
-	return n.store.Network
+	return n.storeResource.Network
 }
 
 func (n *node) GetAddress() string {
-	return n.store.Address
+	return n.storeResource.Address
 }
 
 func (n *node) GetAdminAddress() string {
-	return n.store.AdminAddress
+	return n.storeResource.AdminAddress
 }
 
 func (n *node) GetStoreResource() *pb.StoreResource {
-	return n.store
+	return n.storeResource
 }
 
 func NewNode(id int, store *pb.StoreResource) Node {
-	return &node{id: id, store: store, shards: make(map[string]*pb.ShardInfo)}
+	return &node{id: id, storeResource: store, shards: make(map[string]*pb.ShardInfo)}
 }
 
 func (n *node) SetShardInfo(ShardInfo *pb.ShardInfo) (oldShardInfo *pb.ShardInfo) {
