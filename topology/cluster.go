@@ -106,6 +106,34 @@ func (cluster *ClusterRing) GetNode(index int, options ...AccessOption) (Node, i
 	return cluster.nodes[index], replica, true
 }
 
+func (cluster *ClusterRing) GetOneNode(index int, options ...AccessOption) (Node, int, bool) {
+	replica := 0
+	clusterSize := len(cluster.nodes)
+	for _, option := range options {
+		index, replica = option(index, clusterSize)
+	}
+	if index < 0 || index >= len(cluster.nodes) {
+		return nil, 0, false
+	}
+	if cluster.nodes[index] == nil {
+		if replica == 0 {
+			// try other locations if replica is not specified
+			for i := 1; i < cluster.replicationFactor; i++ {
+				position := index + i
+				if position >= cluster.expectedSize {
+					position -= cluster.expectedSize
+				}
+				if cluster.nodes[position] != nil {
+					return cluster.nodes[position], i, true
+				}
+			}
+		}
+		return nil, 0, false
+	}
+	return cluster.nodes[index], replica, true
+}
+
+
 // NewHashRing creates a new hash ring.
 func NewHashRing(keyspace, dataCenter string, expectedSize int, replicationFactor int) *ClusterRing {
 	return &ClusterRing{

@@ -33,7 +33,7 @@ func (clusterListener *ClusterListener) GetConnectionByBucket(keyspace string, b
 		return nil, 0, fmt.Errorf("no keyspace %s", keyspace)
 	}
 
-	n, replica, ok := r.GetNode(bucket, options...)
+	n, replica, ok := r.GetOneNode(bucket, options...)
 	if !ok {
 		return nil, 0, fmt.Errorf("bucket %d not found", bucket)
 	}
