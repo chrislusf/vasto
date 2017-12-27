@@ -45,7 +45,7 @@ func (s *shard) maybeBootstrapAfterRestart(ctx context.Context) error {
 
 }
 
-func (s *shard) bootstrap(ctx context.Context, bootstrapOption *topology.BootstrapPlan) error {
+func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapOption *topology.BootstrapPlan) error {
 
 	if bootstrapOption == nil {
 		return nil

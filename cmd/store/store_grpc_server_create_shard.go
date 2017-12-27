@@ -68,28 +68,11 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 
 func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.LocalShardsInCluster) {
 	for _, shardInfo := range storeStatus.ShardMap {
-		ss.startShardDaemon(shardInfo, *ss.option.Bootstrap)
+		ss.bootstrapShard(shardInfo, &topology.BootstrapPlan{
+			IsNormalStart:                true,
+			IsNormalStartBootstrapNeeded: *ss.option.Bootstrap,
+		})
 	}
-}
-
-func (ss *storeServer) startShardDaemon(shardInfo *pb.ShardInfo, needBootstrap bool) {
-
-	cluster := ss.clusterListener.GetOrSetClusterRing(shardInfo.KeyspaceName, int(shardInfo.ClusterSize), int(shardInfo.ReplicationFactor))
-
-	dir := fmt.Sprintf("%s/%s/%d", *ss.option.Dir, shardInfo.KeyspaceName, shardInfo.ShardId)
-	err := os.MkdirAll(dir, 0755)
-	if err != nil {
-		log.Printf("mkdir %s: %v", dir, err)
-		return
-	}
-
-	ctx, node := newShard(shardInfo.KeyspaceName, dir, int(shardInfo.NodeId), int(shardInfo.ShardId), cluster, ss.clusterListener,
-		int(shardInfo.ReplicationFactor), *ss.option.LogFileSizeMb, *ss.option.LogFileCount)
-	// println("loading shard", node.String())
-	ss.keyspaceShards.addShards(shardInfo.KeyspaceName, node)
-	ss.RegisterPeriodicTask(node)
-	go node.startWithBootstrapAndFollow(ctx, ss.selfAdminAddress(), needBootstrap)
-
 }
 
 func (ss *storeServer) bootstrapShard(shardInfo *pb.ShardInfo, bootstrapOption *topology.BootstrapPlan) {

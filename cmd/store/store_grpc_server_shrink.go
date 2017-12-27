@@ -90,8 +90,6 @@ func (ss *storeServer) createMissingShards(ctx context.Context, keyspaceName str
 		return fmt.Errorf("not found keyspace %s", keyspaceName)
 	}
 
-	currentClusterSize := int(statusInCluster.ClusterSize)
-
 	var missingShardIds []int
 	for _, clusterShard := range topology.LocalShards(int(statusInCluster.Id), targetClusterSize, replicationFactor) {
 		if _, found := statusInCluster.ShardMap[uint32(clusterShard.ShardId)]; !found {
@@ -116,31 +114,15 @@ func (ss *storeServer) createMissingShards(ctx context.Context, keyspaceName str
 			ReplicationFactor: uint32(replicationFactor),
 			IsCandidate:       true,
 		}
+		localShards := ss.getOrCreateServerStatusInCluster(keyspaceName, int(statusInCluster.Id), targetClusterSize, replicationFactor)
+
 		ss.bootstrapShard(shardInfo, bootstrapPlan)
 
-		if currentClusterSize <= shardId && shardId < targetClusterSize {
-			// a brand new shard
-		} else {
-			// an existing shard
-			localShards := ss.getOrCreateServerStatusInCluster(keyspaceName, int(statusInCluster.Id), targetClusterSize, replicationFactor)
+		localShards.ShardMap[uint32(shardId)] = shardInfo
 
-			shardInfo := &pb.ShardInfo{
-				NodeId:            statusInCluster.Id,
-				ShardId:           uint32(shardId),
-				KeyspaceName:      keyspaceName,
-				ClusterSize:       uint32(targetClusterSize),
-				ReplicationFactor: uint32(replicationFactor),
-				IsCandidate:       true,
-			}
+		ss.sendShardInfoToMaster(shardInfo, pb.ShardInfo_READY)
 
-			ss.startShardDaemon(shardInfo, true)
-
-			localShards.ShardMap[uint32(shardId)] = shardInfo
-
-			ss.sendShardInfoToMaster(shardInfo, pb.ShardInfo_READY)
-
-			ss.saveClusterConfig(localShards, keyspaceName)
-		}
+		ss.saveClusterConfig(localShards, keyspaceName)
 		return nil
 	})
 

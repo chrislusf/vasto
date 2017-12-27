@@ -15,6 +15,9 @@ type BootstrapPlan struct {
 	BootstrapSource          []ClusterShard
 	PickBestBootstrapSource  bool
 	TransitionalFollowSource []ClusterShard
+
+	IsNormalStart                bool
+	IsNormalStartBootstrapNeeded bool
 }
 
 // BootstrapPeersWhenResize returns
@@ -41,7 +44,7 @@ func BootstrapPlanWithTopoChange(req *BootstrapRequest) (plan *BootstrapPlan) {
 			}
 			plan.TransitionalFollowSource = plan.BootstrapSource
 			return
-		}else {
+		} else {
 			// old shards
 			if isShardInLocal(req.ShardId, req.ServerId, req.ToClusterSize, req.ReplicationFactor) {
 				if isShardInLocal(req.ShardId, req.ServerId, req.FromClusterSize, req.ReplicationFactor) {

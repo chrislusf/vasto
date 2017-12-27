@@ -52,14 +52,14 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 	return nil
 }
 
-func (ms *masterServer) notifyUpdate(ShardInfo *pb.ShardInfo, storeResource *pb.StoreResource) error {
+func (ms *masterServer) notifyUpdate(shardInfo *pb.ShardInfo, storeResource *pb.StoreResource) error {
 	return ms.clientChans.notifyStoreResourceUpdate(
-		keyspace_name(ShardInfo.KeyspaceName),
+		keyspace_name(shardInfo.KeyspaceName),
 		data_center_name(storeResource.DataCenter),
 		[]*pb.ClusterNode{
 			&pb.ClusterNode{
 				StoreResource: storeResource,
-				ShardInfo:     ShardInfo,
+				ShardInfo:     shardInfo,
 			},
 		},
 		false,
@@ -67,14 +67,14 @@ func (ms *masterServer) notifyUpdate(ShardInfo *pb.ShardInfo, storeResource *pb.
 	)
 }
 
-func (ms *masterServer) notifyDeletion(ShardInfo *pb.ShardInfo, storeResource *pb.StoreResource) error {
+func (ms *masterServer) notifyDeletion(shardInfo *pb.ShardInfo, storeResource *pb.StoreResource) error {
 	return ms.clientChans.notifyStoreResourceUpdate(
-		keyspace_name(ShardInfo.KeyspaceName),
+		keyspace_name(shardInfo.KeyspaceName),
 		data_center_name(storeResource.DataCenter),
 		[]*pb.ClusterNode{
 			&pb.ClusterNode{
 				StoreResource: storeResource,
-				ShardInfo:     ShardInfo,
+				ShardInfo:     shardInfo,
 			},
 		},
 		true,
@@ -82,14 +82,14 @@ func (ms *masterServer) notifyDeletion(ShardInfo *pb.ShardInfo, storeResource *p
 	)
 }
 
-func (ms *masterServer) notifyPromotion(ShardInfo *pb.ShardInfo, storeResource *pb.StoreResource) error {
+func (ms *masterServer) notifyPromotion(shardInfo *pb.ShardInfo, storeResource *pb.StoreResource) error {
 	return ms.clientChans.notifyStoreResourceUpdate(
-		keyspace_name(ShardInfo.KeyspaceName),
+		keyspace_name(shardInfo.KeyspaceName),
 		data_center_name(storeResource.DataCenter),
 		[]*pb.ClusterNode{
 			&pb.ClusterNode{
 				StoreResource: storeResource,
-				ShardInfo:     ShardInfo,
+				ShardInfo:     shardInfo,
 			},
 		},
 		false,
@@ -100,7 +100,7 @@ func (ms *masterServer) notifyPromotion(ShardInfo *pb.ShardInfo, storeResource *
 func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.ShardInfo,
 	storeResource *pb.StoreResource, shardInfo *pb.ShardInfo) error {
 	keyspace := ms.topo.keyspaces.getOrCreateKeyspace(shardInfo.KeyspaceName)
-	cluster := keyspace.getOrCreateCluster(storeResource, int(shardInfo.ClusterSize), int(shardInfo.ReplicationFactor))
+	cluster := keyspace.getOrCreateCluster(storeResource.DataCenter, int(shardInfo.ClusterSize), int(shardInfo.ReplicationFactor))
 
 	if shardInfo.IsCandidate {
 		if cluster.GetNextClusterRing() == nil {
@@ -110,6 +110,9 @@ func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.S
 	}
 
 	node, _, found := cluster.GetNode(int(shardInfo.NodeId))
+	if found {
+		println("shard:", shardInfo.IdentifierOnThisServer(), "from", storeResource.Address, "=>", node.GetAddress())
+	}
 	if shardInfo.Status == pb.ShardInfo_DELETED && !found {
 		return nil
 	}
@@ -124,6 +127,7 @@ func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.S
 		log.Printf("- dc %s keyspace %s node %d shard %d %s cluster %s", storeResource.DataCenter,
 			shardInfo.KeyspaceName, node.GetId(), shardInfo.ShardId, node.GetAddress(), cluster)
 	} else {
+		println("updated shard info:", shardInfo.String(), "store", storeResource.GetAddress())
 		oldShardInfo := node.SetShardInfo(shardInfo)
 		ms.notifyUpdate(shardInfo, storeResource)
 		seenShardsOnThisServer[shardInfo.IdentifierOnThisServer()] = shardInfo
