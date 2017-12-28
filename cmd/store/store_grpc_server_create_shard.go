@@ -32,8 +32,7 @@ func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardR
 
 func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, replicationFactor int, isCandidate bool, planGen func(shardId int) *topology.BootstrapPlan) (err error) {
 
-	cluster := ss.clusterListener.AddNewKeyspace(keyspace, clusterSize, replicationFactor)
-	log.Printf("new cluster: %v", cluster)
+	ss.clusterListener.AddNewKeyspace(keyspace, clusterSize, replicationFactor)
 
 	_, found := ss.keyspaceShards.getShards(keyspace)
 	if found {
@@ -91,6 +90,6 @@ func (ss *storeServer) bootstrapShard(shardInfo *pb.ShardInfo, bootstrapOption *
 	// println("loading shard", shard.String())
 	ss.keyspaceShards.addShards(shardInfo.KeyspaceName, shard)
 	ss.RegisterPeriodicTask(shard)
-	go shard.startWithBootstrapPlan(ctx, bootstrapOption, ss.selfAdminAddress())
+	shard.startWithBootstrapPlan(ctx, bootstrapOption, ss.selfAdminAddress())
 
 }

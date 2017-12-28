@@ -99,7 +99,7 @@ func (s *shard) startWithBootstrapPlan(ctx context.Context, bootstrapOption *top
 
 	}
 
-	s.follow(ctx, selfAdminAddress)
+	go s.follow(ctx, selfAdminAddress)
 
 	s.clusterListener.RegisterShardEventProcessor(s)
 
