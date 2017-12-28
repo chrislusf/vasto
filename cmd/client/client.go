@@ -39,3 +39,4 @@ func (c *VastoClient) StartClient(ctx context.Context) {
 	c.ClusterListener.AddExistingKeyspace(*c.Option.Keyspace, 0, 0)
 	c.ClusterListener.StartListener(ctx, *c.Option.Master, *c.Option.DataCenter, true)
 }
+
