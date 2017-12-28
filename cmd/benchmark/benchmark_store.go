@@ -15,23 +15,25 @@ func (b *benchmarker) runBenchmarkerOnStore(option *BenchmarkOption) {
 
 	requestCount := int(*b.option.RequestCount / *b.option.ClientCount)
 
-	b.startThreads("put", requestCount, func(hist *Histogram, start, stop int) {
+	b.startThreads("put", requestCount, func(hist *Histogram, start, stop, batchSize int) {
 		b.startDirectClient(hist, func(r *rand.Rand) *pb.Requests {
 			requests := &pb.Requests{}
 			for i := start; i < stop; i++ {
-				request := &pb.Request{
-					Put: &pb.PutRequest{
-						KeyValue: &pb.KeyValue{
-							Key:   make([]byte, 4),
-							Value: make([]byte, 4),
+				for t := 0; t < batchSize; t++ {
+					request := &pb.Request{
+						Put: &pb.PutRequest{
+							KeyValue: &pb.KeyValue{
+								Key:   make([]byte, 4),
+								Value: make([]byte, 4),
+							},
+							TtlSecond: 0,
 						},
-						TtlSecond: 0,
-					},
+					}
+					Uint32toBytes(request.Put.KeyValue.Key, r.Uint32())
+					Uint32toBytes(request.Put.KeyValue.Value, r.Uint32())
+					request.Put.PartitionHash = util.Hash(request.Put.KeyValue.Key)
+					requests.Requests = append(requests.Requests, request)
 				}
-				Uint32toBytes(request.Put.KeyValue.Key, r.Uint32())
-				Uint32toBytes(request.Put.KeyValue.Value, r.Uint32())
-				request.Put.PartitionHash = util.Hash(request.Put.KeyValue.Key)
-				requests.Requests = append(requests.Requests, request)
 			}
 			return requests
 		})

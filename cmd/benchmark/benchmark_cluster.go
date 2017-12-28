@@ -13,19 +13,27 @@ import (
 
 func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *BenchmarkOption) {
 
-	b.startThreadsWithClient(ctx, *option.Tests, func(hist *Histogram, c *client.VastoClient, start, stop int) {
+	b.startThreadsWithClient(ctx, *option.Tests, func(hist *Histogram, c *client.VastoClient, start, stop, batchSize int) {
 		for _, t := range strings.Split(*option.Tests, ",") {
 			switch t {
 			case "put":
-				b.execute(hist, c, start, stop, func(c *client.VastoClient, i int) error {
+				b.execute(hist, c, start, stop, batchSize, func(c *client.VastoClient, i int) error {
 
-					key := []byte(fmt.Sprintf("k%5d", i))
-					value := []byte(fmt.Sprintf("v%5d", i))
+					var rows []*client.Row
 
-					return c.Put(*b.option.Keyspace, nil, key, value)
+					for t := 0; t < batchSize; t++ {
+						key := []byte(fmt.Sprintf("k%5d", i+t))
+						value := []byte(fmt.Sprintf("v%5d", i+t))
+
+						row := client.NewRow(key, value)
+
+						rows = append(rows, row)
+					}
+
+					return c.Put(*b.option.Keyspace, rows)
 				})
 			case "get":
-				b.execute(hist, c, start, stop, func(c *client.VastoClient, i int) error {
+				b.execute(hist, c, start, stop, batchSize, func(c *client.VastoClient, i int) error {
 
 					key := []byte(fmt.Sprintf("k%5d", i))
 					value := []byte(fmt.Sprintf("v%5d", i))
@@ -49,9 +57,9 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 
 }
 
-func (b *benchmarker) execute(hist *Histogram, c *client.VastoClient, start, stop int, fn func(c *client.VastoClient, i int) error) error {
+func (b *benchmarker) execute(hist *Histogram, c *client.VastoClient, start, stop, batchSize int, fn func(c *client.VastoClient, i int) error) error {
 
-	for i := start; i < stop; i++ {
+	for i := start; i < stop; i += batchSize {
 		start := time.Now()
 		err := fn(c, i)
 		if err != nil {

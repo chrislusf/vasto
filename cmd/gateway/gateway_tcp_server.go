@@ -10,6 +10,7 @@ import (
 	"log"
 	"net"
 	"time"
+	"github.com/chrislusf/vasto/cmd/client"
 )
 
 // Run starts the heartbeating to master and starts accepting requests.
@@ -116,10 +117,12 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 		key := command.Put.KeyValue.Key
 		value := command.Put.KeyValue.Value
 
+		row := client.NewRow(key, value)
+
 		resp := &pb.PutResponse{
 			Ok: true,
 		}
-		err := ms.vastoClient.Put(*ms.option.Keyspace, nil, key, value)
+		err := ms.vastoClient.Put(*ms.option.Keyspace, []*client.Row{row})
 		if err != nil {
 			resp.Ok = false
 			resp.Status = err.Error()
