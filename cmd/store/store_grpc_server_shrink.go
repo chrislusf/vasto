@@ -68,7 +68,7 @@ func (ss *storeServer) ShrinkClusterCommit(ctx context.Context, request *pb.Shri
 func (ss *storeServer) ShrinkClusterCleanup(ctx context.Context, request *pb.ShrinkClusterCleanupRequest) (*pb.ShrinkClusterCleanupResponse, error) {
 
 	log.Printf("shrink cluster %v", request)
-	err := ss.deleteShards(request.Keyspace)
+	err := ss.deleteShards(request.Keyspace, false)
 	if err != nil {
 		log.Printf("shrink cluster %v: %v", request, err)
 		return &pb.ShrinkClusterCleanupResponse{

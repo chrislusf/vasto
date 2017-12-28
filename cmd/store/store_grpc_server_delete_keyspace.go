@@ -13,7 +13,7 @@ import (
 func (ss *storeServer) DeleteKeyspace(ctx context.Context, request *pb.DeleteKeyspaceRequest) (*pb.DeleteKeyspaceResponse, error) {
 
 	log.Printf("delete keyspace %v", request)
-	err := ss.deleteShards(request.Keyspace)
+	err := ss.deleteShards(request.Keyspace, true)
 	if err != nil {
 		log.Printf("delete keyspace %s: %v", request.Keyspace, err)
 		return &pb.DeleteKeyspaceResponse{
@@ -27,15 +27,17 @@ func (ss *storeServer) DeleteKeyspace(ctx context.Context, request *pb.DeleteKey
 
 }
 
-func (ss *storeServer) deleteShards(keyspace string) (err error) {
+func (ss *storeServer) deleteShards(keyspace string, shouldTellMaster bool) (err error) {
 
 	// notify master of the deleted shards
-	localShards, found := ss.getServerStatusInCluster(keyspace)
-	if !found {
-		return nil
-	}
-	for _, shardInfo := range localShards.ShardMap {
-		ss.sendShardInfoToMaster(shardInfo, pb.ShardInfo_DELETED)
+	if shouldTellMaster {
+		localShards, found := ss.getServerStatusInCluster(keyspace)
+		if !found {
+			return nil
+		}
+		for _, shardInfo := range localShards.ShardMap {
+			ss.sendShardInfoToMaster(shardInfo, pb.ShardInfo_DELETED)
+		}
 	}
 
 	// physically delete the shards

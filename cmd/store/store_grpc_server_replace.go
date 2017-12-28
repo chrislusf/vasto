@@ -50,7 +50,7 @@ func (ss *storeServer) ReplicateNodeCommit(ctx context.Context, request *pb.Repl
 func (ss *storeServer) ReplicateNodeCleanup(ctx context.Context, request *pb.ReplicateNodeCleanupRequest) (*pb.ReplicateNodeCleanupResponse, error) {
 
 	log.Printf("cleanup shard %v", request)
-	err := ss.deleteShards(request.Keyspace)
+	err := ss.deleteShards(request.Keyspace, false)
 	if err != nil {
 		log.Printf("cleanup shard %v: %v", request, err)
 		return &pb.ReplicateNodeCleanupResponse{
