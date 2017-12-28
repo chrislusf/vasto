@@ -117,6 +117,9 @@ func (ms *masterServer) OnClientDisconnectEvent(dc data_center_name, keyspace ke
 	if ms.clientsStat.getClusterClientCount(keyspace, dc) <= 0 {
 		if k, found := ms.topo.keyspaces.getKeyspace(string(keyspace)); found {
 			k.removeCluster(string(dc))
+			if len(k.clusters) == 0 {
+				ms.topo.keyspaces.removeKeyspace(string(keyspace))
+			}
 		}
 	}
 }
