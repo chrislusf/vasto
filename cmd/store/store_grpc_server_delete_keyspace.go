@@ -20,7 +20,6 @@ func (ss *storeServer) DeleteKeyspace(ctx context.Context, request *pb.DeleteKey
 			Error: err.Error(),
 		}, nil
 	}
-	ss.keyspaceShards.deleteKeyspace(request.Keyspace)
 
 	return &pb.DeleteKeyspaceResponse{
 		Error: "",
@@ -30,20 +29,32 @@ func (ss *storeServer) DeleteKeyspace(ctx context.Context, request *pb.DeleteKey
 
 func (ss *storeServer) deleteShards(keyspace string) (err error) {
 
-	nodes, found := ss.keyspaceShards.getShards(keyspace)
+	// notify master of the deleted shards
+	localShards, found := ss.getServerStatusInCluster(keyspace)
 	if !found {
 		return nil
 	}
-
-	for _, node := range nodes {
-		node.db.Close()
-		node.db.Destroy()
-		node.shutdownNode()
+	for _, shardInfo := range localShards.ShardMap {
+		ss.sendShardInfoToMaster(shardInfo, pb.ShardInfo_DELETED)
 	}
 
+	// physically delete the shards
+	shards, found := ss.keyspaceShards.getShards(keyspace)
+	if !found {
+		return nil
+	}
+	for _, shard := range shards {
+		shard.db.Close()
+		shard.db.Destroy()
+		shard.shutdownNode()
+	}
+
+	// remove all meta info and in-memory objects
 	ss.UnregisterPeriodicTask(keyspace)
 	dir := fmt.Sprintf("%s/%s", *ss.option.Dir, keyspace)
 	os.RemoveAll(dir)
+	ss.keyspaceShards.deleteKeyspace(keyspace)
+	ss.deleteServerStatusInCluster(keyspace)
 
 	return nil
 }

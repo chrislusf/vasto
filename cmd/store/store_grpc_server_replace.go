@@ -57,7 +57,6 @@ func (ss *storeServer) ReplicateNodeCleanup(ctx context.Context, request *pb.Rep
 			Error: err.Error(),
 		}, nil
 	}
-	ss.keyspaceShards.deleteKeyspace(request.Keyspace)
 
 	return &pb.ReplicateNodeCleanupResponse{
 		Error: "",

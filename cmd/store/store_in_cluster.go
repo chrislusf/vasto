@@ -78,13 +78,24 @@ func (ss *storeServer) getServerStatusInCluster(keyspace string) (statusInCluste
 
 }
 
+func (ss *storeServer) deleteServerStatusInCluster(keyspace string) {
+
+	ss.statusInClusterLock.RLock()
+	defer ss.statusInClusterLock.RUnlock()
+
+	delete(ss.statusInCluster, keyspace)
+
+	return
+
+}
+
 func (ss *storeServer) getOrCreateServerStatusInCluster(keyspace string, serverId, clusterSize, replicationFactor int) (*pb.LocalShardsInCluster) {
 
 	ss.statusInClusterLock.Lock()
 	defer ss.statusInClusterLock.Unlock()
 
 	statusInCluster, found := ss.statusInCluster[keyspace]
-	if !found{
+	if !found {
 		statusInCluster = &pb.LocalShardsInCluster{
 			Id:                uint32(serverId),
 			ShardMap:          make(map[uint32]*pb.ShardInfo),

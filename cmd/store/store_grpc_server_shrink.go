@@ -75,7 +75,6 @@ func (ss *storeServer) ShrinkClusterCleanup(ctx context.Context, request *pb.Shr
 			Error: err.Error(),
 		}, nil
 	}
-	ss.keyspaceShards.deleteKeyspace(request.Keyspace)
 
 	return &pb.ShrinkClusterCleanupResponse{
 		Error: "",
