@@ -110,9 +110,6 @@ func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.S
 	}
 
 	node, _, found := cluster.GetNode(int(shardInfo.NodeId))
-	if found {
-		println("shard:", shardInfo.IdentifierOnThisServer(), "from", storeResource.Address, "=>", node.GetAddress())
-	}
 	if shardInfo.Status == pb.ShardInfo_DELETED && !found {
 		return nil
 	}
