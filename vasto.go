@@ -88,6 +88,7 @@ var (
 		Keyspace:   bench.Flag("cluster.keyspace", "keyspace name").Default("benchmark").String(),
 		Tests:      bench.Flag("tests", "[put|get]").Default("put,get").Short('t').String(),
 	}
+	benchProfile = bench.Flag("cpuprofile", "cpu profile output file").Default("").String()
 
 	shell       = app.Command("shell", "Start a vasto shell")
 	shellOption = &sh.ShellOption{
@@ -108,7 +109,7 @@ func main() {
 
 	cmd := kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	cpuProfile := *storeProfile + *gatewayProfile
+	cpuProfile := *storeProfile + *gatewayProfile + *benchProfile
 
 	if cpuProfile != "" {
 		println("profiling to", cpuProfile)
