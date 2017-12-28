@@ -16,7 +16,7 @@ func (s *shard) follow(ctx context.Context, selfAdminAddress string) {
 
 	for _, peer := range s.peerShards() {
 		sid := peer.ServerId
-		go util.RetryForever(ctx, fmt.Sprintf("server %d shard %d to server %d", s.serverId, s.id, sid), func() error {
+		go util.RetryForever(ctx, fmt.Sprintf("shard %s follow server %d", s.String(), sid), func() error {
 			return s.doFollow(ctx, sid)
 		}, 2*time.Second)
 	}
