@@ -4,17 +4,26 @@ import (
 	"bytes"
 
 	"github.com/tecbot/gorocksdb"
+	"sync/atomic"
 )
 
 // PrefixScan paginate through all entries with the prefix
 // the first scan can have empty lastKey and limit = 0
 func (d *Rocks) PrefixScan(prefix, lastKey []byte, limit int, fn func(key, value []byte) bool) error {
+	atomic.AddInt32(&d.clientCounter, 1)
+
 	opts := gorocksdb.NewDefaultReadOptions()
 	opts.SetFillCache(false)
-	defer opts.Destroy()
 	iter := d.db.NewIterator(opts)
-	defer iter.Close()
-	return d.enumerate(iter, prefix, lastKey, limit, fn)
+
+	err := d.enumerate(iter, prefix, lastKey, limit, fn)
+
+	iter.Close()
+	opts.Destroy()
+
+	atomic.AddInt32(&d.clientCounter, -1)
+
+	return err
 }
 
 func (d *Rocks) enumerate(iter *gorocksdb.Iterator, prefix, lastKey []byte, limit int, fn func(key, value []byte) bool) error {

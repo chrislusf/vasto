@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"github.com/tecbot/gorocksdb"
+	"sync/atomic"
+	"time"
 )
 
 type Rocks struct {
@@ -14,6 +16,9 @@ type Rocks struct {
 	wo               *gorocksdb.WriteOptions
 	ro               *gorocksdb.ReadOptions
 	compactionFilter *shardingCompactionFilter
+
+	// used for locking
+	clientCounter int32
 }
 
 func New(path string) *Rocks {
@@ -45,16 +50,25 @@ func (d *Rocks) setup(path string) {
 
 func (d *Rocks) Put(key []byte, msg []byte) error {
 	// println("put", string(key), "value", string(msg))
-	return d.db.Put(d.wo, key, msg)
+	atomic.AddInt32(&d.clientCounter, 1)
+	err := d.db.Put(d.wo, key, msg)
+	atomic.AddInt32(&d.clientCounter, -1)
+	return err
 }
 
 func (d *Rocks) Get(key []byte) ([]byte, error) {
-	return d.db.GetBytes(d.ro, key)
+	atomic.AddInt32(&d.clientCounter, 1)
+	data, err := d.db.GetBytes(d.ro, key)
+	atomic.AddInt32(&d.clientCounter, -1)
+	return data, err
 }
 
 func (d *Rocks) Delete(k []byte) error {
 	// println("del", string(k))
-	return d.db.Delete(d.wo, k)
+	atomic.AddInt32(&d.clientCounter, 1)
+	err := d.db.Delete(d.wo, k)
+	atomic.AddInt32(&d.clientCounter, -1)
+	return err
 }
 
 func (d *Rocks) Destroy() {
@@ -62,10 +76,19 @@ func (d *Rocks) Destroy() {
 }
 
 func (d *Rocks) Close() {
+	for {
+		count := atomic.LoadInt32(&d.clientCounter)
+		if count <= 0 {
+			break
+		}
+		log.Printf("waiting to close db %s ...", d.path)
+		time.Sleep(3 * time.Second)
+	}
 	d.wo.Destroy()
 	d.ro.Destroy()
 	d.dbOptions.Destroy()
 	d.db.Close()
+	log.Printf("closed db %s", d.path)
 }
 
 func (d *Rocks) Size() (sum uint64) {

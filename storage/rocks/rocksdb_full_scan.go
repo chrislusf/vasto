@@ -3,10 +3,14 @@ package rocks
 import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/tecbot/gorocksdb"
+	"sync/atomic"
 )
 
 // FullScan scan through all entries
 func (d *Rocks) FullScan(batchSize int, fn func([]*pb.KeyValue) error) error {
+	atomic.AddInt32(&d.clientCounter, 1)
+	defer atomic.AddInt32(&d.clientCounter, -1)
+
 	opts := gorocksdb.NewDefaultReadOptions()
 	opts.SetFillCache(false)
 	defer opts.Destroy()
