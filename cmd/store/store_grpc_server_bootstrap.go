@@ -14,12 +14,12 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 
 	log.Printf("BootstrapCopy %v", request)
 
-	node, found := ss.findDbReplica(request.Keyspace, request.ShardId)
+	shard, found := ss.findDbReplica(request.Keyspace, request.ShardId)
 	if !found {
 		return fmt.Errorf("shard: %s.%d not found", request.Keyspace, request.ShardId)
 	}
 
-	segment, offset := node.lm.GetSegmentOffset()
+	segment, offset := shard.lm.GetSegmentOffset()
 
 	// println("server", shard.serverId, "shard", shard.id, "segment", segment, "offset", offset)
 
@@ -30,7 +30,7 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 		batchSize *= targetClusterSize
 	}
 
-	err := node.db.FullScan(batchSize, func(rows []*pb.KeyValue) error {
+	err := shard.db.FullScan(batchSize, func(rows []*pb.KeyValue) error {
 
 		var filteredRows []*pb.KeyValue
 		if targetClusterSize > 0 {
