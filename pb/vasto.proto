@@ -275,6 +275,7 @@ message BootstrapCopyRequest {
     uint32 shard_id = 2;
     uint32 target_shard_id = 3;
     uint32 target_cluster_size = 4;
+    string origin = 5;
 }
 message BootstrapCopyResponse {
 
@@ -296,6 +297,7 @@ message PullUpdateRequest {
     uint32 limit = 5;
     uint32 target_shard_id = 6;
     uint32 target_cluster_size = 7;
+    string origin = 8;
 }
 
 message PullUpdateResponse {

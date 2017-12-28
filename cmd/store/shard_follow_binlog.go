@@ -54,6 +54,7 @@ func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConne
 		Limit:             8096,
 		TargetClusterSize: targetClusterSize,
 		TargetShardId:     uint32(targetShardId),
+		Origin:            s.String(),
 	}
 
 	stream, err := client.TailBinlog(ctx, request)

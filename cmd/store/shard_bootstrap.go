@@ -127,6 +127,7 @@ func (s *shard) writeToSst(ctx context.Context, grpcConnection *grpc.ClientConn,
 		ShardId:           uint32(s.id),
 		TargetClusterSize: targetClusterSize,
 		TargetShardId:     uint32(targetShardId),
+		Origin:            s.String(),
 	}
 
 	stream, err := client.BootstrapCopy(ctx, request)
