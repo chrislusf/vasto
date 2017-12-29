@@ -80,7 +80,7 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapOption *topolo
 
 func (s *shard) checkBinlogAvailable(ctx context.Context, grpcConnection *grpc.ClientConn, node topology.Node) (latestSegment uint32, canTailBinlog bool, err error) {
 
-	segment, _, hasProgress, err := s.getProgress(node.GetAdminAddress())
+	segment, _, hasProgress, err := s.loadProgress(node.GetAdminAddress())
 
 	// println("shard", s.id, "segment", segment, "hasProgress", hasProgress, "err", err)
 
@@ -114,7 +114,7 @@ func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.Client
 		return fmt.Errorf("writeToSst: %v", err)
 	}
 
-	return s.setProgress(node.GetAdminAddress(), segment, offset)
+	return s.saveProgress(node.GetAdminAddress(), segment, offset)
 
 }
 

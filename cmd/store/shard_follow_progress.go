@@ -15,7 +15,26 @@ type progressValue struct {
 	offset  uint64
 }
 
-func (s *shard) getProgress(serverAdminAddress string) (segment uint32, offset uint64, hasProgress bool, err error) {
+// implementing PeriodicTask
+func (s *shard) Keyspace() string {
+	return s.keyspace
+}
+
+// implementing PeriodicTask
+func (s *shard) EverySecond() {
+	// log.Printf("%s every second", s)
+	s.followProgressLock.Lock()
+	for pk, pv := range s.followProgress {
+		if segment, offset, hasProgress, err := s.loadProgress(pk.serverAdminAddress); err == nil {
+			if !hasProgress || segment != pv.segment || offset != pv.offset {
+				s.saveProgress(pk.serverAdminAddress, pv.segment, pv.offset)
+			}
+		}
+	}
+	s.followProgressLock.Unlock()
+}
+
+func (s *shard) loadProgress(serverAdminAddress string) (segment uint32, offset uint64, hasProgress bool, err error) {
 
 	segmentKey := []byte(fmt.Sprintf("%s.%d.next.segment", serverAdminAddress, s.id))
 	offsetKey := []byte(fmt.Sprintf("%s.%d.next.offset", serverAdminAddress, s.id))
@@ -36,7 +55,7 @@ func (s *shard) getProgress(serverAdminAddress string) (segment uint32, offset u
 	return nextSegment, nextOffset, hasProgress, err
 }
 
-func (s *shard) setProgress(serverAdminAddress string, segment uint32, offset uint64) (err error) {
+func (s *shard) saveProgress(serverAdminAddress string, segment uint32, offset uint64) (err error) {
 
 	log.Printf("shard %s follow server %v next segment %d offset %d", s, serverAdminAddress, segment, offset)
 
@@ -53,4 +72,38 @@ func (s *shard) setProgress(serverAdminAddress string, segment uint32, offset ui
 	}
 
 	return nil
+}
+
+func (s *shard) clearProgress(serverAdminAddress string) {
+
+	log.Printf("shard %s stops following server %v", s, serverAdminAddress)
+
+	segmentKey := []byte(fmt.Sprintf("%s.%d.next.segment", serverAdminAddress, s.id))
+	offsetKey := []byte(fmt.Sprintf("%s.%d.next.offset", serverAdminAddress, s.id))
+
+	s.db.Delete(segmentKey)
+	s.db.Delete(offsetKey)
+
+}
+
+func (s *shard) insertInMemoryFollowProgress(serverAdminAddress string, segment uint32, offset uint64) {
+	s.followProgressLock.Lock()
+	s.followProgress[progressKey{s.id, serverAdminAddress}] = progressValue{segment, offset}
+	s.followProgressLock.Unlock()
+}
+
+func (s *shard) updateInMemoryFollowProgressIfPresent(serverAdminAddress string, segment uint32, offset uint64) (found bool) {
+	s.followProgressLock.Lock()
+	_, found = s.followProgress[progressKey{s.id, serverAdminAddress}]
+	if found {
+		s.followProgress[progressKey{s.id, serverAdminAddress}] = progressValue{segment, offset}
+	}
+	s.followProgressLock.Unlock()
+	return found
+}
+
+func (s *shard) deleteInMemoryFollowProgress(serverAdminAddress string) {
+	s.followProgressLock.Lock()
+	delete(s.followProgress, progressKey{s.id, serverAdminAddress})
+	s.followProgressLock.Unlock()
 }

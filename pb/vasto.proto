@@ -177,6 +177,7 @@ message ShardInfo {
     }
     Status status = 6;
     bool is_candidate = 7;
+    bool is_permanent_delete = 8;
 }
 
 //////////////////////////////////////////////////

@@ -26,7 +26,7 @@ Notation:
     (possibly some slow clients) -> A, -> C, A <=> B, A => C, B => C
 2. master wait until all "replicate shard prepare" requests are completed, and tell shard Cs to promote themselves, (but not sending shard status to master)
 3. master set these shards status to READY, and remove old shard, and add the new shard. Broadcast this to all clients for this keyspace
-3.1 all clients remove the old server, and move the candidate server to the right position.
+3.1 all clients remove the old server(clear out the tail offset also), and move the candidate server to the right position.
 4. master wait a period of time for the slow clients, tell shard A to cleanup
 4.1 shard A wait until no traffic, shuts down
 4.2 shard C found A is gone, and not going to follow shard A any more.

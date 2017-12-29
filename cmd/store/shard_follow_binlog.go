@@ -16,33 +16,17 @@ const (
 	syncProgressFlushInterval = time.Minute
 )
 
-// implementing PeriodicTask
-func (s *shard) Keyspace() string {
-	return s.keyspace
-}
-
-// implementing PeriodicTask
-func (s *shard) EverySecond() {
-	// log.Printf("%s every second", s)
-	s.followProgressLock.Lock()
-	for pk, pv := range s.followProgress {
-		if segment, offset, hasProgress, err := s.getProgress(pk.serverAdminAddress); err == nil {
-			if !hasProgress || segment != pv.segment || offset != pv.offset {
-				s.setProgress(pk.serverAdminAddress, pv.segment, pv.offset)
-			}
-		}
-	}
-	s.followProgressLock.Unlock()
-}
-
 func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConnection *grpc.ClientConn, targetClusterSize uint32, targetShardId int) (error) {
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
-	nextSegment, nextOffset, _, err := s.getProgress(node.GetAdminAddress())
+	nextSegment, nextOffset, _, err := s.loadProgress(node.GetAdminAddress())
 	if err != nil {
 		log.Printf("read shard %d follow progress: %v", s.id, err)
 	}
+
+	// set in memory progress
+	s.insertInMemoryFollowProgress(node.GetAdminAddress(), nextSegment, nextOffset)
 
 	log.Printf("shard %v follows server %d from segment %d offset %d", s.String(), node.GetId(), nextSegment, nextOffset)
 
@@ -132,11 +116,12 @@ func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConne
 
 		}
 
-		// set the nextSegment and nextOffset for OnInterrupt()
+		// set the nextSegment and nextOffset
 		nextSegment, nextOffset = changes.NextSegment, changes.NextOffset
-		s.followProgressLock.Lock()
-		s.followProgress[progressKey{s.id, node.GetAdminAddress()}] = progressValue{nextSegment, nextOffset}
-		s.followProgressLock.Unlock()
+		if !s.updateInMemoryFollowProgressIfPresent(node.GetAdminAddress(), nextSegment, nextOffset) {
+			// if not found in memory,
+			break
+		}
 
 	}
 

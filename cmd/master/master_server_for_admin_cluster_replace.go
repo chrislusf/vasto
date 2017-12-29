@@ -148,6 +148,7 @@ func (ms *masterServer) adjustAndBroadcastShardStatus(ctx context.Context, req *
 		// remove the old shard
 		cluster.RemoveNode(n.GetId())
 		for _, shardInfo := range n.GetShardInfoList() {
+			shardInfo.IsPermanentDelete = true
 			ms.notifyDeletion(shardInfo, n.GetStoreResource())
 			log.Printf("removing old shard %v on %s", shardInfo.IdentifierOnThisServer(), n.GetAddress())
 		}
