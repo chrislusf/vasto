@@ -25,6 +25,7 @@ type ClusterListener struct {
 	keyspaceFollowMessageChan chan keyspace_follow_message
 	dataCenter                string
 	shardEventProcessors      []ShardEventProcessor
+	verbose                   bool
 }
 
 func NewClusterClient(dataCenter string) *ClusterListener {
@@ -199,4 +200,8 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 
 	return
 
+}
+
+func (clusterListener *ClusterListener) SetVerboseLog(verbose bool) {
+	clusterListener.verbose = verbose
 }

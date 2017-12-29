@@ -5,6 +5,7 @@ import (
 	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
 	"net"
+	"log"
 )
 
 /*
@@ -41,8 +42,9 @@ func (clusterListener *ClusterListener) GetConnectionByBucket(keyspace string, b
 	if r.GetNextClusterRing() != nil {
 		candidate, _, found := r.GetNextClusterRing().GetNode(bucket, options...)
 		if found {
-			// TODO remove this
-			println("connecting to candidate", candidate.GetAddress())
+			if clusterListener.verbose {
+				log.Printf("connecting to candidate %s", candidate.GetAddress())
+			}
 			n = candidate
 		}
 	}
@@ -57,9 +59,10 @@ func (clusterListener *ClusterListener) GetConnectionByBucket(keyspace string, b
 		return nil, 0, fmt.Errorf("GetConnection node %d %s %+v", n.GetId(), n.GetAddress(), err)
 	}
 
-	if replica > 0 {
-		// TODO remove this
-		println("connecting to", node.id, node.GetAddress(), "replica =", replica)
+	if clusterListener.verbose {
+		if replica > 0 {
+			log.Printf("connecting to server %d at %s replica=%d", node.id, node.GetAddress(), replica)
+		}
 	}
 
 	return conn, replica, nil

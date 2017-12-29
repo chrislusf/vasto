@@ -12,6 +12,7 @@ type ShellOption struct {
 	Master     *string
 	DataCenter *string
 	Keyspace   *string
+	Verbose    *bool
 }
 
 type shell struct {
@@ -35,7 +36,10 @@ func RunShell(option *ShellOption) {
 
 	b.vastoClient.StartClient(context.Background())
 
-	b.vastoClient.ClusterListener.RegisterShardEventProcessor(b)
+	if *option.Verbose {
+		b.vastoClient.ClusterListener.RegisterShardEventProcessor(b)
+		b.vastoClient.ClusterListener.SetVerboseLog(true)
+	}
 
 	b.runShell()
 
