@@ -40,19 +40,21 @@ func (ss *storeServer) deleteShards(keyspace string, shouldTellMaster bool) (err
 		}
 	}
 
+	// stop periodic tasks
+	ss.UnregisterPeriodicTask(keyspace)
+
 	// physically delete the shards
 	shards, found := ss.keyspaceShards.getShards(keyspace)
 	if !found {
 		return nil
 	}
 	for _, shard := range shards {
+		shard.shutdownNode()
 		shard.db.Close()
 		shard.db.Destroy()
-		shard.shutdownNode()
 	}
 
 	// remove all meta info and in-memory objects
-	ss.UnregisterPeriodicTask(keyspace)
 	dir := fmt.Sprintf("%s/%s", *ss.option.Dir, keyspace)
 	os.RemoveAll(dir)
 	ss.keyspaceShards.deleteKeyspace(keyspace)

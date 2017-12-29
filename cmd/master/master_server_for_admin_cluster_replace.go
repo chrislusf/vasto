@@ -40,6 +40,7 @@ func (ms *masterServer) ReplaceNode(ctx context.Context, req *pb.ReplaceNodeRequ
 	}
 
 	newStore := &pb.StoreResource{
+		Address:      req.GetNewAddress(),
 		AdminAddress: adminAddress,
 	}
 
@@ -86,13 +87,13 @@ func replicateNodePrepare(ctx context.Context, req *pb.ReplaceNodeRequest, clust
 			ReplicationFactor: uint32(cluster.ReplicationFactor()),
 		}
 
-		log.Printf("prepare replicate keyspace %s from %s to %v: %v", req.Keyspace, oldServer.GetAdminAddress(), newStore.AdminAddress, request)
+		log.Printf("prepare replicate keyspace %s from %s to %v: %v", req.Keyspace, oldServer.GetAddress(), newStore.Address, request)
 		resp, err := client.ReplicateNodePrepare(ctx, request)
 		if err != nil {
 			return err
 		}
 		if resp.Error != "" {
-			return fmt.Errorf("prepare replicate keyspace %s from %s to %v: %s", req.Keyspace, oldServer.GetAdminAddress(), newStore.AdminAddress, resp.Error)
+			return fmt.Errorf("prepare replicate keyspace %s from %s to %v: %s", req.Keyspace, oldServer.GetAddress(), newStore.Address, resp.Error)
 		}
 		return nil
 	})
@@ -109,13 +110,13 @@ func replicateNodeCommit(ctx context.Context, req *pb.ReplaceNodeRequest, cluste
 			Keyspace: req.Keyspace,
 		}
 
-		log.Printf("commit replicate keyspace %s from %s to %v: %v", req.Keyspace, oldServer.GetAdminAddress(), newStore.AdminAddress, request)
+		log.Printf("commit replicate keyspace %s from %s to %v: %v", req.Keyspace, oldServer.GetAddress(), newStore.Address, request)
 		resp, err := pb.NewVastoStoreClient(grpcConnection).ReplicateNodeCommit(ctx, request)
 		if err != nil {
 			return err
 		}
 		if resp.Error != "" {
-			return fmt.Errorf("commit replicate keyspace %s from %s to %v: %s", req.Keyspace, oldServer.GetAdminAddress(), newStore.AdminAddress, resp.Error)
+			return fmt.Errorf("commit replicate keyspace %s from %s to %v: %s", req.Keyspace, oldServer.GetAddress(), newStore.Address, resp.Error)
 		}
 		return nil
 	})
@@ -181,13 +182,13 @@ func replicateNodeCleanup(ctx context.Context, req *pb.ReplaceNodeRequest, clust
 			Keyspace: req.Keyspace,
 		}
 
-		log.Printf("replicateNodeCleanup keyspace %s from %s to %v: %v", req.Keyspace, oldServer.GetAdminAddress(), newStore.AdminAddress, request)
+		log.Printf("replicateNodeCleanup keyspace %s from %s to %v: %v", req.Keyspace, oldServer.GetAddress(), newStore.Address, request)
 		resp, err := pb.NewVastoStoreClient(grpcConnection).ReplicateNodeCleanup(ctx, request)
 		if err != nil {
 			return err
 		}
 		if resp.Error != "" {
-			return fmt.Errorf("replicateNodeCleanup keyspace %s from %s to %v: %s", req.Keyspace, oldServer.GetAdminAddress(), newStore.AdminAddress, resp.Error)
+			return fmt.Errorf("replicateNodeCleanup keyspace %s from %s to %v: %s", req.Keyspace, oldServer.GetAddress(), newStore.Address, resp.Error)
 		}
 		return nil
 	})

@@ -36,7 +36,7 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 
 	_, found := ss.keyspaceShards.getShards(keyspace)
 	if found {
-		return nil
+		return fmt.Errorf("keyspace %s already exists", keyspace)
 	}
 
 	localShards := ss.getOrCreateServerStatusInCluster(keyspace, serverId, clusterSize, replicationFactor)
