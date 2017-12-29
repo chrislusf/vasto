@@ -124,7 +124,7 @@ func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.S
 		log.Printf("- dc %s keyspace %s node %d shard %d %s cluster %s", storeResource.DataCenter,
 			shardInfo.KeyspaceName, node.GetId(), shardInfo.ShardId, node.GetAddress(), cluster)
 	} else {
-		println("updated shard info:", shardInfo.String(), "store", storeResource.GetAddress())
+		// println("updated shard info:", shardInfo.String(), "store", storeResource.GetAddress())
 		oldShardInfo := node.SetShardInfo(shardInfo)
 		ms.notifyUpdate(shardInfo, storeResource)
 		seenShardsOnThisServer[shardInfo.IdentifierOnThisServer()] = shardInfo
