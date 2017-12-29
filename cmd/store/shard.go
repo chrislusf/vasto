@@ -9,6 +9,9 @@ import (
 	"log"
 	"context"
 	"sync"
+	"github.com/chrislusf/vasto/util"
+	"time"
+	"google.golang.org/grpc"
 )
 
 type shard_id int
@@ -84,6 +87,7 @@ func (s *shard) setCompactionFilterClusterSize(clusterSize int) {
 
 func (s *shard) startWithBootstrapPlan(ctx context.Context, bootstrapOption *topology.BootstrapPlan, selfAdminAddress string) {
 
+	// bootstrap the data
 	if bootstrapOption.IsNormalStart {
 		if s.clusterRing != nil && bootstrapOption.IsNormalStartBootstrapNeeded {
 			err := s.maybeBootstrapAfterRestart(ctx)
@@ -99,8 +103,34 @@ func (s *shard) startWithBootstrapPlan(ctx context.Context, bootstrapOption *top
 
 	}
 
-	go s.follow(ctx, selfAdminAddress)
+	// add normal follow
+	for _, peer := range s.peerShards() {
+		sid := peer.ServerId
+		go util.RetryForever(ctx, fmt.Sprintf("shard %s follow server %d", s.String(), sid), func() error {
+			return s.doFollow(ctx, sid)
+		}, 2*time.Second)
+	}
+
+	// add one time follow during transitional period
+	for _, shard := range bootstrapOption.TransitionalFollowSource {
+		go func() {
+			sourceShard, _, found := s.clusterRing.GetNode(int(shard.ServerId))
+			if found && sourceShard.GetStoreResource().GetAdminAddress() != selfAdminAddress {
+				if err := s.doFollow(ctx, int(shard.ServerId)); err != nil {
+					log.Printf("shard %s stop following server %s : %v", s, sourceShard.GetStoreResource().GetAddress(), err)
+				}
+			}
+		}()
+	}
 
 	s.clusterListener.RegisterShardEventProcessor(s)
+
+}
+
+func (s *shard) doFollow(ctx context.Context, serverId int) error {
+
+	return s.clusterRing.WithConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
+		return s.followChanges(ctx, node, grpcConnection, 0, 0)
+	})
 
 }

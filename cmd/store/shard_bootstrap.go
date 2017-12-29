@@ -12,6 +12,10 @@ import (
 	"context"
 )
 
+func (s *shard) peerShards() []topology.ClusterShard {
+	return topology.PeerShards(int(s.serverId), int(s.id), s.clusterRing.ExpectedSize(), s.clusterRing.ReplicationFactor())
+}
+
 /*
 bootstrap ensure current shard is bootstrapped and can be synced by binlog tailing.
 1. checks whether the binlog offset is behind any other nodes, if not, return

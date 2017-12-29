@@ -67,10 +67,15 @@ func (ss *storeServer) ReplicateNodeCleanup(ctx context.Context, request *pb.Rep
 func (ss *storeServer) replicateNode(request *pb.ReplicateNodePrepareRequest) (err error) {
 
 	err = ss.createShards(request.Keyspace, int(request.ServerId), int(request.ClusterSize), int(request.ReplicationFactor), true, func(shardId int) *topology.BootstrapPlan {
-		return &topology.BootstrapPlan{
-			BootstrapSource:         topology.PartitionShards(int(request.ServerId), shardId, int(request.ClusterSize), int(request.ReplicationFactor)),
-			PickBestBootstrapSource: true,
-		}
+
+		return topology.BootstrapPlanWithTopoChange(&topology.BootstrapRequest{
+			ServerId:          int(request.ServerId),
+			ShardId:           shardId,
+			FromClusterSize:   int(request.ClusterSize),
+			ToClusterSize:     int(request.ClusterSize),
+			ReplicationFactor: int(request.ReplicationFactor),
+		})
+
 	})
 	if err != nil {
 		return
