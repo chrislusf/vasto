@@ -3,72 +3,43 @@ package master
 import (
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
+	"context"
 )
 
-func (ms *masterServer) ResizeCluster(req *pb.ResizeRequest, stream pb.VastoMaster_ResizeClusterServer) error {
+func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest) (resp *pb.ResizeResponse, err error) {
 
-	keyspace, dc := keyspace_name(req.Keyspace), data_center_name(req.DataCenter)
+	resp = &pb.ResizeResponse{}
 
-	r, found := ms.topo.keyspaces.getOrCreateKeyspace(string(keyspace)).getCluster(string(dc))
-
-	resp := &pb.ResizeProgress{}
-
+	keyspace, found := ms.topo.keyspaces.getKeyspace(req.Keyspace)
 	if !found {
-		resp.Error = fmt.Sprintf("cluster %s not found", dc)
-		if err := stream.Send(resp); err != nil {
-			return err
-		}
-		return nil
+		resp.Error = fmt.Sprintf("no keyspace %v found", req.Keyspace)
+		return
 	}
 
-	if r.GetNextClusterRing() != nil {
-		resp.Error = fmt.Sprintf(
-			"cluster %s is resizing %d => %d in progress ...",
-			dc, r.CurrentSize(), r.GetNextClusterRing().ExpectedSize())
-		if err := stream.Send(resp); err != nil {
-			return err
-		}
-		return nil
+	cluster, found := keyspace.getCluster(req.DataCenter)
+	if !found {
+		resp.Error = fmt.Sprintf("no datacenter %v found", req.DataCenter)
+		return
 	}
 
-	if r.CurrentSize() < int(req.GetClusterSize()) {
-		resp.Error = fmt.Sprintf("cluster %s has size %d, less than requested %d", dc, r.CurrentSize(), req.GetClusterSize())
-		if err := stream.Send(resp); err != nil {
-			return err
-		}
-		return nil
+	if cluster.GetNextClusterRing() != nil {
+		resp.Error = fmt.Sprintf("cluster %s %s is resizing %d => %d in progress ...",
+			req.Keyspace, req.DataCenter, cluster.CurrentSize(), cluster.GetNextClusterRing().ExpectedSize())
+		return
 	}
 
-	if r.CurrentSize() == int(req.GetClusterSize()) {
-		resp.Error = fmt.Sprintf("cluster %s is already size %d", dc, r.CurrentSize())
-		if err := stream.Send(resp); err != nil {
-			return err
-		}
-		return nil
-	} else if r.CurrentSize() > int(req.GetClusterSize()) {
-		resp.Error = fmt.Sprintf("cluster %s size %d => %d downsizing is not supported yet.",
-			dc, r.CurrentSize(), req.GetClusterSize())
-		if err := stream.Send(resp); err != nil {
-			return err
-		}
-		return nil
+	if cluster.ExpectedSize() == int(req.GetClusterSize()) {
+		resp.Error = fmt.Sprintf("cluster %s %s is already size %d", req.Keyspace, req.DataCenter, cluster.ExpectedSize())
+		return
+	}
+
+	if cluster.ExpectedSize() < int(req.GetClusterSize()) {
+
+		// grow the cluster
+
 	} else {
-		resp.Progress = fmt.Sprintf("start cluster %s size %d => %d",
-			dc, r.CurrentSize(), req.GetClusterSize())
-		if err := stream.Send(resp); err != nil {
-			return err
-		}
+		// shrink the cluster
 	}
 
-	/*
-	r.SetNextSize(int(req.GetClusterSize()))
-	ms.clientChans.notifyClusterSize(keyspace, dc, uint32(r.CurrentSize()), uint32(r.NextSize()))
-
-	ms.clientChans.notifyClusterSize(keyspace, dc, uint32(r.NextSize()), 0)
-	r.SetExpectedSize(r.NextSize())
-	r.SetNextSize(0)
-
-	*/
-
-	return nil
+	return
 }

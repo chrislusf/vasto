@@ -22,7 +22,7 @@ func (c *CommandResizeCluster) Name() string {
 }
 
 func (c *CommandResizeCluster) Help() string {
-	return "dataCenter newClusterSize"
+	return "<keyspace> <data_center> <new_cluster_size>"
 }
 
 func (c *CommandResizeCluster) SetMasterCilent(masterClient pb.VastoMasterClient) {
@@ -31,45 +31,30 @@ func (c *CommandResizeCluster) SetMasterCilent(masterClient pb.VastoMasterClient
 
 func (c *CommandResizeCluster) Do(args []string, out io.Writer) (err error) {
 
-	dc := "defaultDataCenter"
-	if len(args) > 0 {
-		dc = args[0]
-	} else {
+	if len(args) != 3 {
+		return InvalidArguments
+	}
+	keyspace := args[0]
+	dc := args[1]
+	newClusterSize, err := strconv.ParseUint(args[2], 10, 32)
+	if err != nil {
 		return InvalidArguments
 	}
 
-	var clusterSize uint64
-	if len(args) > 1 {
-		clusterSize, err = strconv.ParseUint(args[1], 10, 32)
-		if err != nil {
-			return InvalidArguments
-		}
-	} else {
-		return InvalidArguments
-	}
-
-	stream, err := c.masterClient.ResizeCluster(
+	resp, err := c.masterClient.ResizeCluster(
 		context.Background(),
 		&pb.ResizeRequest{
+			Keyspace:    keyspace,
 			DataCenter:  dc,
-			ClusterSize: uint32(clusterSize),
+			ClusterSize: uint32(newClusterSize),
 		},
 	)
 
-	for {
-		resizeProgress, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("resize cluster error: %v", err)
-		}
-		if resizeProgress.Error != "" {
-			return fmt.Errorf("Resize Error: %v", resizeProgress.Error)
-		}
-		if resizeProgress.Progress != "" {
-			fmt.Fprintf(out, "Resize: %v\n", resizeProgress.Progress)
-		}
+	if err != nil {
+		return fmt.Errorf("resize request: %v", err)
+	}
+	if resp.Error != "" {
+		return fmt.Errorf("resize: %v", resp.Error)
 	}
 
 	return nil

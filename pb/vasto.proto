@@ -24,7 +24,7 @@ service VastoMaster {
     rpc DeleteCluster (DeleteClusterRequest) returns (DeleteClusterResponse) {
     }
 
-    rpc ResizeCluster (ResizeRequest) returns (stream ResizeProgress) {
+    rpc ResizeCluster (ResizeRequest) returns (ResizeResponse) {
     }
 
     rpc ReplaceNode (ReplaceNodeRequest) returns (ReplaceNodeResponse) {
@@ -490,14 +490,6 @@ message ResizeRequest {
     string keyspace = 2;
     uint32 cluster_size = 3;
 }
-message ResizeProgress {
+message ResizeResponse {
     string error = 1;
-    string progress = 2;
-    bool hasNotifiedClientsToStart = 3;
-    bool hasNotifiedStoresToStart = 4;
-    bool areStoresSplit = 5;
-    bool areStoresReplicated = 6;
-    bool areStoresCaughtUp = 7;
-    bool hasNotifiedClientsToStop = 8;
-    bool hasNotifiedStoresToStop = 9;
 }

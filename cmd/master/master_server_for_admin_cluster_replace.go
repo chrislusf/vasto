@@ -27,6 +27,12 @@ func (ms *masterServer) ReplaceNode(ctx context.Context, req *pb.ReplaceNodeRequ
 		return
 	}
 
+	if cluster.GetNextClusterRing() != nil {
+		resp.Error = fmt.Sprintf("cluster %s %s is changing %d => %d in progress ...",
+			req.Keyspace, req.DataCenter, cluster.ExpectedSize(), cluster.GetNextClusterRing().ExpectedSize())
+		return
+	}
+
 	oldServer, _, found := cluster.GetNode(int(req.NodeId))
 	if !found {
 		resp.Error = fmt.Sprintf("no server %v found", req.NodeId)
