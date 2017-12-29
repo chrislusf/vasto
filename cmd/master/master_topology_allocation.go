@@ -16,7 +16,7 @@ import (
 // 2. sort by free capacity desc
 // 3. pick the top n
 // the actual capacity is deducted until the stores create the database and report to the master
-func (dc *dataCenter) allocateServers(n int, totalGb float64, requiredTags []string) (stores []*pb.StoreResource, err error) {
+func (dc *dataCenter) allocateServers(n int, totalGb float64, filterFunc func(*pb.StoreResource) bool) (stores []*pb.StoreResource, err error) {
 	var servers []*pb.StoreResource
 
 	eachRequiredGb := uint32(math.Ceil(totalGb / float64(n)))
@@ -24,9 +24,8 @@ func (dc *dataCenter) allocateServers(n int, totalGb float64, requiredTags []str
 	// 1. select servers that has all the requiredTags and enough disk
 	dc.RLock()
 	for _, server := range dc.servers {
-		t := server
-		if meetRequirement(t.Tags, requiredTags) && (t.DiskSizeGb-t.AllocatedSizeGb) > eachRequiredGb {
-			servers = append(servers, t)
+		if filterFunc(server) && (server.DiskSizeGb-server.AllocatedSizeGb) > eachRequiredGb {
+			servers = append(servers, server)
 		}
 	}
 	dc.RUnlock()
@@ -60,7 +59,7 @@ func meetRequirement(existingTags, requiredTags []string) bool {
 	return true
 }
 
-func createShards(ctx context.Context, req *pb.CreateClusterRequest, stores []*pb.StoreResource) (error) {
+func createShards(ctx context.Context, keyspace string, clusterSize, replicationFactor, eachShardSizeGb uint32, stores []*pb.StoreResource, shardIdStartFrom int) (error) {
 
 	var createShardsError error
 	var wg sync.WaitGroup
@@ -73,11 +72,11 @@ func createShards(ctx context.Context, req *pb.CreateClusterRequest, stores []*p
 
 				client := pb.NewVastoStoreClient(grpcConnection)
 				request := &pb.CreateShardRequest{
-					Keyspace:          req.Keyspace,
-					ShardId:           uint32(shardId),
-					ClusterSize:       req.ClusterSize,
-					ReplicationFactor: req.ReplicationFactor,
-					ShardDiskSizeGb:   uint32(math.Ceil(float64(req.TotalDiskSizeGb) / float64(req.ClusterSize))),
+					Keyspace:          keyspace,
+					ShardId:           uint32(shardId + shardIdStartFrom),
+					ClusterSize:       clusterSize,
+					ReplicationFactor: replicationFactor,
+					ShardDiskSizeGb:   eachShardSizeGb,
 				}
 
 				log.Printf("create shard on %v: %v", store.AdminAddress, request)
@@ -86,7 +85,7 @@ func createShards(ctx context.Context, req *pb.CreateClusterRequest, stores []*p
 					return err
 				}
 				if resp.Error != "" {
-					return fmt.Errorf("create shard %d on %s: %s", shardId, store.AdminAddress, resp.Error)
+					return fmt.Errorf("create shard %d on %s: %s", shardId+shardIdStartFrom, store.AdminAddress, resp.Error)
 				}
 				return nil
 			}); err != nil {

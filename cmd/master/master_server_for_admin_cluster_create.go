@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
+	"math"
 )
 
 func (ms *masterServer) CreateCluster(ctx context.Context, req *pb.CreateClusterRequest) (resp *pb.CreateClusterResponse, err error) {
@@ -16,13 +17,16 @@ func (ms *masterServer) CreateCluster(ctx context.Context, req *pb.CreateCluster
 		return
 	}
 
-	servers, err := dc.allocateServers(int(req.ClusterSize), float64(req.TotalDiskSizeGb*req.ReplicationFactor), req.Tags)
-	var nodes []*pb.ClusterNode
+	servers, err := dc.allocateServers(int(req.ClusterSize), float64(req.TotalDiskSizeGb*req.ReplicationFactor),
+		func(resource *pb.StoreResource) bool {
+			return meetRequirement(resource.Tags, req.Tags)
+		})
 	if err != nil {
 		resp.Error = err.Error()
 		return
 	}
 
+	var nodes []*pb.ClusterNode
 	for i, server := range servers {
 		nodes = append(nodes, &pb.ClusterNode{
 			StoreResource: &pb.StoreResource{
@@ -37,7 +41,9 @@ func (ms *masterServer) CreateCluster(ctx context.Context, req *pb.CreateCluster
 		})
 	}
 
-	if err = createShards(ctx, req, servers); err != nil {
+	eachShardSizeGb := uint32(math.Ceil(float64(req.TotalDiskSizeGb) / float64(req.ClusterSize)))
+
+	if err = createShards(ctx, req.Keyspace, req.ClusterSize, req.ReplicationFactor, eachShardSizeGb, servers, 0); err != nil {
 		resp.Error = err.Error()
 	}
 

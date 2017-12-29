@@ -133,7 +133,6 @@ func (cluster *ClusterRing) GetOneNode(index int, options ...AccessOption) (Node
 	return cluster.nodes[index], replica, true
 }
 
-
 // NewHashRing creates a new hash ring.
 func NewHashRing(keyspace, dataCenter string, expectedSize int, replicationFactor int) *ClusterRing {
 	return &ClusterRing{
@@ -163,4 +162,8 @@ func (cluster *ClusterRing) String() string {
 	output.WriteString(fmt.Sprintf(" size %d/%d ", cluster.CurrentSize(), cluster.ExpectedSize()))
 
 	return output.String()
+}
+
+func (cluster *ClusterRing) GetNodes() []Node {
+	return cluster.nodes
 }
