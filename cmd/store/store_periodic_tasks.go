@@ -4,7 +4,6 @@ import "time"
 
 type PeriodicTask interface {
 	EverySecond()
-	Keyspace() string
 }
 
 func (ss *storeServer) startPeriodTasks() {
@@ -20,10 +19,10 @@ func (ss *storeServer) RegisterPeriodicTask(task PeriodicTask) {
 	ss.periodTasks = append(ss.periodTasks, task)
 }
 
-func (ss *storeServer) UnregisterPeriodicTask(keyspace string) {
+func (ss *storeServer) UnregisterPeriodicTask(task PeriodicTask) {
 	var t []PeriodicTask
 	for _, p := range ss.periodTasks {
-		if p.Keyspace() != keyspace {
+		if p != task {
 			x := p
 			t = append(t, x)
 		}

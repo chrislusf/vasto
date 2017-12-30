@@ -16,11 +16,6 @@ type progressValue struct {
 }
 
 // implementing PeriodicTask
-func (s *shard) Keyspace() string {
-	return s.keyspace
-}
-
-// implementing PeriodicTask
 func (s *shard) EverySecond() {
 	// log.Printf("%s every second", s)
 	s.followProgressLock.Lock()
