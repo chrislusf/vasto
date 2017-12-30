@@ -43,7 +43,7 @@ func (ms *masterServer) CreateCluster(ctx context.Context, req *pb.CreateCluster
 
 	eachShardSizeGb := uint32(math.Ceil(float64(req.TotalDiskSizeGb) / float64(req.ClusterSize)))
 
-	if err = createShards(ctx, req.Keyspace, req.ClusterSize, req.ReplicationFactor, eachShardSizeGb, servers, 0); err != nil {
+	if err = createShards(ctx, req.Keyspace, req.ClusterSize, req.ReplicationFactor, eachShardSizeGb, servers); err != nil {
 		resp.Error = err.Error()
 	}
 

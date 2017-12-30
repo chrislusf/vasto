@@ -14,7 +14,7 @@ import (
 func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardRequest) (*pb.CreateShardResponse, error) {
 
 	log.Printf("create shard %v", request)
-	err := ss.createShards(request.Keyspace, int(request.ShardId), int(request.ClusterSize), int(request.ReplicationFactor), false, func(shardId int) *topology.BootstrapPlan {
+	err := ss.createShards(request.Keyspace, int(request.ServerId), int(request.ClusterSize), int(request.ReplicationFactor), false, func(shardId int) *topology.BootstrapPlan {
 		return &topology.BootstrapPlan{}
 	})
 	if err != nil {
@@ -34,14 +34,27 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 
 	ss.clusterListener.AddNewKeyspace(keyspace, clusterSize, replicationFactor)
 
-	_, found := ss.keyspaceShards.getShards(keyspace)
-	if found {
-		return fmt.Errorf("keyspace %s already exists", keyspace)
+	if _, found := ss.keyspaceShards.getShards(keyspace); found {
+		localShards, foundLocalShards := ss.getServerStatusInCluster(keyspace)
+		if !foundLocalShards {
+			return fmt.Errorf("missing local shard status for keyspace %s", keyspace)
+		}
+		if int(localShards.ClusterSize) == clusterSize && int(localShards.ReplicationFactor) == replicationFactor {
+			return fmt.Errorf("keyspace %s already exists", keyspace)
+		}
+		if serverId != int(localShards.Id) {
+			return fmt.Errorf("local server id = %d, not matching requested server id %d", localShards.Id, serverId)
+		}
 	}
 
 	localShards := ss.getOrCreateServerStatusInCluster(keyspace, serverId, clusterSize, replicationFactor)
 
 	for _, clusterShard := range topology.LocalShards(serverId, clusterSize, replicationFactor) {
+
+		if _, found := localShards.ShardMap[uint32(clusterShard.ShardId)]; found {
+			// skip existing shards
+			continue
+		}
 
 		shardInfo := &pb.ShardInfo{
 			NodeId:            uint32(serverId),

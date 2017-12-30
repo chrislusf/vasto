@@ -15,6 +15,7 @@ type BootstrapPlan struct {
 	BootstrapSource          []ClusterShard
 	PickBestBootstrapSource  bool
 	TransitionalFollowSource []ClusterShard
+	ToClusterSize            int
 
 	IsNormalStart                bool
 	IsNormalStartBootstrapNeeded bool
@@ -22,7 +23,7 @@ type BootstrapPlan struct {
 
 // BootstrapPeersWhenResize returns
 func BootstrapPlanWithTopoChange(req *BootstrapRequest) (plan *BootstrapPlan) {
-	plan = &BootstrapPlan{}
+	plan = &BootstrapPlan{ToClusterSize: req.ToClusterSize}
 
 	if req.FromClusterSize == req.ToClusterSize {
 		plan.BootstrapSource = PartitionShards(req.ServerId, req.ShardId, req.ToClusterSize, req.ReplicationFactor)

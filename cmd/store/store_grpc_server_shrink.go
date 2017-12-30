@@ -165,7 +165,7 @@ func (ss *storeServer) followRetiringShards(request *pb.ShrinkClusterPrepareRequ
 
 		return eachInt(retiringServerIds, func(serverId int) error {
 			return shard.clusterRing.WithConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
-				return shard.followChanges(context.Background(), node, grpcConnection, request.TargetClusterSize, int(shard.id))
+				return shard.followChanges(context.Background(), node, grpcConnection, int(shard.id), int(request.TargetClusterSize))
 			})
 		})
 	})

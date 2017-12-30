@@ -105,32 +105,32 @@ func (s *shard) startWithBootstrapPlan(ctx context.Context, bootstrapOption *top
 
 	// add normal follow
 	for _, peer := range s.peerShards() {
-		sid := peer.ServerId
-		go util.RetryForever(ctx, fmt.Sprintf("shard %s follow server %d", s.String(), sid), func() error {
-			return s.doFollow(ctx, sid)
+		serverId, shardId := peer.ServerId, peer.ShardId
+		go util.RetryForever(ctx, fmt.Sprintf("shard %s follow server %d", s.String(), serverId), func() error {
+			return s.doFollow(ctx, serverId, shardId, 0)
 		}, 2*time.Second)
 	}
 
 	// add one time follow during transitional period
 	for _, shard := range bootstrapOption.TransitionalFollowSource {
-		go func() {
+		go func(shard topology.ClusterShard) {
 			sourceShard, _, found := s.clusterRing.GetNode(int(shard.ServerId))
 			if found && sourceShard.GetStoreResource().GetAdminAddress() != selfAdminAddress {
-				if err := s.doFollow(ctx, int(shard.ServerId)); err != nil {
+				if err := s.doFollow(ctx, shard.ServerId, shard.ShardId, bootstrapOption.ToClusterSize); err != nil {
 					log.Printf("shard %s stop following server %s : %v", s, sourceShard.GetStoreResource().GetAddress(), err)
 				}
 			}
-		}()
+		}(shard)
 	}
 
 	s.clusterListener.RegisterShardEventProcessor(s)
 
 }
 
-func (s *shard) doFollow(ctx context.Context, serverId int) error {
+func (s *shard) doFollow(ctx context.Context, serverId int, sourceShardId int, targetClusterSize int) error {
 
 	return s.clusterRing.WithConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
-		return s.followChanges(ctx, node, grpcConnection, 0, 0)
+		return s.followChanges(ctx, node, grpcConnection, sourceShardId, targetClusterSize)
 	})
 
 }

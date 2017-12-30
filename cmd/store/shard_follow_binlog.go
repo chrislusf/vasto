@@ -16,7 +16,7 @@ const (
 	syncProgressFlushInterval = time.Minute
 )
 
-func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConnection *grpc.ClientConn, targetClusterSize uint32, targetShardId int) (error) {
+func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConnection *grpc.ClientConn, sourceShardId int, targetClusterSize int) (error) {
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
@@ -32,12 +32,12 @@ func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConne
 
 	request := &pb.PullUpdateRequest{
 		Keyspace:          s.keyspace,
-		ShardId:           uint32(s.id),
+		ShardId:           uint32(sourceShardId),
 		Segment:           nextSegment,
 		Offset:            nextOffset,
 		Limit:             8096,
-		TargetClusterSize: targetClusterSize,
-		TargetShardId:     uint32(targetShardId),
+		TargetClusterSize: uint32(targetClusterSize),
+		TargetShardId:     uint32(s.id),
 		Origin:            s.String(),
 	}
 

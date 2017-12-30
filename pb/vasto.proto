@@ -73,6 +73,11 @@ service VastoStore {
     rpc ShrinkClusterCleanup (ShrinkClusterCleanupRequest) returns (ShrinkClusterCleanupResponse) {
     }
 
+    rpc ResizeCreateShard (ResizeCreateShardRequest) returns (ResizeCreateShardResponse) {
+    }
+    rpc ResizeBootstrap (ResizeBootstrapRequest) returns (ResizeBootstrapResponse) {
+    }
+
 }
 
 //////////////////////////////////////////////////
@@ -417,7 +422,7 @@ message ReplaceNodeResponse {
 ////////  request response with store
 message CreateShardRequest {
     string keyspace = 1;
-    uint32 shard_id = 2;
+    uint32 server_id = 2;
     uint32 cluster_size = 3;
     uint32 replication_factor = 4;
     uint32 shard_disk_size_gb = 5;
@@ -484,6 +489,26 @@ message ShrinkClusterCleanupRequest {
 message ShrinkClusterCleanupResponse {
     string error = 1;
 }
+
+message ResizeCreateShardRequest {
+    string keyspace = 1;
+    uint32 server_id = 2;
+    uint32 cluster_size = 3;
+    uint32 replication_factor = 4;
+    uint32 target_cluster_size = 5;
+}
+message ResizeCreateShardResponse {
+    string error = 1;
+}
+
+message ResizeBootstrapRequest {
+    string keyspace = 1;
+    uint32 target_cluster_size = 2;
+}
+message ResizeBootstrapResponse {
+    string error = 1;
+}
+
 
 message ResizeRequest {
     string data_center = 1;

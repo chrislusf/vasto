@@ -59,21 +59,21 @@ func meetRequirement(existingTags, requiredTags []string) bool {
 	return true
 }
 
-func createShards(ctx context.Context, keyspace string, clusterSize, replicationFactor, eachShardSizeGb uint32, stores []*pb.StoreResource, shardIdStartFrom int) (error) {
+func createShards(ctx context.Context, keyspace string, clusterSize, replicationFactor, eachShardSizeGb uint32, stores []*pb.StoreResource) (error) {
 
 	var createShardsError error
 	var wg sync.WaitGroup
-	for shardId, store := range stores {
+	for serverId, store := range stores {
 		wg.Add(1)
-		go func(shardId int, store *pb.StoreResource) {
+		go func(serverId int, store *pb.StoreResource) {
 			defer wg.Done()
-			// log.Printf("connecting to server %d at %s", shardId, store.GetAdminAddress())
+			// log.Printf("connecting to server %d at %s", serverId, store.GetAdminAddress())
 			if err := withConnection(store, func(grpcConnection *grpc.ClientConn) error {
 
 				client := pb.NewVastoStoreClient(grpcConnection)
 				request := &pb.CreateShardRequest{
 					Keyspace:          keyspace,
-					ShardId:           uint32(shardId + shardIdStartFrom),
+					ServerId:          uint32(serverId),
 					ClusterSize:       clusterSize,
 					ReplicationFactor: replicationFactor,
 					ShardDiskSizeGb:   eachShardSizeGb,
@@ -85,15 +85,15 @@ func createShards(ctx context.Context, keyspace string, clusterSize, replication
 					return err
 				}
 				if resp.Error != "" {
-					return fmt.Errorf("create shard %d on %s: %s", shardId+shardIdStartFrom, store.AdminAddress, resp.Error)
+					return fmt.Errorf("create shard %d on %s: %s", serverId, store.AdminAddress, resp.Error)
 				}
 				return nil
 			}); err != nil {
 				createShardsError = err
 				return
 			}
-			// log.Printf("shard created on server %d at %s", shardId, store.GetAdminAddress())
-		}(shardId, store)
+			// log.Printf("shard created on server %d at %s", serverId, store.GetAdminAddress())
+		}(serverId, store)
 	}
 	wg.Wait()
 	return createShardsError

@@ -44,12 +44,14 @@ B =>(i/n) A means A pull data on B that matches ith node on the new cluster with
 
 0. at the beginning,
     -> A, -> B
-1. master tell all m servers the new cluster size *
+1. master tell all m servers the new cluster size, to create and bootstrap all new or missing shards
 1.1. there are new shards to be created in the first and second servers, they should be bootstrapped from the existing shard first.
 1.2 shard A follows all main shards on to-be-removed servers.
     -> A, -> B, B =>(i/n) A
-2. master change the cluster size to n.
-2.1 normal clients will read/write by new cluster size n.
+2. master tell all servers to commit the changes, promote from CANDIDATE to READY, adjust cluster size, (but not sending shard status to master)
+3. master change the cluster size to n. master set these shards status to READY, and remove old shard, and add the new shard. Broadcast this to all clients for this keyspace
+3.1 normal clients will read/write by new cluster size n.
+3.2 all clients remove the old server(clear out the tail offset also), and move the candidate server to the right position.
 3. master tell shard A to commit the cluster size to disk
 4. master tell shard B to stop, some servers may have a few shards to be removed.
 

@@ -40,20 +40,33 @@ func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest
 		return
 	}
 
+	var existingServers []*pb.StoreResource
+	for _, node := range cluster.GetNodes() {
+		existingServers = append(existingServers, &pb.StoreResource{
+			Address:      node.GetAddress(),
+			AdminAddress: node.GetAdminAddress(),
+		})
+	}
+
 	if cluster.ExpectedSize() < int(req.GetClusterSize()) {
 
 		// grow the cluster
 		// TODO proper quota alocation
+		// 1. allocate new servers for the growing cluster
 		eachShardSizeGb := uint32(1)
-		servers, err := allocateServers(cluster, dc, int(req.ClusterSize), float64(eachShardSizeGb))
-		if err != nil {
-			resp.Error = fmt.Sprintf("fail to allocate %d servers: %v", req.ClusterSize, err)
+		newServers, allocateErr := allocateServers(cluster, dc, int(req.ClusterSize), float64(eachShardSizeGb))
+		if allocateErr != nil {
+			resp.Error = fmt.Sprintf("fail to allocate %d servers: %v", req.ClusterSize, allocateErr)
 			return
 		}
 
-		if err = createShards(ctx, req.Keyspace, req.ClusterSize+uint32(cluster.ExpectedSize()), uint32(cluster.ReplicationFactor()), eachShardSizeGb, servers, cluster.ExpectedSize()); err != nil {
+		// 2. create missing shards on existing servers, create new shards on new servers
+		servers := append(existingServers, newServers...)
+		if err = createShards(ctx, req.Keyspace, req.ClusterSize+uint32(cluster.ExpectedSize()), uint32(cluster.ReplicationFactor()), eachShardSizeGb, servers); err != nil {
 			resp.Error = err.Error()
 		}
+
+		// 3. tell all servers to bootstrap the new shards
 
 	} else {
 		// shrink the cluster
