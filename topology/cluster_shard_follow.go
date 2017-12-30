@@ -70,7 +70,7 @@ func LocalShards(selfServerId int, clusterSize int, replicationFactor int) (shar
 	return
 }
 
-func isShardInLocal(shardId int, selfServerId int, clusterSize int, replicationFactor int) bool {
+func IsShardInLocal(shardId int, selfServerId int, clusterSize int, replicationFactor int) bool {
 	shards := LocalShards(selfServerId, clusterSize, replicationFactor)
 	for _, shard := range shards {
 		if shardId == shard.ShardId {

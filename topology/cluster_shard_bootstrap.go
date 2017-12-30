@@ -47,8 +47,8 @@ func BootstrapPlanWithTopoChange(req *BootstrapRequest) (plan *BootstrapPlan) {
 			return
 		} else {
 			// old shards
-			if isShardInLocal(req.ShardId, req.ServerId, req.ToClusterSize, req.ReplicationFactor) {
-				if isShardInLocal(req.ShardId, req.ServerId, req.FromClusterSize, req.ReplicationFactor) {
+			if IsShardInLocal(req.ShardId, req.ServerId, req.ToClusterSize, req.ReplicationFactor) {
+				if IsShardInLocal(req.ShardId, req.ServerId, req.FromClusterSize, req.ReplicationFactor) {
 					// the shard does not move, no need to do anything
 					return
 				} else {
@@ -74,9 +74,9 @@ func BootstrapPlanWithTopoChange(req *BootstrapRequest) (plan *BootstrapPlan) {
 			// if retiring shards, nothing to bootstrap
 			return
 		}
-		if isShardInLocal(req.ShardId, req.ServerId, req.ToClusterSize, req.ReplicationFactor) {
+		if IsShardInLocal(req.ShardId, req.ServerId, req.ToClusterSize, req.ReplicationFactor) {
 			// local in new cluster
-			if !isShardInLocal(req.ShardId, req.ServerId, req.FromClusterSize, req.ReplicationFactor) {
+			if !IsShardInLocal(req.ShardId, req.ServerId, req.FromClusterSize, req.ReplicationFactor) {
 				// the shard does not exist before the new cluster, need to copy existing one, and follow the to-be-retired shards with a filter
 				plan.BootstrapSource = PartitionShards(req.ServerId, req.ShardId, req.FromClusterSize, req.ReplicationFactor)
 				plan.PickBestBootstrapSource = true

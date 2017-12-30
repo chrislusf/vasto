@@ -73,9 +73,9 @@ service VastoStore {
     rpc ShrinkClusterCleanup (ShrinkClusterCleanupRequest) returns (ShrinkClusterCleanupResponse) {
     }
 
-    rpc ResizeCreateShard (ResizeCreateShardRequest) returns (ResizeCreateShardResponse) {
+    rpc ResizePrepare (ResizeCreateShardRequest) returns (ResizeCreateShardResponse) {
     }
-    rpc ResizeBootstrap (ResizeBootstrapRequest) returns (ResizeBootstrapResponse) {
+    rpc ResizeCommit (ResizeCommitRequest) returns (ResizeCommitResponse) {
     }
 
 }
@@ -498,11 +498,11 @@ message ResizeCreateShardResponse {
     string error = 1;
 }
 
-message ResizeBootstrapRequest {
+message ResizeCommitRequest {
     string keyspace = 1;
     uint32 target_cluster_size = 2;
 }
-message ResizeBootstrapResponse {
+message ResizeCommitResponse {
     string error = 1;
 }
 
