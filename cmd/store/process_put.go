@@ -10,9 +10,9 @@ import (
 	"github.com/chrislusf/vasto/storage/codec"
 )
 
-func (ss *storeServer) processPut(nodes []*shard, putRequest *pb.PutRequest) *pb.PutResponse {
+func (ss *storeServer) processPut(shards []*shard, putRequest *pb.PutRequest) *pb.PutResponse {
 	replica := int(putRequest.Replica)
-	if replica >= len(nodes) {
+	if replica >= len(shards) {
 		return &pb.PutResponse{
 			Status: fmt.Sprintf("replica %d not found", replica),
 		}
@@ -31,7 +31,7 @@ func (ss *storeServer) processPut(nodes []*shard, putRequest *pb.PutRequest) *pb
 		Ok: true,
 	}
 
-	node := nodes[replica]
+	node := shards[replica]
 
 	// fmt.Printf("shard %d put keyValue: %v\n", shard.id, putRequest.KeyValue.String())
 

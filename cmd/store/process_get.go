@@ -6,16 +6,16 @@ import (
 	"github.com/chrislusf/vasto/storage/codec"
 )
 
-func (ss *storeServer) processGet(nodes []*shard, getRequest *pb.GetRequest) *pb.GetResponse {
+func (ss *storeServer) processGet(shards []*shard, getRequest *pb.GetRequest) *pb.GetResponse {
 	replica := int(getRequest.Replica)
-	if replica >= len(nodes) {
+	if replica >= len(shards) {
 		return &pb.GetResponse{
 			Status: fmt.Sprintf("replica %d not found", replica),
 		}
 	}
 	key := getRequest.Key
-	// println("replica", replica, "shard", nodes[replica].id, "keyspace", nodes[replica].keyspace, "server", nodes[replica].serverId, "request", getRequest.String())
-	if b, err := nodes[replica].db.Get(key); err != nil {
+	// println("replica", replica, "shard", shards[replica].id, "keyspace", shards[replica].keyspace, "server", shards[replica].serverId, "request", getRequest.String())
+	if b, err := shards[replica].db.Get(key); err != nil {
 		return &pb.GetResponse{
 			Status: err.Error(),
 		}

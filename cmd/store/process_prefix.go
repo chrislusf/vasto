@@ -6,9 +6,9 @@ import (
 	"github.com/chrislusf/vasto/storage/codec"
 )
 
-func (ss *storeServer) processPrefix(nodes []*shard, prefixRequest *pb.GetByPrefixRequest) *pb.GetByPrefixResponse {
+func (ss *storeServer) processPrefix(shards []*shard, prefixRequest *pb.GetByPrefixRequest) *pb.GetByPrefixResponse {
 	replica := int(prefixRequest.Replica)
-	if replica >= len(nodes) {
+	if replica >= len(shards) {
 		return &pb.GetByPrefixResponse{
 			Status: fmt.Sprintf("replica %d not found", replica),
 		}
@@ -18,7 +18,7 @@ func (ss *storeServer) processPrefix(nodes []*shard, prefixRequest *pb.GetByPref
 	resp := &pb.GetByPrefixResponse{
 		Ok: true,
 	}
-	err := nodes[replica].db.PrefixScan(
+	err := shards[replica].db.PrefixScan(
 		prefixRequest.Prefix,
 		prefixRequest.LastSeenKey,
 		int(prefixRequest.Limit),
