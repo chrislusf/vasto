@@ -61,78 +61,55 @@ func meetRequirement(existingTags, requiredTags []string) bool {
 
 func createShards(ctx context.Context, keyspace string, clusterSize, replicationFactor, eachShardSizeGb uint32, stores []*pb.StoreResource) (error) {
 
-	var createShardsError error
-	var wg sync.WaitGroup
-	for serverId, store := range stores {
-		wg.Add(1)
-		go func(serverId int, store *pb.StoreResource) {
-			defer wg.Done()
-			// log.Printf("connecting to server %d at %s", serverId, store.GetAdminAddress())
-			if err := withConnection(store, func(grpcConnection *grpc.ClientConn) error {
+	return eachStore(stores, func(serverId int, store *pb.StoreResource) error {
+		// log.Printf("connecting to server %d at %s", serverId, store.GetAdminAddress())
+		return withConnection(store, func(grpcConnection *grpc.ClientConn) error {
 
-				client := pb.NewVastoStoreClient(grpcConnection)
-				request := &pb.CreateShardRequest{
-					Keyspace:          keyspace,
-					ServerId:          uint32(serverId),
-					ClusterSize:       clusterSize,
-					ReplicationFactor: replicationFactor,
-					ShardDiskSizeGb:   eachShardSizeGb,
-				}
-
-				log.Printf("create shard on %v: %v", store.AdminAddress, request)
-				resp, err := client.CreateShard(ctx, request)
-				if err != nil {
-					return err
-				}
-				if resp.Error != "" {
-					return fmt.Errorf("create shard %d on %s: %s", serverId, store.AdminAddress, resp.Error)
-				}
-				return nil
-			}); err != nil {
-				createShardsError = err
-				return
+			client := pb.NewVastoStoreClient(grpcConnection)
+			request := &pb.CreateShardRequest{
+				Keyspace:          keyspace,
+				ServerId:          uint32(serverId),
+				ClusterSize:       clusterSize,
+				ReplicationFactor: replicationFactor,
+				ShardDiskSizeGb:   eachShardSizeGb,
 			}
-			// log.Printf("shard created on server %d at %s", serverId, store.GetAdminAddress())
-		}(serverId, store)
-	}
-	wg.Wait()
-	return createShardsError
+
+			log.Printf("create shard on %v: %v", store.AdminAddress, request)
+			resp, err := client.CreateShard(ctx, request)
+			if err != nil {
+				return err
+			}
+			if resp.Error != "" {
+				return fmt.Errorf("create shard %d on %s: %s", serverId, store.AdminAddress, resp.Error)
+			}
+			return nil
+		})
+	})
 }
 
 func deleteShards(ctx context.Context, req *pb.DeleteClusterRequest, stores []*pb.StoreResource) (error) {
 
-	var deleteShardsError error
-	var wg sync.WaitGroup
-	for shardId, store := range stores {
-		wg.Add(1)
-		go func(shardId int, store *pb.StoreResource) {
-			defer wg.Done()
-			// log.Printf("connecting to server %d at %s", shardId, store.GetAdminAddress())
-			if err := withConnection(store, func(grpcConnection *grpc.ClientConn) error {
+	return eachStore(stores, func(serverId int, store *pb.StoreResource) error {
+		// log.Printf("connecting to server %d at %s", serverId, store.GetAdminAddress())
+		return withConnection(store, func(grpcConnection *grpc.ClientConn) error {
 
-				client := pb.NewVastoStoreClient(grpcConnection)
-				request := &pb.DeleteKeyspaceRequest{
-					Keyspace: req.Keyspace,
-				}
-
-				log.Printf("delete shard on %v: %v", store.AdminAddress, request)
-				resp, err := client.DeleteKeyspace(ctx, request)
-				if err != nil {
-					return err
-				}
-				if resp.Error != "" {
-					return fmt.Errorf("delete keyspace %s on %s: %s", req.Keyspace, store.AdminAddress, resp.Error)
-				}
-				return nil
-			}); err != nil {
-				deleteShardsError = err
-				return
+			client := pb.NewVastoStoreClient(grpcConnection)
+			request := &pb.DeleteKeyspaceRequest{
+				Keyspace: req.Keyspace,
 			}
-			// log.Printf("shard created on server %d at %s", shardId, store.GetAdminAddress())
-		}(shardId, store)
-	}
-	wg.Wait()
-	return deleteShardsError
+
+			log.Printf("delete shard on %v: %v", store.AdminAddress, request)
+			resp, err := client.DeleteKeyspace(ctx, request)
+			if err != nil {
+				return err
+			}
+			if resp.Error != "" {
+				return fmt.Errorf("delete keyspace %s on %s: %s", req.Keyspace, store.AdminAddress, resp.Error)
+			}
+			return nil
+		})
+	})
+
 }
 
 func withConnection(store *pb.StoreResource, fn func(*grpc.ClientConn) error) error {
@@ -144,4 +121,19 @@ func withConnection(store *pb.StoreResource, fn func(*grpc.ClientConn) error) er
 	defer grpcConnection.Close()
 
 	return fn(grpcConnection)
+}
+
+func eachStore(stores []*pb.StoreResource, eachFunc func(serverId int, store *pb.StoreResource) error) (err error) {
+	var wg sync.WaitGroup
+	for serverId, store := range stores {
+		wg.Add(1)
+		go func(serverId int, store *pb.StoreResource) {
+			defer wg.Done()
+			if eachErr := eachFunc(serverId, store); eachErr != nil {
+				err = eachErr
+			}
+		}(serverId, store)
+	}
+	wg.Wait()
+	return
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/chrislusf/vasto/topology"
 )
 
-// 1. create the new or missing shards
+// 1. create the new or missing shards, bootstrap the data, one-time follows, and regular follows.
 func (ss *storeServer) ResizeCreateShard(ctx context.Context, request *pb.ResizeCreateShardRequest) (*pb.ResizeCreateShardResponse, error) {
 
 	log.Printf("resize create shards %v", request)

@@ -111,7 +111,7 @@ func (s *shard) startWithBootstrapPlan(ctx context.Context, bootstrapOption *top
 		}, 2*time.Second)
 	}
 
-	// add one time follow during transitional period
+	// add one time follow during transitional period, there are no retries, assuming the source shards are already up
 	for _, shard := range bootstrapOption.TransitionalFollowSource {
 		go func(shard topology.ClusterShard) {
 			sourceShard, _, found := s.clusterRing.GetNode(int(shard.ServerId))
