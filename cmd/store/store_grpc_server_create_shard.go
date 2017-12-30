@@ -57,7 +57,7 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 		}
 
 		shardInfo := &pb.ShardInfo{
-			NodeId:            uint32(serverId),
+			ServerId:          uint32(serverId),
 			ShardId:           uint32(clusterShard.ShardId),
 			KeyspaceName:      keyspace,
 			ClusterSize:       uint32(clusterSize),
@@ -98,7 +98,7 @@ func (ss *storeServer) bootstrapShard(shardInfo *pb.ShardInfo, bootstrapOption *
 		return
 	}
 
-	ctx, shard := newShard(shardInfo.KeyspaceName, dir, int(shardInfo.NodeId), int(shardInfo.ShardId), cluster, ss.clusterListener,
+	ctx, shard := newShard(shardInfo.KeyspaceName, dir, int(shardInfo.ServerId), int(shardInfo.ShardId), cluster, ss.clusterListener,
 		int(shardInfo.ReplicationFactor), *ss.option.LogFileSizeMb, *ss.option.LogFileCount)
 	// println("loading shard", shard.String())
 	ss.keyspaceShards.addShards(shardInfo.KeyspaceName, shard)

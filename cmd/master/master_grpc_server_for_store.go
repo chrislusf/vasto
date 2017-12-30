@@ -109,12 +109,12 @@ func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.S
 		cluster = cluster.GetNextClusterRing()
 	}
 
-	node, _, found := cluster.GetNode(int(shardInfo.NodeId))
+	node, _, found := cluster.GetNode(int(shardInfo.ServerId))
 	if shardInfo.Status == pb.ShardInfo_DELETED && !found {
 		return nil
 	}
 	if !found {
-		node = topology.NewNodeFromStore(storeResource, shardInfo.NodeId)
+		node = topology.NewNodeFromStore(storeResource, shardInfo.ServerId)
 		cluster.SetNode(node)
 	}
 	if shardInfo.Status == pb.ShardInfo_DELETED {
@@ -156,7 +156,7 @@ func (ms *masterServer) unRegisterShards(seenShardsOnThisServer map[string]*pb.S
 				}
 				cluster = cluster.GetNextClusterRing()
 			}
-			cluster.RemoveNode(int(shardInfo.NodeId)) // just remove the whole node
+			cluster.RemoveNode(int(shardInfo.ServerId)) // just remove the whole node
 			ms.notifyDeletion(shardInfo, storeResource)
 		}
 	}

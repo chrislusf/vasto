@@ -104,9 +104,9 @@ func (clusterListener *ClusterListener) AddNode(keyspace string, n *pb.ClusterNo
 	}
 
 	st, ss := n.StoreResource, n.ShardInfo
-	node, _, found := cluster.GetNode(int(ss.NodeId))
+	node, _, found := cluster.GetNode(int(ss.ServerId))
 	if !found {
-		node = topology.Node(newNodeWithConnPool(int(ss.NodeId), st))
+		node = topology.Node(newNodeWithConnPool(int(ss.ServerId), st))
 	}
 	oldShardInfo = node.SetShardInfo(ss)
 	cluster.SetNode(node)
@@ -126,7 +126,7 @@ func (clusterListener *ClusterListener) RemoveNode(keyspace string, n *pb.Cluste
 	}
 	ss := n.ShardInfo
 	if n != nil {
-		node := cluster.RemoveNode(int(ss.NodeId))
+		node := cluster.RemoveNode(int(ss.ServerId))
 		if node != nil {
 			node.RemoveShardInfo(ss)
 			if t, ok := node.(*NodeWithConnPool); ok {
@@ -151,7 +151,7 @@ func (clusterListener *ClusterListener) PromoteNode(keyspace string, n *pb.Clust
 
 	if n != nil {
 		ss := n.ShardInfo
-		node := candidateCluster.RemoveNode(int(ss.NodeId))
+		node := candidateCluster.RemoveNode(int(ss.ServerId))
 		if candidateCluster.CurrentSize() == 0 {
 			cluster.RemoveNextClusterRing()
 		}

@@ -55,7 +55,7 @@ func (c *CommandDesc) Do(args []string, out io.Writer) error {
 					cluster.DataCenter, cluster.ExpectedClusterSize)
 				for _, node := range cluster.Nodes {
 					fmt.Fprintf(out, "        * node %v shard %v %v\n",
-						node.ShardInfo.NodeId, node.ShardInfo.ShardId, node.StoreResource.Address)
+						node.ShardInfo.ServerId, node.ShardInfo.ShardId, node.StoreResource.Address)
 				}
 			}
 		}
@@ -113,7 +113,7 @@ func (c *CommandDesc) Do(args []string, out io.Writer) error {
 						continue
 					}
 					fmt.Fprintf(out, "        + node %v shard %v %v\n",
-						node.ShardInfo.NodeId, node.ShardInfo.ShardId, node.StoreResource.Address)
+						node.ShardInfo.ServerId, node.ShardInfo.ShardId, node.StoreResource.Address)
 				}
 			}
 		}
@@ -130,7 +130,7 @@ func printCluster(out io.Writer, cluster *pb.Cluster) {
 
 		for _, node := range cluster.Nodes {
 			fmt.Fprintf(out, "        * node %v shard %v %v\n",
-				node.ShardInfo.NodeId, node.ShardInfo.ShardId, node.StoreResource.Address)
+				node.ShardInfo.ServerId, node.ShardInfo.ShardId, node.StoreResource.Address)
 		}
 
 	}

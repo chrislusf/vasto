@@ -106,7 +106,7 @@ func (ss *storeServer) createMissingShards(ctx context.Context, keyspaceName str
 			ReplicationFactor: replicationFactor,
 		})
 		shardInfo := &pb.ShardInfo{
-			NodeId:            statusInCluster.Id,
+			ServerId:          statusInCluster.Id,
 			ShardId:           uint32(shardId),
 			KeyspaceName:      keyspaceName,
 			ClusterSize:       uint32(targetClusterSize),

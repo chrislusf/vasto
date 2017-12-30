@@ -92,8 +92,8 @@ func (clusterListener *ClusterListener) SetNodes(keyspace string, fixedCluster s
 				Address: parts[1],
 			},
 			ShardInfo: &pb.ShardInfo{
-				NodeId:  uint32(id),
-				ShardId: uint32(id),
+				ServerId: uint32(id),
+				ShardId:  uint32(id),
 			},
 		}
 		nodes = append(nodes, node)
