@@ -12,22 +12,23 @@ func (c *VastoClient) GetByPrefix(keyspace string, partitionKey, prefix []byte, 
 	if partitionKey == nil {
 		partitionKey = prefix
 	}
+	shardId, _ := c.ClusterListener.GetShardId(keyspace, partitionKey)
 
-	conn, replica, err := c.ClusterListener.GetConnectionByPartitionKey(keyspace, partitionKey, options...)
+	conn, _, err := c.ClusterListener.GetConnectionByShardId(keyspace, shardId, options...)
 	if err != nil {
 		return nil, err
 	}
 
 	request := &pb.Request{
+		ShardId: uint32(shardId),
 		GetByPrefix: &pb.GetByPrefixRequest{
-			Replica:     uint32(replica),
 			Prefix:      prefix,
 			Limit:       limit,
 			LastSeenKey: lastSeenKey,
 		},
 	}
 
-	requests := &pb.Requests{Keyspace:keyspace}
+	requests := &pb.Requests{Keyspace: keyspace}
 	requests.Requests = append(requests.Requests, request)
 
 	responses, err := pb.SendRequests(conn, requests)

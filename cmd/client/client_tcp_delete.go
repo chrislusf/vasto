@@ -9,19 +9,23 @@ import (
 
 func (c *VastoClient) Delete(keyspace string, key []byte, options ...topology.AccessOption) error {
 
-	conn, replica, err := c.ClusterListener.GetConnectionByPartitionKey(keyspace, key, options...)
+	// TODO use partition key here
+	shardId, partitionHash := c.ClusterListener.GetShardId(keyspace, key)
+
+	conn, _, err := c.ClusterListener.GetConnectionByShardId(keyspace, shardId, options...)
 	if err != nil {
 		return err
 	}
 
 	request := &pb.Request{
+		ShardId: uint32(shardId),
 		Delete: &pb.DeleteRequest{
-			Replica: uint32(replica),
-			Key:     key,
+			Key:           key,
+			PartitionHash: partitionHash,
 		},
 	}
 
-	requests := &pb.Requests{Keyspace:keyspace}
+	requests := &pb.Requests{Keyspace: keyspace}
 	requests.Requests = append(requests.Requests, request)
 
 	_, err = pb.SendRequests(conn, requests)

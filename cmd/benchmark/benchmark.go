@@ -34,13 +34,8 @@ func RunBenchmarker(option *BenchmarkOption) {
 		option: option,
 	}
 
-	if *option.Master != "" {
-		println("benchmarking on cluster with master", *option.Master)
-		b.runBenchmarkerOnCluster(context.Background(), option)
-	} else {
-		println("benchmarking on single store or gateway", *option.StoreAddress)
-		b.runBenchmarkerOnStore(option)
-	}
+	println("benchmarking on cluster with master", *option.Master)
+	b.runBenchmarkerOnCluster(context.Background(), option)
 }
 
 func (b *benchmarker) startThreads(name string, requestCount int, fn func(hist *Histogram, start, stop, batchSize int)) {

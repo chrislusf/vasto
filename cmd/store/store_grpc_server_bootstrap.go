@@ -14,7 +14,7 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 
 	log.Printf("BootstrapCopy %v", request)
 
-	shard, found := ss.findDbReplica(request.Keyspace, request.ShardId)
+	shard, found := ss.keyspaceShards.getShard(request.Keyspace, shard_id(request.ShardId))
 	if !found {
 		return fmt.Errorf("shard: %s.%d not found", request.Keyspace, request.ShardId)
 	}
@@ -65,20 +65,4 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 	}
 
 	return err
-}
-
-func (ss *storeServer) findDbReplica(keyspace string, shardId uint32) (replica *shard, found bool) {
-
-	shards, found := ss.keyspaceShards.getShards(keyspace)
-	if !found {
-		return nil, false
-	}
-
-	for _, shard := range shards {
-		if int(shard.id) == int(shardId) {
-			replica = shard
-			return replica, true
-		}
-	}
-	return nil, false
 }

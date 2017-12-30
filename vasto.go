@@ -76,7 +76,6 @@ var (
 
 	bench           = app.Command("bench", "Start a vasto benchmark")
 	benchmarkOption = &b.BenchmarkOption{
-		StoreAddress:      bench.Flag("store.tcpAddress", "store listening tcp address").Default("localhost:8279").String(),
 		DisableUnixSocket: bench.Flag("disableUnixSocket", "store listening unix socket").Default("false").Bool(),
 		ClientCount:       bench.Flag("clientCount", "parallel client count").Default("2").Short('c').Int32(),
 		RequestCount:      bench.Flag("requestCount", "total request count").Default("1024000").Short('n').Int32(),

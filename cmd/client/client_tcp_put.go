@@ -19,14 +19,14 @@ func (c *VastoClient) Put(keyspace string, rows []*Row, options ...topology.Acce
 		return fmt.Errorf("no keyspace %s", keyspace)
 	}
 
-	bucketToKeyValues := make(map[int][]*Row)
+	shardIdToKeyValues := make(map[int][]*Row)
 	for _, row := range rows {
-		bucket := cluster.FindBucket(row.PartitionHash)
-		bucketToKeyValues[bucket] = append(bucketToKeyValues[bucket], row)
+		bucket := cluster.FindShardId(row.PartitionHash)
+		shardIdToKeyValues[bucket] = append(shardIdToKeyValues[bucket], row)
 	}
 
-	err := eachBucket(bucketToKeyValues, func(bucket int, rows []*Row) error {
-		return c.batchPut(keyspace, bucket, rows, options...)
+	err := eachShard(shardIdToKeyValues, func(shardId int, rows []*Row) error {
+		return c.batchPut(keyspace, shardId, rows, options...)
 	})
 
 	if err != nil {
@@ -36,9 +36,9 @@ func (c *VastoClient) Put(keyspace string, rows []*Row, options ...topology.Acce
 	return nil
 }
 
-func (c *VastoClient) batchPut(keyspace string, bucket int, rows []*Row, options ...topology.AccessOption) error {
+func (c *VastoClient) batchPut(keyspace string, shardId int, rows []*Row, options ...topology.AccessOption) error {
 
-	conn, replica, err := c.ClusterListener.GetConnectionByBucket(keyspace, bucket, options...)
+	conn, _, err := c.ClusterListener.GetConnectionByShardId(keyspace, shardId, options...)
 
 	if err != nil {
 		return err
@@ -48,8 +48,8 @@ func (c *VastoClient) batchPut(keyspace string, bucket int, rows []*Row, options
 
 	for _, row := range rows {
 		request := &pb.Request{
+			ShardId: uint32(shardId),
 			Put: &pb.PutRequest{
-				Replica: uint32(replica),
 				KeyValue: &pb.KeyValue{
 					Key:   row.Key,
 					Value: row.Value,
@@ -71,16 +71,16 @@ func (c *VastoClient) batchPut(keyspace string, bucket int, rows []*Row, options
 	return nil
 }
 
-func eachBucket(buckets map[int][]*Row, eachFunc func(int, []*Row) error) (err error) {
+func eachShard(buckets map[int][]*Row, eachFunc func(int, []*Row) error) (err error) {
 	var wg sync.WaitGroup
-	for bucket, rows := range buckets {
+	for shardId, rows := range buckets {
 		wg.Add(1)
-		go func(bucket int, rows []*Row) {
+		go func(shardId int, rows []*Row) {
 			defer wg.Done()
-			if eachErr := eachFunc(bucket, rows); eachErr != nil {
+			if eachErr := eachFunc(shardId, rows); eachErr != nil {
 				err = eachErr
 			}
-		}(bucket, rows)
+		}(shardId, rows)
 	}
 	wg.Wait()
 	return

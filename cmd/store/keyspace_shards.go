@@ -25,6 +25,19 @@ func (ks *keyspaceShards) getShards(keyspaceName string) (shards []*shard, found
 	return
 }
 
+func (ks *keyspaceShards) getShard(keyspaceName string, shardId shard_id) (shard *shard, found bool) {
+	shards, hasShards := ks.getShards(keyspaceName)
+	if !hasShards {
+		return
+	}
+	for _, shard := range shards {
+		if shard.id == shardId {
+			return shard, true
+		}
+	}
+	return
+}
+
 func (ks *keyspaceShards) addShards(keyspaceName string, nodes ...*shard) {
 	ks.Lock()
 	shards := ks.keyspaceToShards[keyspace_name(keyspaceName)]

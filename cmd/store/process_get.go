@@ -1,21 +1,14 @@
 package store
 
 import (
-	"fmt"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
 )
 
-func (ss *storeServer) processGet(shards []*shard, getRequest *pb.GetRequest) *pb.GetResponse {
-	replica := int(getRequest.Replica)
-	if replica >= len(shards) {
-		return &pb.GetResponse{
-			Status: fmt.Sprintf("replica %d not found", replica),
-		}
-	}
+func (ss *storeServer) processGet(shard *shard, getRequest *pb.GetRequest) *pb.GetResponse {
 	key := getRequest.Key
 	// println("replica", replica, "shard", shards[replica].id, "keyspace", shards[replica].keyspace, "server", shards[replica].serverId, "request", getRequest.String())
-	if b, err := shards[replica].db.Get(key); err != nil {
+	if b, err := shard.db.Get(key); err != nil {
 		return &pb.GetResponse{
 			Status: err.Error(),
 		}

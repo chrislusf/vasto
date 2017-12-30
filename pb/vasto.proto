@@ -203,17 +203,17 @@ message Responses {
 }
 
 message Request {
-    PutRequest put = 1;
-    GetRequest get = 2;
-    GetByPrefixRequest get_by_prefix = 3;
-    DeleteRequest delete = 4;
+    uint32 shard_id = 1;
+    PutRequest put = 2;
+    GetRequest get = 3;
+    GetByPrefixRequest get_by_prefix = 4;
+    DeleteRequest delete = 5;
 }
 
 message PutRequest {
-    uint32 replica = 1;
+    KeyValue key_value = 1;
     uint64 partition_hash = 2;
-    KeyValue key_value = 3;
-    uint32 ttl_second = 4;
+    uint32 ttl_second = 3;
 }
 
 message PutResponse {
@@ -222,9 +222,8 @@ message PutResponse {
 }
 
 message DeleteRequest {
-    uint32 replica = 1;
+    bytes key = 1;
     uint64 partition_hash = 2;
-    bytes key = 3;
 }
 
 message DeleteResponse {
@@ -233,8 +232,7 @@ message DeleteResponse {
 }
 
 message GetRequest {
-    uint32 replica = 1;
-    bytes key = 2;
+    bytes key = 1;
 }
 
 message GetResponse {
@@ -244,10 +242,9 @@ message GetResponse {
 }
 
 message GetByPrefixRequest {
-    uint32 replica = 1;
-    bytes prefix = 2;
-    uint32 limit = 3;
-    bytes last_seen_key = 4;
+    bytes prefix = 1;
+    uint32 limit = 2;
+    bytes last_seen_key = 3;
 }
 
 message GetByPrefixResponse {
@@ -325,10 +322,10 @@ message UpdateEntry {
 
 message CheckBinlogRequest {
     string keyspace = 1;
-    uint32 node_id = 2;
+    uint32 shard_id = 2;
 }
 message CheckBinlogResponse {
-    uint32 node_id = 1;
+    uint32 shard_id = 1;
     uint32 earliest_segment = 2;
     uint32 latest_segment = 3;
 }

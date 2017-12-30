@@ -14,19 +14,21 @@ var (
 
 func (c *VastoClient) Get(keyspace string, key []byte, options ...topology.AccessOption) ([]byte, error) {
 
-	conn, replica, err := c.ClusterListener.GetConnectionByPartitionKey(keyspace, key, options...)
+	shardId, _ := c.ClusterListener.GetShardId(keyspace, key)
+
+	conn, _, err := c.ClusterListener.GetConnectionByShardId(keyspace, shardId, options...)
 	if err != nil {
 		return nil, err
 	}
 
 	request := &pb.Request{
+		ShardId: uint32(shardId),
 		Get: &pb.GetRequest{
-			Replica: uint32(replica),
-			Key:     key,
+			Key: key,
 		},
 	}
 
-	requests := &pb.Requests{Keyspace:keyspace}
+	requests := &pb.Requests{Keyspace: keyspace}
 	requests.Requests = append(requests.Requests, request)
 
 	responses, err := pb.SendRequests(conn, requests)

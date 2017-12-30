@@ -38,7 +38,7 @@ func baselineBenchmark(hosts int) func(b *testing.B) {
 	return func(b *testing.B) {
 		// use the ring hash a number
 		for n := 0; n < b.N; n++ {
-			ring.FindBucket(uint64(n))
+			ring.FindShardId(uint64(n))
 		}
 	}
 }
@@ -69,8 +69,8 @@ func TestHashing(t *testing.T) {
 	ring1Size := ring1.CurrentSize()
 
 	for n := 0; n < count; n++ {
-		x := ring1.FindBucket(uint64(n))
-		y := ring2.FindBucket(uint64(n))
+		x := ring1.FindShardId(uint64(n))
+		y := ring2.FindShardId(uint64(n))
 		if x != y {
 			moved += 1
 			if y < ring1Size {

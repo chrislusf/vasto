@@ -100,7 +100,7 @@ func (s *shard) checkBinlogAvailable(ctx context.Context, grpcConnection *grpc.C
 
 	resp, err := client.CheckBinlog(ctx, &pb.CheckBinlogRequest{
 		Keyspace: s.keyspace,
-		NodeId:   uint32(s.id),
+		ShardId:  uint32(s.id),
 	})
 	if err != nil {
 		return 0, false, err

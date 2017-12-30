@@ -16,7 +16,7 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 
 	log.Printf("TailBinlog %v", request)
 
-	node, found := ss.findDbReplica(request.Keyspace, request.ShardId)
+	node, found := ss.keyspaceShards.getShard(request.Keyspace, shard_id(request.ShardId))
 	if !found || node.isShutdown {
 		return fmt.Errorf("shard: %s.%d not found", request.Keyspace, request.ShardId)
 	}
@@ -105,15 +105,15 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 
 func (ss *storeServer) CheckBinlog(ctx context.Context, request *pb.CheckBinlogRequest) (*pb.CheckBinlogResponse, error) {
 
-	node, found := ss.findDbReplica(request.Keyspace, request.NodeId)
+	node, found := ss.keyspaceShards.getShard(request.Keyspace, shard_id(request.ShardId))
 	if !found {
-		return nil, fmt.Errorf("shard: %s.%d not found", request.Keyspace, request.NodeId)
+		return nil, fmt.Errorf("shard: %s.%d not found", request.Keyspace, request.ShardId)
 	}
 
 	earliestSegment, latestSegment := node.lm.GetSegmentRange()
 
 	return &pb.CheckBinlogResponse{
-		NodeId:          request.NodeId,
+		ShardId:         request.ShardId,
 		EarliestSegment: earliestSegment,
 		LatestSegment:   latestSegment,
 	}, nil

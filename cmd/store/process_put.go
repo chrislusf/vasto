@@ -1,7 +1,6 @@
 package store
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -10,13 +9,7 @@ import (
 	"github.com/chrislusf/vasto/storage/codec"
 )
 
-func (ss *storeServer) processPut(shards []*shard, putRequest *pb.PutRequest) *pb.PutResponse {
-	replica := int(putRequest.Replica)
-	if replica >= len(shards) {
-		return &pb.PutResponse{
-			Status: fmt.Sprintf("replica %d not found", replica),
-		}
-	}
+func (ss *storeServer) processPut(shard *shard, putRequest *pb.PutRequest) *pb.PutResponse {
 
 	key := putRequest.KeyValue.Key
 	nowInNano := uint64(time.Now().UnixNano())
@@ -31,16 +24,14 @@ func (ss *storeServer) processPut(shards []*shard, putRequest *pb.PutRequest) *p
 		Ok: true,
 	}
 
-	node := shards[replica]
-
 	// fmt.Printf("shard %d put keyValue: %v\n", shard.id, putRequest.KeyValue.String())
 
-	err := node.db.Put(key, entry.ToBytes())
+	err := shard.db.Put(key, entry.ToBytes())
 	if err != nil {
 		resp.Ok = false
 		resp.Status = err.Error()
 	} else {
-		node.logPut(putRequest, nowInNano)
+		shard.logPut(putRequest, nowInNano)
 	}
 
 	return resp

@@ -13,34 +13,21 @@ import (
  * If a shard has a candidate, use the candidate.
  */
 
-func (clusterListener *ClusterListener) GetConnectionByPartitionKey(keyspace string, partitionKey []byte, options ...topology.AccessOption) (net.Conn, int, error) {
-	bucket := clusterListener.GetBucket(keyspace, partitionKey)
-	return clusterListener.GetConnectionByBucket(keyspace, bucket, options...)
-}
-
-func (clusterListener *ClusterListener) GetConnectionByPartitionHash(keyspace string, partitionHash uint64, options ...topology.AccessOption) (net.Conn, int, error) {
-	r, found := clusterListener.GetClusterRing(keyspace)
-	if !found {
-		return nil, 0, fmt.Errorf("no keyspace %s", keyspace)
-	}
-	bucket := r.FindBucket(partitionHash)
-	return clusterListener.GetConnectionByBucket(keyspace, bucket, options...)
-}
-
-func (clusterListener *ClusterListener) GetConnectionByBucket(keyspace string, bucket int, options ...topology.AccessOption) (net.Conn, int, error) {
+func (clusterListener *ClusterListener) GetConnectionByShardId(keyspace string, shardId int, options ...topology.AccessOption) (net.Conn, int, error) {
 
 	r, found := clusterListener.GetClusterRing(keyspace)
 	if !found {
 		return nil, 0, fmt.Errorf("no keyspace %s", keyspace)
 	}
 
-	n, replica, ok := r.GetOneNode(bucket, options...)
+	// find one shard
+	n, replica, ok := r.GetOneNode(shardId, options...)
 	if !ok {
-		return nil, 0, fmt.Errorf("bucket %d not found", bucket)
+		return nil, 0, fmt.Errorf("shardId %d not found", shardId)
 	}
 
 	if r.GetNextClusterRing() != nil {
-		candidate, _, found := r.GetNextClusterRing().GetNode(bucket, options...)
+		candidate, _, found := r.GetNextClusterRing().GetNode(shardId, options...)
 		if found {
 			if clusterListener.verbose {
 				log.Printf("connecting to candidate %s", candidate.GetAddress())
@@ -69,12 +56,12 @@ func (clusterListener *ClusterListener) GetConnectionByBucket(keyspace string, b
 
 }
 
-func (clusterListener *ClusterListener) GetBucket(keyspace string, partitionKey []byte) int {
-	partitionHash := util.Hash(partitionKey)
+func (clusterListener *ClusterListener) GetShardId(keyspace string, partitionKey []byte) (shardId int, partitionHash uint64) {
+	partitionHash = util.Hash(partitionKey)
 	r, found := clusterListener.GetClusterRing(keyspace)
 	if !found {
-		return -1
+		return -1, partitionHash
 	}
-	bucket := r.FindBucket(partitionHash)
-	return bucket
+	shardId = r.FindShardId(partitionHash)
+	return
 }

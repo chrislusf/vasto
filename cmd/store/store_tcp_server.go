@@ -103,7 +103,7 @@ func (ss *storeServer) handleInputOutput(input []byte) (output []byte, err error
 
 func (ss *storeServer) processRequest(keyspace string, command *pb.Request) *pb.Response {
 
-	shards, found := ss.keyspaceShards.getShards(keyspace)
+	shard, found := ss.keyspaceShards.getShard(keyspace, shard_id(command.ShardId))
 
 	if !found {
 		if command.GetGet() != nil {
@@ -139,19 +139,19 @@ func (ss *storeServer) processRequest(keyspace string, command *pb.Request) *pb.
 
 	if command.GetGet() != nil {
 		return &pb.Response{
-			Get: ss.processGet(shards, command.Get),
+			Get: ss.processGet(shard, command.Get),
 		}
 	} else if command.GetPut() != nil {
 		return &pb.Response{
-			Put: ss.processPut(shards, command.Put),
+			Put: ss.processPut(shard, command.Put),
 		}
 	} else if command.GetDelete() != nil {
 		return &pb.Response{
-			Delete: ss.processDelete(shards, command.Delete),
+			Delete: ss.processDelete(shard, command.Delete),
 		}
 	} else if command.GetGetByPrefix() != nil {
 		return &pb.Response{
-			GetByPrefix: ss.processPrefix(shards, command.GetByPrefix),
+			GetByPrefix: ss.processPrefix(shard, command.GetByPrefix),
 		}
 	}
 	return &pb.Response{

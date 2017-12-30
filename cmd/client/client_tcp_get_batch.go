@@ -15,38 +15,35 @@ type answer struct {
 
 func (c *VastoClient) BatchGet(keyspace string, keys [][]byte, options ...topology.AccessOption) ([]*pb.KeyValue, error) {
 
-	bucketToRequests := make(map[int][]*pb.Request)
+	shardIdToRequests := make(map[int][]*pb.Request)
 
 	r, found := c.ClusterListener.GetClusterRing(keyspace)
 	if !found {
 		return nil, fmt.Errorf("no keyspace %s", keyspace)
 	}
 	for _, key := range keys {
-		bucket := r.FindBucket(util.Hash(key))
-		if _, ok := bucketToRequests[bucket]; !ok {
-			bucketToRequests[bucket] = make([]*pb.Request, 0, 4)
+		shardId := r.FindShardId(util.Hash(key))
+		if _, ok := shardIdToRequests[shardId]; !ok {
+			shardIdToRequests[shardId] = make([]*pb.Request, 0, 4)
 		}
 		request := &pb.Request{
+			ShardId: uint32(shardId),
 			Get: &pb.GetRequest{
 				Key: key,
 			},
 		}
-		bucketToRequests[bucket] = append(bucketToRequests[bucket], request)
+		shardIdToRequests[shardId] = append(shardIdToRequests[shardId], request)
 	}
 
-	outputChan := make(chan *answer, len(bucketToRequests))
+	outputChan := make(chan *answer, len(shardIdToRequests))
 
-	for bucket, requests := range bucketToRequests {
-		go func(bucket int, requestList []*pb.Request) {
+	for shardId, requests := range shardIdToRequests {
+		go func(shardId int, requestList []*pb.Request) {
 
-			conn, replica, err := c.ClusterListener.GetConnectionByBucket(keyspace, bucket, options...)
+			conn, _, err := c.ClusterListener.GetConnectionByShardId(keyspace, shardId, options...)
 			if err != nil {
 				outputChan <- &answer{err: err}
 				return
-			}
-
-			for _, request := range requestList {
-				request.Get.Replica = uint32(replica)
 			}
 
 			requests := &pb.Requests{Keyspace: keyspace}
@@ -66,11 +63,11 @@ func (c *VastoClient) BatchGet(keyspace string, keys [][]byte, options ...topolo
 
 			outputChan <- &answer{keyvalues: output}
 
-		}(bucket, requests)
+		}(shardId, requests)
 	}
 
 	var ret []*pb.KeyValue
-	for i := 0; i < len(bucketToRequests); i++ {
+	for i := 0; i < len(shardIdToRequests); i++ {
 		answer := <-outputChan
 		if answer.err != nil {
 			return nil, answer.err

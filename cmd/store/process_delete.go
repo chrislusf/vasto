@@ -1,32 +1,23 @@
 package store
 
 import (
-	"fmt"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/binlog"
 	"time"
 )
 
-func (ss *storeServer) processDelete(shards []*shard, deleteRequest *pb.DeleteRequest) *pb.DeleteResponse {
-
-	replica := int(deleteRequest.Replica)
-	if replica >= len(shards) {
-		return &pb.DeleteResponse{
-			Status: fmt.Sprintf("replica %d not found", replica),
-		}
-	}
+func (ss *storeServer) processDelete(shard *shard, deleteRequest *pb.DeleteRequest) *pb.DeleteResponse {
 
 	resp := &pb.DeleteResponse{
 		Ok: true,
 	}
 
-	node := shards[replica]
-	err := node.db.Delete(deleteRequest.Key)
+	err := shard.db.Delete(deleteRequest.Key)
 	if err != nil {
 		resp.Ok = false
 		resp.Status = err.Error()
 	} else {
-		node.logDelete(deleteRequest.Key, deleteRequest.PartitionHash, uint64(time.Now().UnixNano()))
+		shard.logDelete(deleteRequest.Key, deleteRequest.PartitionHash, uint64(time.Now().UnixNano()))
 	}
 	return resp
 
