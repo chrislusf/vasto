@@ -91,19 +91,20 @@ func (cluster *ClusterRing) CurrentSize() int {
 	return 0
 }
 
-func (cluster *ClusterRing) GetNode(index int, options ...AccessOption) (Node, int, bool) {
+func (cluster *ClusterRing) GetNode(shardId int, options ...AccessOption) (Node, int, bool) {
 	replica := 0
+	serverId := shardId
 	clusterSize := len(cluster.nodes)
 	for _, option := range options {
-		index, replica = option(index, clusterSize)
+		serverId, replica = option(serverId, clusterSize)
 	}
-	if index < 0 || index >= len(cluster.nodes) {
+	if serverId < 0 || serverId >= len(cluster.nodes) {
 		return nil, 0, false
 	}
-	if cluster.nodes[index] == nil {
+	if cluster.nodes[serverId] == nil {
 		return nil, 0, false
 	}
-	return cluster.nodes[index], replica, true
+	return cluster.nodes[serverId], replica, true
 }
 
 func (cluster *ClusterRing) GetOneNode(shardId int, options ...AccessOption) (Node, int, bool) {
@@ -111,7 +112,7 @@ func (cluster *ClusterRing) GetOneNode(shardId int, options ...AccessOption) (No
 	serverId := shardId
 	clusterSize := len(cluster.nodes)
 	for _, option := range options {
-		serverId, replica = option(shardId, clusterSize)
+		serverId, replica = option(serverId, clusterSize)
 	}
 	if serverId < 0 || serverId >= len(cluster.nodes) {
 		return nil, 0, false
