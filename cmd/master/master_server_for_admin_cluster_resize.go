@@ -76,10 +76,7 @@ func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest
 			return
 		}
 
-		// wait a little bit for shards created and update back shard status to master
-		time.Sleep(time.Second)
-
-		if err = ms.adjustAndBroadcastUpcomingShardStatuses(ctx, req, cluster, servers); err != nil {
+		if err = ms.adjustAndBroadcastUpcomingShardStatuses(ctx, req, cluster, servers, existingServers); err != nil {
 			log.Printf("adjustAndBroadcastUpcomingShardStatuses %v: %v", req, err)
 			resp.Error = err.Error()
 			return
@@ -161,9 +158,13 @@ func resizeCommit(ctx context.Context, keyspace string, clusterSize uint32, stor
 	})
 }
 
-func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Context, req *pb.ResizeRequest, cluster *topology.ClusterRing, stores []*pb.StoreResource) error {
+func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Context, req *pb.ResizeRequest, cluster *topology.ClusterRing, newStores []*pb.StoreResource, existingServers []*pb.StoreResource) error {
 
 	log.Printf("adjustAndBroadcastUpcomingShardStatuses %v", req)
+
+	// wait a little bit for shards created and update back shard status to master
+	time.Sleep(time.Second)
+	// TODO wait until all updated shards are reported back
 
 	candidateCluster := cluster.GetNextClusterRing()
 	if candidateCluster == nil {

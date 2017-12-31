@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"github.com/chrislusf/vasto/topology"
+	"time"
 )
 
 func (ms *masterServer) ReplaceNode(ctx context.Context, req *pb.ReplaceNodeRequest) (resp *pb.ReplaceNodeResponse, err error) {
@@ -132,6 +133,10 @@ func replicateNodeCommit(ctx context.Context, req *pb.ReplaceNodeRequest, cluste
 func (ms *masterServer) adjustAndBroadcastShardStatus(ctx context.Context, req *pb.ReplaceNodeRequest, cluster *topology.ClusterRing, newStore *pb.StoreResource, oldServer topology.Node) error {
 
 	log.Printf("adjustAndBroadcastShardStatus %v", req)
+
+	// wait a little bit for shards created and update back shard status to master
+	time.Sleep(time.Second)
+	// TODO wait until all updated shards are reported back
 
 	candidateCluster := cluster.GetNextClusterRing()
 	if candidateCluster == nil {
