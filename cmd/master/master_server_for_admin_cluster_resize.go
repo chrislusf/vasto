@@ -43,7 +43,7 @@ func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest
 		return
 	}
 
-	var existingServers []*pb.StoreResource
+	var existingServers, newServers []*pb.StoreResource
 	for _, node := range cluster.GetNodes() {
 		existingServers = append(existingServers, &pb.StoreResource{
 			Address:      node.GetAddress(),
@@ -51,39 +51,48 @@ func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest
 		})
 	}
 
+	// 1. allocate new servers for the growing cluster
 	if cluster.ExpectedSize() < int(req.GetClusterSize()) {
-
 		// grow the cluster
+		var allocateErr error
 		// TODO proper quota alocation
-		// 1. allocate new servers for the growing cluster
 		eachShardSizeGb := uint32(1)
-		newServers, allocateErr := allocateServers(cluster, dc, int(req.ClusterSize)-cluster.ExpectedSize(), float64(eachShardSizeGb))
+		newServers, allocateErr = allocateServers(cluster, dc, int(req.ClusterSize)-cluster.ExpectedSize(), float64(eachShardSizeGb))
 		if allocateErr != nil {
+			log.Printf("allocateServers %v: %v", req, err)
 			resp.Error = fmt.Sprintf("fail to allocate %d servers: %v", int(req.ClusterSize)-cluster.ExpectedSize(), allocateErr)
-			return
-		}
-
-		// 2. create missing shards on existing servers, create new shards on new servers
-		servers := append(existingServers, newServers...)
-		if err = resizeCreateShards(ctx, req.Keyspace, req.ClusterSize, uint32(cluster.ReplicationFactor()), servers); err != nil {
-			resp.Error = err.Error()
-			return
-		}
-
-		// 3. tell all servers to commit the new shards, adjust local cluster size, status, etc, not informing the master of shard info changes
-		if err = resizeCommit(ctx, req.Keyspace, req.ClusterSize, servers); err != nil {
-			resp.Error = err.Error()
-			return
-		}
-
-		if err = ms.adjustAndBroadcastUpcomingShardStatuses(ctx, req, cluster, servers, existingServers); err != nil {
-			log.Printf("adjustAndBroadcastUpcomingShardStatuses %v: %v", req, err)
-			resp.Error = err.Error()
 			return
 		}
 
 	} else {
 		// shrink the cluster
+	}
+
+	// 2. create missing shards on existing servers, create new shards on new servers
+	servers := append(existingServers, newServers...)
+	if err = resizeCreateShards(ctx, req.Keyspace, req.ClusterSize, uint32(cluster.ReplicationFactor()), servers); err != nil {
+		log.Printf("resizeCreateShards %v: %v", req, err)
+		resp.Error = err.Error()
+		return
+	}
+
+	// 3. tell all servers to commit the new shards, adjust local cluster size, status, etc, not informing the master of shard info changes
+	if err = resizeCommit(ctx, req.Keyspace, req.ClusterSize, servers); err != nil {
+		resp.Error = err.Error()
+		return
+	}
+
+	if err = ms.adjustAndBroadcastUpcomingShardStatuses(ctx, req, cluster, servers, existingServers); err != nil {
+		log.Printf("adjustAndBroadcastUpcomingShardStatuses %v: %v", req, err)
+		resp.Error = err.Error()
+		return
+	}
+
+	// 3. cleanup old shards
+	if err = resizeCleanup(ctx, req.Keyspace, req.ClusterSize, servers); err != nil {
+		log.Printf("resizeCleanup %v: %v", req, err)
+		resp.Error = err.Error()
+		return
 	}
 
 	return
@@ -145,13 +154,13 @@ func resizeCommit(ctx context.Context, keyspace string, clusterSize uint32, stor
 				TargetClusterSize: clusterSize,
 			}
 
-			log.Printf("resize create shard on %v: %v", store.AdminAddress, request)
+			log.Printf("resize commit on %v: %v", store.AdminAddress, request)
 			resp, err := client.ResizeCommit(ctx, request)
 			if err != nil {
 				return err
 			}
 			if resp.Error != "" {
-				return fmt.Errorf("resize create shard %d on %s: %s", serverId, store.AdminAddress, resp.Error)
+				return fmt.Errorf("resize commit server %d on %s: %s", serverId, store.AdminAddress, resp.Error)
 			}
 			return nil
 		})
@@ -171,41 +180,87 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 		return fmt.Errorf("candidate cluster for keyspace %s does not exist", req.Keyspace)
 	}
 
-	for i := 0; i < cluster.ExpectedSize(); i++ {
-		n, _, found := cluster.GetNode(i)
-		if !found {
-			continue
-		}
-		if n.GetAdminAddress() != oldServer.GetAdminAddress() {
-			continue
+	newClusterSize := int(req.ClusterSize)
+	oldClusterSize := cluster.ExpectedSize()
+	replicationFactor := cluster.ReplicationFactor()
+
+	maxClusterSize := newClusterSize
+	if maxClusterSize < oldClusterSize {
+		maxClusterSize = oldClusterSize
+	}
+
+	// report new shards
+	for serverId := 0; serverId < maxClusterSize; serverId++ {
+
+		oldServer, _, oldServerFound := cluster.GetNode(serverId)
+		if oldServerFound {
+			// these should be to-be-removed servers, or no-change servers, only change the cluster size
+			for _, shardInfo := range oldServer.GetShardInfoList() {
+				if topology.IsShardInLocal(int(shardInfo.ShardId), int(shardInfo.ServerId), newClusterSize, replicationFactor) {
+					// change shards that will be on the new cluster
+					shardInfo.IsCandidate = false
+					shardInfo.ClusterSize = uint32(newClusterSize)
+					ms.notifyUpdate(shardInfo, oldServer.GetStoreResource())
+					log.Printf("change shard %v on %s to cluster size %d", shardInfo.IdentifierOnThisServer(), oldServer.GetAddress(), newClusterSize)
+				}
+			}
 		}
 
-		candidate, _, found := candidateCluster.GetNode(i)
-		if !found {
-			return fmt.Errorf("candidate server for keyspace %s server %s does not exist", req.Keyspace, n.GetAddress())
-		}
+		if newServer, _, newServerFound := candidateCluster.GetNode(serverId); newServerFound {
+			// these are new servers with new or updated shards
+			for _, shardInfo := range newServer.GetShardInfoList() {
+				if topology.IsShardInLocal(int(shardInfo.ShardId), int(shardInfo.ServerId), newClusterSize, replicationFactor) {
+					// double check shards that will be on the new cluster, may not be necessary
+					shardInfo.IsCandidate = false
+					ms.notifyPromotion(shardInfo, newServer.GetStoreResource())
+					log.Printf("promote shard %v on %s to cluster size %d", shardInfo.IdentifierOnThisServer(), newServer.GetAddress(), newClusterSize)
+				} else {
+					log.Printf("something wrong here! %s on server %s", shardInfo.IdentifierOnThisServer(), newServer.GetAddress())
+				}
+			}
 
-		// remove the old shard
-		cluster.RemoveNode(n.GetId())
-		for _, shardInfo := range n.GetShardInfoList() {
-			shardInfo.IsPermanentDelete = true
-			ms.notifyDeletion(shardInfo, n.GetStoreResource())
-			log.Printf("removing old shard %v on %s", shardInfo.IdentifierOnThisServer(), n.GetAddress())
-		}
-
-		// promote the new shard
-		candidateCluster.RemoveNode(i)
-		if candidateCluster.CurrentSize() == 0 {
-			cluster.RemoveNextClusterRing()
-		}
-		cluster.SetNode(candidate)
-		for _, shardInfo := range candidate.GetShardInfoList() {
-			shardInfo.IsCandidate = false
-			ms.notifyPromotion(shardInfo, candidate.GetStoreResource())
-			log.Printf("promoting new shard %v on %s", shardInfo.IdentifierOnThisServer(), candidate.GetAddress())
+			// promote the node into the cluster
+			candidateCluster.RemoveNode(serverId)
+			if candidateCluster.CurrentSize() == 0 {
+				cluster.RemoveNextClusterRing()
+			}
+			if !oldServerFound {
+				// simply move the new server into the cluster
+				cluster.SetNode(newServer)
+			} else {
+				// move off the shards onto the existing server
+				for _, shardInfo := range newServer.GetShardInfoList() {
+					oldServer.SetShardInfo(shardInfo)
+				}
+			}
 		}
 
 	}
 
 	return nil
+}
+
+func resizeCleanup(ctx context.Context, keyspace string, clusterSize uint32, stores []*pb.StoreResource) (error) {
+
+	return eachStore(stores, func(serverId int, store *pb.StoreResource) error {
+		// log.Printf("connecting to server %d at %s", serverId, store.GetAdminAddress())
+		return withConnection(store, func(grpcConnection *grpc.ClientConn) error {
+
+			client := pb.NewVastoStoreClient(grpcConnection)
+			request := &pb.ResizeCleanupRequest{
+				Keyspace:          keyspace,
+				TargetClusterSize: clusterSize,
+			}
+
+			log.Printf("resize cleanup on %v: %v", store.AdminAddress, request)
+			resp, err := client.ResizeCleanup(ctx, request)
+			if err != nil {
+				return err
+			}
+			if resp.Error != "" {
+				return fmt.Errorf("resize cleanup server %d on %s: %s", serverId, store.AdminAddress, resp.Error)
+			}
+			return nil
+		})
+	})
 }

@@ -6,6 +6,7 @@ import (
 	"log"
 	"github.com/chrislusf/vasto/topology"
 	"fmt"
+	"os"
 )
 
 // 1. create the new or missing shards, bootstrap the data, one-time follows, and regular follows.
@@ -39,6 +40,24 @@ func (ss *storeServer) ResizeCommit(ctx context.Context, request *pb.ResizeCommi
 	}
 
 	return &pb.ResizeCommitResponse{
+		Error: "",
+	}, nil
+
+}
+
+// 3. cleanup old shards
+func (ss *storeServer) ResizeCleanup(ctx context.Context, request *pb.ResizeCleanupRequest) (*pb.ResizeCleanupResponse, error) {
+
+	log.Printf("cleanup old shards %v", request)
+	err := ss.deleteOldShardsInNewCluster(ctx, request)
+	if err != nil {
+		log.Printf("cleanup old shards %v: %v", request, err)
+		return &pb.ResizeCleanupResponse{
+			Error: err.Error(),
+		}, nil
+	}
+
+	return &pb.ResizeCleanupResponse{
 		Error: "",
 	}, nil
 
@@ -93,4 +112,37 @@ func (ss *storeServer) resizeCommitShardInfoNewCluster(ctx context.Context, requ
 	}
 
 	return
+}
+
+func (ss *storeServer) deleteOldShardsInNewCluster(ctx context.Context, request *pb.ResizeCleanupRequest) (err error) {
+
+	// do notify master of the deleted shards
+
+	// physically delete the shards
+	shards, found := ss.keyspaceShards.getShards(request.Keyspace)
+	if !found {
+		return nil
+	}
+
+	for _, shard := range shards {
+		if !topology.IsShardInLocal(int(shard.id), int(shard.serverId), int(request.TargetClusterSize), shard.clusterRing.ReplicationFactor()) {
+			ss.UnregisterPeriodicTask(shard)
+			shard.shutdownNode()
+			shard.db.Close()
+			shard.db.Destroy()
+		}
+	}
+
+	if localShardsStatus, found := ss.getServerStatusInCluster(request.Keyspace); found {
+		if localShardsStatus.Id >= request.TargetClusterSize {
+			// retiring server
+			// remove all meta info and in-memory objects
+			dir := fmt.Sprintf("%s/%s", *ss.option.Dir, request.Keyspace)
+			os.RemoveAll(dir)
+			ss.keyspaceShards.deleteKeyspace(request.Keyspace)
+			ss.deleteServerStatusInCluster(request.Keyspace)
+		}
+	}
+
+	return nil
 }

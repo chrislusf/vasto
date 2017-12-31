@@ -77,6 +77,8 @@ service VastoStore {
     }
     rpc ResizeCommit (ResizeCommitRequest) returns (ResizeCommitResponse) {
     }
+    rpc ResizeCleanup (ResizeCleanupRequest) returns (ResizeCleanupResponse) {
+    }
 
 }
 
@@ -506,6 +508,13 @@ message ResizeCommitResponse {
     string error = 1;
 }
 
+message ResizeCleanupRequest {
+    string keyspace = 1;
+    uint32 target_cluster_size = 2;
+}
+message ResizeCleanupResponse {
+    string error = 1;
+}
 
 message ResizeRequest {
     string data_center = 1;

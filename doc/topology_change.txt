@@ -79,10 +79,6 @@ B =>(i/n) A means A pull data on B that matches ith node on the new cluster with
 
 
 
-TODO:
-3. tell cluster listener change cluster size
-1.1. there are new shards to be created in the first and second servers, they should be bootstrapped from the existing shard first.
-
 Notes
 -----
 1. follow progress is stored with key as (server_address, shard_id), so
