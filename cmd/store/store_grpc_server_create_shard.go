@@ -73,9 +73,8 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 
 	}
 
-	ss.saveClusterConfig(localShards, keyspace)
+	return ss.saveClusterConfig(localShards, keyspace)
 
-	return nil
 }
 
 func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.LocalShardsInCluster) {

@@ -519,7 +519,7 @@ message ResizeCleanupResponse {
 message ResizeRequest {
     string data_center = 1;
     string keyspace = 2;
-    uint32 cluster_size = 3;
+    uint32 target_cluster_size = 3;
 }
 message ResizeResponse {
     string error = 1;

@@ -95,7 +95,5 @@ func (ss *storeServer) setShardStatus(request *pb.ReplicateNodeCommitRequest) (e
 		shardInfo.IsCandidate = false
 	}
 
-	ss.saveClusterConfig(localShardsStatus, request.Keyspace)
-
-	return nil
+	return ss.saveClusterConfig(localShardsStatus, request.Keyspace)
 }

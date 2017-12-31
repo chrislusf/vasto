@@ -121,8 +121,7 @@ func (ss *storeServer) createMissingShards(ctx context.Context, keyspaceName str
 
 		ss.sendShardInfoToMaster(shardInfo, pb.ShardInfo_READY)
 
-		ss.saveClusterConfig(localShards, keyspaceName)
-		return nil
+		return ss.saveClusterConfig(localShards, keyspaceName)
 	})
 
 }
@@ -183,9 +182,8 @@ func (ss *storeServer) commitClusterSizeChange(request *pb.ShrinkClusterCommitRe
 		shardInfo.ClusterSize = request.TargetClusterSize
 	}
 
-	ss.saveClusterConfig(localShardsStatus, request.Keyspace)
+	return ss.saveClusterConfig(localShardsStatus, request.Keyspace)
 
-	return nil
 }
 
 func eachShard(shards []*shard, eachFunc func(*shard) error) (err error) {

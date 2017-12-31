@@ -7,6 +7,7 @@ import (
 
 	"github.com/chrislusf/vasto/pb"
 	"github.com/golang/protobuf/proto"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -60,7 +61,8 @@ func (ss *storeServer) saveClusterConfig(status *pb.LocalShardsInCluster, keyspa
 	if err := ioutil.WriteFile(fullPath, []byte(txt), 0640); err == nil {
 		ss.statusInCluster[keyspaceName] = status
 	} else {
-		log.Printf("save cluster %s to %s : %v", keyspaceName, fullPath, err)
+		log.Printf("%+v", errors.WithStack(err))
+		return errors.Errorf("save cluster %s to %s : %v", keyspaceName, fullPath, err)
 	}
 
 	return nil

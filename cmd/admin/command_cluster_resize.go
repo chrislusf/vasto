@@ -44,9 +44,9 @@ func (c *CommandResizeCluster) Do(args []string, out io.Writer) (err error) {
 	resp, err := c.masterClient.ResizeCluster(
 		context.Background(),
 		&pb.ResizeRequest{
-			Keyspace:    keyspace,
-			DataCenter:  dc,
-			ClusterSize: uint32(newClusterSize),
+			Keyspace:          keyspace,
+			DataCenter:        dc,
+			TargetClusterSize: uint32(newClusterSize),
 		},
 	)
 

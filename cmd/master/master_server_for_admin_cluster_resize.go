@@ -38,7 +38,7 @@ func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest
 		return
 	}
 
-	if cluster.ExpectedSize() == int(req.GetClusterSize()) {
+	if cluster.ExpectedSize() == int(req.GetTargetClusterSize()) {
 		resp.Error = fmt.Sprintf("cluster %s %s is already size %d", req.Keyspace, req.DataCenter, cluster.ExpectedSize())
 		return
 	}
@@ -52,15 +52,15 @@ func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest
 	}
 
 	// 1. allocate new servers for the growing cluster
-	if cluster.ExpectedSize() < int(req.GetClusterSize()) {
+	if cluster.ExpectedSize() < int(req.GetTargetClusterSize()) {
 		// grow the cluster
 		var allocateErr error
 		// TODO proper quota alocation
 		eachShardSizeGb := uint32(1)
-		newServers, allocateErr = allocateServers(cluster, dc, int(req.ClusterSize)-cluster.ExpectedSize(), float64(eachShardSizeGb))
+		newServers, allocateErr = allocateServers(cluster, dc, int(req.TargetClusterSize)-cluster.ExpectedSize(), float64(eachShardSizeGb))
 		if allocateErr != nil {
 			log.Printf("allocateServers %v: %v", req, err)
-			resp.Error = fmt.Sprintf("fail to allocate %d servers: %v", int(req.ClusterSize)-cluster.ExpectedSize(), allocateErr)
+			resp.Error = fmt.Sprintf("fail to allocate %d servers: %v", int(req.TargetClusterSize)-cluster.ExpectedSize(), allocateErr)
 			return
 		}
 
@@ -70,14 +70,14 @@ func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest
 
 	// 2. create missing shards on existing servers, create new shards on new servers
 	servers := append(existingServers, newServers...)
-	if err = resizeCreateShards(ctx, req.Keyspace, req.ClusterSize, uint32(cluster.ReplicationFactor()), servers); err != nil {
+	if err = resizeCreateShards(ctx, req.Keyspace, uint32(cluster.ExpectedSize()), req.TargetClusterSize, uint32(cluster.ReplicationFactor()), servers); err != nil {
 		log.Printf("resizeCreateShards %v: %v", req, err)
 		resp.Error = err.Error()
 		return
 	}
 
 	// 3. tell all servers to commit the new shards, adjust local cluster size, status, etc, not informing the master of shard info changes
-	if err = resizeCommit(ctx, req.Keyspace, req.ClusterSize, servers); err != nil {
+	if err = resizeCommit(ctx, req.Keyspace, req.TargetClusterSize, servers); err != nil {
 		resp.Error = err.Error()
 		return
 	}
@@ -89,7 +89,7 @@ func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest
 	}
 
 	// 3. cleanup old shards
-	if err = resizeCleanup(ctx, req.Keyspace, req.ClusterSize, servers); err != nil {
+	if err = resizeCleanup(ctx, req.Keyspace, req.TargetClusterSize, servers); err != nil {
 		log.Printf("resizeCleanup %v: %v", req, err)
 		resp.Error = err.Error()
 		return
@@ -115,7 +115,7 @@ func allocateServers(cluster *topology.ClusterRing, dc *dataCenter, serverCount 
 	return servers, err
 }
 
-func resizeCreateShards(ctx context.Context, keyspace string, clusterSize, replicationFactor uint32, stores []*pb.StoreResource) (error) {
+func resizeCreateShards(ctx context.Context, keyspace string, clusterSize, targetClusterSize, replicationFactor uint32, stores []*pb.StoreResource) (error) {
 
 	return eachStore(stores, func(serverId int, store *pb.StoreResource) error {
 		// log.Printf("connecting to server %d at %s", serverId, store.GetAdminAddress())
@@ -127,6 +127,7 @@ func resizeCreateShards(ctx context.Context, keyspace string, clusterSize, repli
 				ServerId:          uint32(serverId),
 				ClusterSize:       clusterSize,
 				ReplicationFactor: replicationFactor,
+				TargetClusterSize: targetClusterSize,
 			}
 
 			log.Printf("resize create shard on %v: %v", store.AdminAddress, request)
@@ -180,7 +181,7 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 		return fmt.Errorf("candidate cluster for keyspace %s does not exist", req.Keyspace)
 	}
 
-	newClusterSize := int(req.ClusterSize)
+	newClusterSize := int(req.TargetClusterSize)
 	oldClusterSize := cluster.ExpectedSize()
 	replicationFactor := cluster.ReplicationFactor()
 

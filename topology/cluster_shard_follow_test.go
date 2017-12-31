@@ -78,4 +78,10 @@ func TestLocalShards(t *testing.T) {
 	assert.Equal(t, 1, len(shards))
 	assert.Equal(t, 0, shards[0].ShardId)
 
+	// 3 nodes
+	shards = LocalShards(2, 3, 2)
+	assert.Equal(t, 2, len(shards))
+	assert.Equal(t, 2, shards[0].ShardId)
+	assert.Equal(t, 1, shards[1].ShardId)
+
 }
