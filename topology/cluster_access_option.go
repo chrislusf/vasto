@@ -3,10 +3,10 @@ package topology
 type AccessOption func(bucket int, ringSize int) (node, replica int)
 
 func NewAccessOption(replica int) AccessOption {
-	return func(bucket int, ringSize int) (int, int) {
-		if bucket+replica >= ringSize {
-			return bucket + replica - ringSize, replica
+	return func(serverId int, ringSize int) (int, int) {
+		if serverId+replica >= ringSize {
+			return serverId + replica - ringSize, replica
 		}
-		return bucket + replica, replica
+		return serverId + replica, replica
 	}
 }

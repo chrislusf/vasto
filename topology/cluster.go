@@ -106,20 +106,21 @@ func (cluster *ClusterRing) GetNode(index int, options ...AccessOption) (Node, i
 	return cluster.nodes[index], replica, true
 }
 
-func (cluster *ClusterRing) GetOneNode(index int, options ...AccessOption) (Node, int, bool) {
+func (cluster *ClusterRing) GetOneNode(shardId int, options ...AccessOption) (Node, int, bool) {
 	replica := 0
+	serverId := shardId
 	clusterSize := len(cluster.nodes)
 	for _, option := range options {
-		index, replica = option(index, clusterSize)
+		serverId, replica = option(shardId, clusterSize)
 	}
-	if index < 0 || index >= len(cluster.nodes) {
+	if serverId < 0 || serverId >= len(cluster.nodes) {
 		return nil, 0, false
 	}
-	if cluster.nodes[index] == nil {
+	if cluster.nodes[serverId] == nil {
 		if replica == 0 {
 			// try other locations if replica is not specified
 			for i := 1; i < cluster.replicationFactor; i++ {
-				position := index + i
+				position := serverId + i
 				if position >= cluster.expectedSize {
 					position -= cluster.expectedSize
 				}
@@ -130,7 +131,7 @@ func (cluster *ClusterRing) GetOneNode(index int, options ...AccessOption) (Node
 		}
 		return nil, 0, false
 	}
-	return cluster.nodes[index], replica, true
+	return cluster.nodes[serverId], replica, true
 }
 
 // NewHashRing creates a new hash ring.
