@@ -51,8 +51,8 @@ func (n *node) SetShardInfo(ShardInfo *pb.ShardInfo) (oldShardInfo *pb.ShardInfo
 	return
 }
 
-func (n *node) RemoveShardInfo(ShardInfo *pb.ShardInfo) {
-	delete(n.shards, ShardInfo.IdentifierOnThisServer())
+func (n *node) RemoveShardInfo(shardInfo *pb.ShardInfo) {
+	delete(n.shards, shardInfo.IdentifierOnThisServer())
 }
 
 func (n *node) GetShardInfoList() []*pb.ShardInfo {

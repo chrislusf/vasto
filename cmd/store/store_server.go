@@ -55,8 +55,10 @@ type storeServer struct {
 
 func RunStore(option *StoreOption) {
 
+	tcpAddress := fmt.Sprintf("%s:%d", *option.ListenHost, *option.TcpPort)
+
 	ctx := context.Background()
-	clusterListener := cluster_listener.NewClusterClient(*option.DataCenter)
+	clusterListener := cluster_listener.NewClusterClient(*option.DataCenter, tcpAddress)
 
 	var ss = &storeServer{
 		option:          option,

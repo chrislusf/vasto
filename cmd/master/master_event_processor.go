@@ -106,13 +106,13 @@ func (c *clientsStat) removeClient(keyspace keyspace_name, dataCenter data_cente
 
 }
 
-func (ms *masterServer) OnClientConnectEvent(dc data_center_name, keyspace keyspace_name, clientAddress server_address) {
-	log.Printf("+ client %v keyspace(%v) datacenter(%v)", clientAddress, keyspace, dc)
+func (ms *masterServer) OnClientConnectEvent(dc data_center_name, keyspace keyspace_name, clientAddress server_address, clientName string) {
+	log.Printf("+ client %v from %v keyspace(%v) datacenter(%v)", clientName, clientAddress, keyspace, dc)
 	ms.clientsStat.addClient(keyspace, dc, clientAddress)
 }
 
-func (ms *masterServer) OnClientDisconnectEvent(dc data_center_name, keyspace keyspace_name, clientAddress server_address) {
-	log.Printf("- client %v keyspace(%v) datacenter(%v)", clientAddress, keyspace, dc)
+func (ms *masterServer) OnClientDisconnectEvent(dc data_center_name, keyspace keyspace_name, clientAddress server_address, clientName string) {
+	log.Printf("- client %v from %v keyspace(%v) datacenter(%v)", clientName, clientAddress, keyspace, dc)
 	ms.clientsStat.removeClient(keyspace, dc, clientAddress)
 	if ms.clientsStat.getClusterClientCount(keyspace, dc) <= 0 {
 		if k, found := ms.topo.keyspaces.getKeyspace(string(keyspace)); found {

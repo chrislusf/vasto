@@ -28,7 +28,7 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 	go func() {
 		for keyspace, _ := range clusterListener.clusters {
 			log.Printf("register cluster keyspace(%v) datacenter(%v)", keyspace, dataCenter)
-			if err := registerForClusterAtMaster(stream, string(keyspace), dataCenter, false); err != nil {
+			if err := registerForClusterAtMaster(stream, string(keyspace), dataCenter, false, clusterListener.clientName); err != nil {
 				log.Printf("register cluster keyspace(%v) datacenter(%v): %v", keyspace, dataCenter, err)
 				return
 			}
@@ -41,7 +41,7 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 			} else {
 				log.Printf("register cluster new keyspace(%v) datacenter(%v)", msg.keyspace, dataCenter)
 			}
-			if err := registerForClusterAtMaster(stream, string(msg.keyspace), dataCenter, msg.isUnfollow); err != nil {
+			if err := registerForClusterAtMaster(stream, string(msg.keyspace), dataCenter, msg.isUnfollow, clusterListener.clientName); err != nil {
 				if msg.isUnfollow {
 					log.Printf("unfollow cluster keyspace(%v) datacenter(%v): %v", msg.keyspace, dataCenter, err)
 				} else {
@@ -72,9 +72,10 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 
 }
 
-func registerForClusterAtMaster(stream pb.VastoMaster_RegisterClientClient, keyspace, dataCenter string, isUnfollow bool) error {
+func registerForClusterAtMaster(stream pb.VastoMaster_RegisterClientClient, keyspace, dataCenter string, isUnfollow bool, clientName string) error {
 	clientHeartbeat := &pb.ClientHeartbeat{
 		DataCenter: dataCenter,
+		ClientName: clientName,
 		ClusterFollow: &pb.ClientHeartbeat_ClusterFollowMessage{
 			Keyspace:   keyspace,
 			IsUnfollow: isUnfollow,

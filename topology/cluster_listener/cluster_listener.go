@@ -26,13 +26,15 @@ type ClusterListener struct {
 	dataCenter                string
 	shardEventProcessors      []ShardEventProcessor
 	verbose                   bool
+	clientName                string
 }
 
-func NewClusterClient(dataCenter string) *ClusterListener {
+func NewClusterClient(dataCenter string, clientName string) *ClusterListener {
 	return &ClusterListener{
 		clusters:                  make(map[keyspace_name]*topology.ClusterRing),
 		keyspaceFollowMessageChan: make(chan keyspace_follow_message, 1),
 		dataCenter:                dataCenter,
+		clientName:                clientName,
 	}
 }
 
@@ -160,6 +162,7 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 						} else if msg.Updates.GetIsDelete() {
 							clusterListener.RemoveNode(msg.Updates.Keyspace, node)
 							for _, shardEventProcess := range clusterListener.shardEventProcessors {
+								log.Printf("node is %+v, shardEventProcess is %v", node, shardEventProcess)
 								shardEventProcess.OnShardRemoveEvent(cluster, node.StoreResource, node.ShardInfo)
 							}
 						} else {

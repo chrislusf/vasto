@@ -30,6 +30,7 @@ func RunShell(option *ShellOption) {
 				Master:       option.Master,
 				DataCenter:   option.DataCenter,
 				Keyspace:     option.Keyspace,
+				ClientName:   "shell",
 			},
 		),
 	}

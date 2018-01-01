@@ -38,6 +38,7 @@ func RunGateway(option *GatewayOption) {
 				Master:       option.Master,
 				DataCenter:   option.DataCenter,
 				Keyspace:     option.Keyspace,
+				ClientName:   "gateway",
 			},
 		),
 	}

@@ -10,6 +10,7 @@ type ClientOption struct {
 	Master       *string
 	DataCenter   *string
 	Keyspace     *string
+	ClientName   string
 }
 
 type VastoClient struct {
@@ -20,7 +21,7 @@ type VastoClient struct {
 func NewClient(option *ClientOption) *VastoClient {
 	c := &VastoClient{
 		Option:          option,
-		ClusterListener: cluster_listener.NewClusterClient(*option.DataCenter),
+		ClusterListener: cluster_listener.NewClusterClient(*option.DataCenter, option.ClientName),
 	}
 	return c
 }
@@ -39,4 +40,3 @@ func (c *VastoClient) StartClient(ctx context.Context) {
 	c.ClusterListener.AddExistingKeyspace(*c.Option.Keyspace, 0, 0)
 	c.ClusterListener.StartListener(ctx, *c.Option.Master, *c.Option.DataCenter, true)
 }
-

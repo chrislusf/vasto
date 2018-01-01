@@ -30,13 +30,13 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 	// log.Printf("+ client %v", serverAddress)
 
 	// clean up if disconnects
-	clientWatchedKeyspaceAndDataCenters := make(map[string]bool)
+	clientWatchedKeyspaceAndDataCenters := make(map[string]string)
 	defer func() {
-		for k_dc, _ := range clientWatchedKeyspaceAndDataCenters {
+		for k_dc, clientName := range clientWatchedKeyspaceAndDataCenters {
 			t := strings.Split(k_dc, ",")
 			keyspace, dc := keyspace_name(t[0]), data_center_name(t[1])
 			ms.clientChans.removeClient(keyspace, dc, serverAddress)
-			ms.OnClientDisconnectEvent(dc, keyspace, serverAddress)
+			ms.OnClientDisconnectEvent(dc, keyspace, serverAddress, clientName)
 		}
 		// log.Printf("- client %v", serverAddress)
 	}()
@@ -55,24 +55,25 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 		}
 
 		dc := data_center_name(clientHeartbeat.DataCenter)
+		clientName := clientHeartbeat.ClientName
 
-		if clientHeartbeat.GetClusterFollow()!=nil{
+		if clientHeartbeat.GetClusterFollow() != nil {
 			keyspace := keyspace_name(clientHeartbeat.ClusterFollow.Keyspace)
 			clusterKey := fmt.Sprintf("%s,%s", keyspace, dc)
 
 			if clientHeartbeat.ClusterFollow.IsUnfollow {
 				delete(clientWatchedKeyspaceAndDataCenters, clusterKey)
 				ms.clientChans.removeClient(keyspace, dc, serverAddress)
-				ms.OnClientDisconnectEvent(dc, keyspace, serverAddress)
+				ms.OnClientDisconnectEvent(dc, keyspace, serverAddress, clientName)
 			} else {
-				clientWatchedKeyspaceAndDataCenters[clusterKey] = true
+				clientWatchedKeyspaceAndDataCenters[clusterKey] = clientName
 
 				// for client, just set the expected cluster size to zero, and fix it when actual cluster is registered
 				clusterRing, _ := ms.topo.keyspaces.getOrCreateKeyspace(string(keyspace)).doGetOrCreateCluster(string(dc), 0, 0)
 
 				if ch, err := ms.clientChans.addClient(keyspace, dc, serverAddress); err == nil {
 					// this is not added yet, start a goroutine that sends to the stream, until client disconnects
-					ms.OnClientConnectEvent(dc, keyspace, serverAddress)
+					ms.OnClientConnectEvent(dc, keyspace, serverAddress, clientName)
 					go func() {
 						ms.clientChans.sendClientCluster(keyspace, dc, serverAddress, clusterRing)
 						for {

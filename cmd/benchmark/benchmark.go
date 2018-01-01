@@ -74,6 +74,7 @@ func (b *benchmarker) startThreadsWithClient(ctx context.Context, name string, f
 			Master:       b.option.Master,
 			DataCenter:   b.option.DataCenter,
 			Keyspace:     b.option.Keyspace,
+			ClientName:   "benchmarker",
 		})
 		c.StartClient(ctx)
 		fn(hist, c, start, stop, batchSize)
