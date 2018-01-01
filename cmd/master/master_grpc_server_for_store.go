@@ -156,7 +156,7 @@ func (ms *masterServer) unRegisterShards(seenShardsOnThisServer map[string]*pb.S
 				}
 				cluster = cluster.GetNextClusterRing()
 			}
-			cluster.RemoveNode(int(shardInfo.ServerId)) // just remove the whole node
+			cluster.RemoveShardInfo(shardInfo)
 			ms.notifyDeletion(shardInfo, storeResource)
 		}
 	}

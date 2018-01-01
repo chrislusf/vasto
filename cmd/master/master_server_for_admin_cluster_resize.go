@@ -95,6 +95,8 @@ func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest
 		return
 	}
 
+	cluster.SetExpectedSize(int(req.TargetClusterSize))
+
 	return
 }
 
@@ -177,9 +179,6 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 	// TODO wait until all updated shards are reported back
 
 	candidateCluster := cluster.GetNextClusterRing()
-	if candidateCluster == nil {
-		return fmt.Errorf("candidate cluster for keyspace %s does not exist", req.Keyspace)
-	}
 
 	newClusterSize := int(req.TargetClusterSize)
 	oldClusterSize := cluster.ExpectedSize()
@@ -190,7 +189,7 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 		maxClusterSize = oldClusterSize
 	}
 
-	// report new shards
+	// report new shards, update shards, and delete retiring shards
 	for serverId := 0; serverId < maxClusterSize; serverId++ {
 
 		oldServer, _, oldServerFound := cluster.GetNode(serverId)
@@ -203,8 +202,20 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 					shardInfo.ClusterSize = uint32(newClusterSize)
 					ms.notifyUpdate(shardInfo, oldServer.GetStoreResource())
 					log.Printf("change shard %v on %s to cluster size %d", shardInfo.IdentifierOnThisServer(), oldServer.GetAddress(), newClusterSize)
+				} else {
+					oldServer.RemoveShardInfo(shardInfo)
+					shardInfo.IsPermanentDelete = true
+					ms.notifyDeletion(shardInfo, oldServer.GetStoreResource())
+					log.Printf("delete shard %v on %s for cluster size %d", shardInfo.IdentifierOnThisServer(), oldServer.GetAddress(), newClusterSize)
 				}
 			}
+			if len(oldServer.GetShardInfoList()) == 0 {
+				cluster.RemoveNode(serverId)
+			}
+		}
+
+		if candidateCluster == nil {
+			continue // no new servers or shards are created
 		}
 
 		if newServer, _, newServerFound := candidateCluster.GetNode(serverId); newServerFound {

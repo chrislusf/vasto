@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/dgryski/go-jump"
+	"github.com/chrislusf/vasto/pb"
 )
 
 // --------------------
@@ -40,6 +41,28 @@ func (cluster *ClusterRing) RemoveNode(nodeId int) Node {
 	return nil
 }
 
+func (cluster *ClusterRing) SetShardInfo(shardInfo *pb.ShardInfo) {
+	node, _, found := cluster.GetNode(int(shardInfo.ServerId))
+	if !found {
+		return
+	}
+	node.RemoveShardInfo(shardInfo)
+	if len(node.GetShardInfoList()) == 0 {
+		cluster.RemoveNode(node.GetId())
+	}
+}
+
+func (cluster *ClusterRing) RemoveShardInfo(shardInfo *pb.ShardInfo) {
+	node, _, found := cluster.GetNode(int(shardInfo.ServerId))
+	if !found {
+		return
+	}
+	node.RemoveShardInfo(shardInfo)
+	if len(node.GetShardInfoList()) == 0 {
+		cluster.RemoveNode(node.GetId())
+	}
+}
+
 // calculates a Jump hash for the keyHash provided
 func (cluster *ClusterRing) FindShardId(keyHash uint64) int {
 	return int(jump.Hash(keyHash, cluster.expectedSize))
@@ -58,6 +81,9 @@ func (cluster *ClusterRing) SetExpectedSize(expectedSize int) {
 		cluster.expectedSize = expectedSize
 		if len(cluster.nodes) == 0 {
 			cluster.nodes = make([]Node, expectedSize)
+		}
+		if expectedSize < len(cluster.nodes) {
+			cluster.nodes = cluster.nodes[0:expectedSize]
 		}
 	}
 }

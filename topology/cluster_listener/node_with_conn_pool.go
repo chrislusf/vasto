@@ -139,8 +139,8 @@ func (clusterListener *ClusterListener) RemoveNode(keyspace string, n *pb.Cluste
 }
 
 func (clusterListener *ClusterListener) PromoteNode(keyspace string, n *pb.ClusterNode) {
-	cluster, found := clusterListener.GetClusterRing(keyspace)
-	if !found {
+	cluster, foundCluster := clusterListener.GetClusterRing(keyspace)
+	if !foundCluster {
 		return
 	}
 	if cluster.GetNextClusterRing() == nil {
@@ -150,16 +150,15 @@ func (clusterListener *ClusterListener) PromoteNode(keyspace string, n *pb.Clust
 	candidateCluster := cluster.GetNextClusterRing()
 
 	if n != nil {
-		ss := n.ShardInfo
-		node := candidateCluster.RemoveNode(int(ss.ServerId))
+		candidateCluster.RemoveShardInfo(n.ShardInfo)
 		if candidateCluster.CurrentSize() == 0 {
 			cluster.RemoveNextClusterRing()
 		}
-		if node != nil {
-			// since one node can have multiple shards
-			// this node may have been set already
+		node, _, found := cluster.GetNode(int(n.ShardInfo.ServerId))
+		if !found {
+			node = newNodeWithConnPool(int(n.ShardInfo.ServerId), n.StoreResource)
 			cluster.SetNode(node)
-			// println(node.GetAddress(), "from candidate => cluster")
 		}
+		node.SetShardInfo(n.ShardInfo)
 	}
 }

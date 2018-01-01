@@ -141,6 +141,14 @@ func (ss *storeServer) deleteOldShardsInNewCluster(ctx context.Context, request 
 			os.RemoveAll(dir)
 			ss.keyspaceShards.deleteKeyspace(request.Keyspace)
 			ss.deleteServerStatusInCluster(request.Keyspace)
+		} else {
+			for _, shard := range shards {
+				if !topology.IsShardInLocal(int(shard.id), int(shard.serverId), int(request.TargetClusterSize), shard.clusterRing.ReplicationFactor()) {
+					delete(localShardsStatus.ShardMap, uint32(shard.id))
+				}
+			}
+			localShardsStatus.ClusterSize = request.TargetClusterSize
+			ss.saveClusterConfig(localShardsStatus, request.Keyspace)
 		}
 	}
 
