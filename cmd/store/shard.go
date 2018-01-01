@@ -106,7 +106,10 @@ func (s *shard) startWithBootstrapPlan(ctx context.Context, bootstrapOption *top
 	// add normal follow
 	for _, peer := range s.peerShards() {
 		serverId, shardId := peer.ServerId, peer.ShardId
-		go util.RetryForever(ctx, fmt.Sprintf("shard %s follow server %d", s.String(), serverId), func() error {
+		go util.RetryUntil(ctx, fmt.Sprintf("shard %s follow server %d", s.String(), serverId), func() bool {
+			clusterSize, replicationFactor := s.clusterRing.ExpectedSize(), s.clusterRing.ReplicationFactor()
+			return topology.IsShardInLocal(shardId, serverId, clusterSize, replicationFactor)
+		}, func() error {
 			return s.doFollow(ctx, serverId, shardId, 0)
 		}, 2*time.Second)
 	}

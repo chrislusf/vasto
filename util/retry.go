@@ -12,11 +12,24 @@ func Retry(fn func() error) error {
 }
 
 func RetryForever(ctx context.Context, name string, fn func() error, waitTimes time.Duration) {
+	RetryUntil(ctx, name, nil, fn, waitTimes)
+}
+
+func RetryUntil(ctx context.Context, name string, conditionFn func() bool, fn func() error, waitTimes time.Duration) {
+
+	if conditionFn != nil && !conditionFn() {
+		return
+	}
+
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for {
 		err := fn()
 		if err != nil {
 			log.Printf("%s failed: %v", name, err)
+		}
+
+		if conditionFn != nil && !conditionFn() {
+			break
 		}
 
 		time.Sleep(time.Duration((r.Float64() + 1) * float64(waitTimes)))
