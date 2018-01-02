@@ -9,7 +9,6 @@ import (
 	"context"
 	"github.com/chrislusf/vasto/cmd/client"
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/topology"
 	"google.golang.org/grpc"
 	"log"
 )
@@ -50,7 +49,7 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 
 	for i := 0; i < r.ExpectedSize(); i++ {
 
-		n, _, ok := r.GetNode(i)
+		_, _, ok := r.GetNode(i)
 		if !ok {
 			continue
 		}
@@ -58,13 +57,13 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 		ch := make(chan *pb.KeyValue)
 		chans[i] = ch
 
-		go r.WithConnection(i, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
+		go r.WithConnection(i, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 
 			client := pb.NewVastoStoreClient(grpcConnection)
 
 			request := &pb.BootstrapCopyRequest{
 				Keyspace: *c.client.Option.Keyspace,
-				ShardId:  uint32(n.GetId()),
+				ShardId:  uint32(node.ShardInfo.ShardId),
 			}
 
 			defer close(ch)
@@ -93,7 +92,6 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 
 				}
 			}
-			println("TailBinlog stop 3 for", n.GetId())
 			return nil
 		})
 

@@ -8,7 +8,7 @@ import (
 
 // the following functions implements cluster_listener.ShardEventProcessor
 
-func (s *shard) OnShardCreateEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, shardInfo *pb.ShardInfo) {
+func (s *shard) OnShardCreateEvent(cluster *topology.Cluster, resource *pb.StoreResource, shardInfo *pb.ShardInfo) {
 
 	if s.keyspace != shardInfo.KeyspaceName {
 		return
@@ -28,7 +28,7 @@ func (s *shard) OnShardCreateEvent(cluster *topology.ClusterRing, resource *pb.S
 	}
 }
 
-func (s *shard) OnShardUpdateEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, shardInfo *pb.ShardInfo, oldShardInfo *pb.ShardInfo) {
+func (s *shard) OnShardUpdateEvent(cluster *topology.Cluster, resource *pb.StoreResource, shardInfo *pb.ShardInfo, oldShardInfo *pb.ShardInfo) {
 
 	if s.keyspace != shardInfo.KeyspaceName {
 		return
@@ -54,7 +54,7 @@ func (s *shard) OnShardUpdateEvent(cluster *topology.ClusterRing, resource *pb.S
 
 }
 
-func (s *shard) OnShardRemoveEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, shardInfo *pb.ShardInfo) {
+func (s *shard) OnShardRemoveEvent(cluster *topology.Cluster, resource *pb.StoreResource, shardInfo *pb.ShardInfo) {
 
 	if s.keyspace != shardInfo.KeyspaceName {
 		return
@@ -82,7 +82,7 @@ func (s *shard) OnShardRemoveEvent(cluster *topology.ClusterRing, resource *pb.S
 
 }
 
-func (s *shard) OnShardPromoteEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, shardInfo *pb.ShardInfo) {
+func (s *shard) OnShardPromoteEvent(cluster *topology.Cluster, resource *pb.StoreResource, shardInfo *pb.ShardInfo) {
 
 	if s.keyspace != shardInfo.KeyspaceName {
 		return

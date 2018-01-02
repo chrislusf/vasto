@@ -5,7 +5,6 @@ import (
 
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/topology"
 	"log"
 )
 
@@ -103,42 +102,34 @@ func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.S
 	cluster := keyspace.getOrCreateCluster(storeResource.DataCenter, int(shardInfo.ClusterSize), int(shardInfo.ReplicationFactor))
 
 	if shardInfo.IsCandidate {
-		if cluster.GetNextClusterRing() == nil {
-			cluster.SetNextClusterRing(int(shardInfo.ClusterSize), int(shardInfo.ReplicationFactor))
+		if cluster.GetNextCluster() == nil {
+			cluster.SetNextCluster(int(shardInfo.ClusterSize), int(shardInfo.ReplicationFactor))
 		}
-		cluster = cluster.GetNextClusterRing()
+		cluster = cluster.GetNextCluster()
 	}
 
-	node, _, found := cluster.GetNode(int(shardInfo.ServerId))
-	if shardInfo.Status == pb.ShardInfo_DELETED && !found {
-		return nil
-	}
-	if !found {
-		node = topology.NewNodeFromStore(storeResource, shardInfo.ServerId)
-		cluster.SetNode(node)
-	}
 	if shardInfo.Status == pb.ShardInfo_DELETED {
-		node.RemoveShardInfo(shardInfo)
+		cluster.RemoveShard(storeResource, shardInfo)
 		ms.notifyDeletion(shardInfo, storeResource)
 		delete(seenShardsOnThisServer, shardInfo.IdentifierOnThisServer())
-		log.Printf("- dc %s keyspace %s node %d shard %d %s cluster %s", storeResource.DataCenter,
-			shardInfo.KeyspaceName, node.GetId(), shardInfo.ShardId, node.GetAddress(), cluster)
+		log.Printf("- dc %s %s on %s cluster %s", storeResource.DataCenter,
+			shardInfo.IdentifierOnThisServer(), storeResource.Address, cluster)
 	} else {
 		// println("updated shard info:", shardInfo.String(), "store", storeResource.GetAddress())
-		oldShardInfo := node.SetShardInfo(shardInfo)
+		oldShardInfo := cluster.SetShard(storeResource, shardInfo)
 		ms.notifyUpdate(shardInfo, storeResource)
 		seenShardsOnThisServer[shardInfo.IdentifierOnThisServer()] = shardInfo
 		if oldShardInfo == nil {
 			if shardInfo.IsCandidate {
-				log.Printf("=>dc %s keyspace %s node %d shard %d %s cluster %s", storeResource.DataCenter,
-					shardInfo.KeyspaceName, node.GetId(), shardInfo.ShardId, node.GetAddress(), cluster)
+				log.Printf("=> dc %s %s on %s cluster %s", storeResource.DataCenter,
+					shardInfo.IdentifierOnThisServer(), storeResource.Address, cluster)
 			} else {
-				log.Printf("+ dc %s keyspace %s node %d shard %d %s cluster %s", storeResource.DataCenter,
-					shardInfo.KeyspaceName, node.GetId(), shardInfo.ShardId, node.GetAddress(), cluster)
+				log.Printf("+ dc %s %s on %s cluster %s", storeResource.DataCenter,
+					shardInfo.IdentifierOnThisServer(), storeResource.Address, cluster)
 			}
 		} else if oldShardInfo.Status != shardInfo.Status {
-			log.Printf("* dc %s keyspace %s node %d shard %d %s cluster %s status:%s=>%s", storeResource.DataCenter,
-				shardInfo.KeyspaceName, node.GetId(), shardInfo.ShardId, node.GetAddress(), cluster,
+			log.Printf("* dc %s %s on %s cluster %s status:%s=>%s", storeResource.DataCenter,
+				shardInfo.IdentifierOnThisServer(), storeResource.Address, cluster,
 				oldShardInfo.Status, shardInfo.Status)
 		}
 	}
@@ -151,12 +142,12 @@ func (ms *masterServer) unRegisterShards(seenShardsOnThisServer map[string]*pb.S
 		keyspace := ms.topo.keyspaces.getOrCreateKeyspace(string(shardInfo.KeyspaceName))
 		if cluster, found := keyspace.getCluster(storeResource.DataCenter); found {
 			if shardInfo.IsCandidate {
-				if cluster.GetNextClusterRing() == nil {
+				if cluster.GetNextCluster() == nil {
 					continue
 				}
-				cluster = cluster.GetNextClusterRing()
+				cluster = cluster.GetNextCluster()
 			}
-			cluster.RemoveShardInfo(shardInfo)
+			cluster.RemoveShard(storeResource, shardInfo)
 			ms.notifyDeletion(shardInfo, storeResource)
 		}
 	}

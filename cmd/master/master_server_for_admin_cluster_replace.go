@@ -28,17 +28,18 @@ func (ms *masterServer) ReplaceNode(ctx context.Context, req *pb.ReplaceNodeRequ
 		return
 	}
 
-	if cluster.GetNextClusterRing() != nil {
+	if cluster.GetNextCluster() != nil {
 		resp.Error = fmt.Sprintf("cluster %s %s is changing %d => %d in progress ...",
-			req.Keyspace, req.DataCenter, cluster.ExpectedSize(), cluster.GetNextClusterRing().ExpectedSize())
+			req.Keyspace, req.DataCenter, cluster.ExpectedSize(), cluster.GetNextCluster().ExpectedSize())
 		return
 	}
 
-	oldServer, _, found := cluster.GetNode(int(req.NodeId))
+	oldServerNode, _, found := cluster.GetNode(int(req.NodeId))
 	if !found {
 		resp.Error = fmt.Sprintf("no server %v found", req.NodeId)
 		return
 	}
+	oldServer := oldServerNode.StoreResource
 
 	adminAddress, err := addressToAdminAddress(req.NewAddress)
 	if err != nil {
@@ -80,7 +81,7 @@ func (ms *masterServer) ReplaceNode(ctx context.Context, req *pb.ReplaceNodeRequ
 }
 
 // 1. create the new shard and follow the old shard and its peers
-func replicateNodePrepare(ctx context.Context, req *pb.ReplaceNodeRequest, cluster *topology.ClusterRing, newStore *pb.StoreResource, oldServer topology.Node) error {
+func replicateNodePrepare(ctx context.Context, req *pb.ReplaceNodeRequest, cluster *topology.Cluster, newStore *pb.StoreResource, oldServer *pb.StoreResource) error {
 
 	log.Printf("replicateNodePrepare %v", req)
 
@@ -107,7 +108,7 @@ func replicateNodePrepare(ctx context.Context, req *pb.ReplaceNodeRequest, clust
 }
 
 // 2. let the server to promote the new shard from CANDIDATE to READY
-func replicateNodeCommit(ctx context.Context, req *pb.ReplaceNodeRequest, cluster *topology.ClusterRing, newStore *pb.StoreResource, oldServer topology.Node) error {
+func replicateNodeCommit(ctx context.Context, req *pb.ReplaceNodeRequest, cluster *topology.Cluster, newStore *pb.StoreResource, oldServer *pb.StoreResource) error {
 
 	log.Printf("replicateNodeCommit %v", req)
 
@@ -130,7 +131,7 @@ func replicateNodeCommit(ctx context.Context, req *pb.ReplaceNodeRequest, cluste
 }
 
 // 3. remove the old shard, set the new shard from CANDIDATE to READY, and inform all clients of these changes
-func (ms *masterServer) adjustAndBroadcastShardStatus(ctx context.Context, req *pb.ReplaceNodeRequest, cluster *topology.ClusterRing, newStore *pb.StoreResource, oldServer topology.Node) error {
+func (ms *masterServer) adjustAndBroadcastShardStatus(ctx context.Context, req *pb.ReplaceNodeRequest, cluster *topology.Cluster, newStore *pb.StoreResource, oldServer *pb.StoreResource) error {
 
 	log.Printf("adjustAndBroadcastShardStatus %v", req)
 
@@ -138,7 +139,7 @@ func (ms *masterServer) adjustAndBroadcastShardStatus(ctx context.Context, req *
 	time.Sleep(time.Second)
 	// TODO wait until all updated shards are reported back
 
-	candidateCluster := cluster.GetNextClusterRing()
+	candidateCluster := cluster.GetNextCluster()
 	if candidateCluster == nil {
 		return fmt.Errorf("candidate cluster for keyspace %s does not exist", req.Keyspace)
 	}
@@ -148,33 +149,33 @@ func (ms *masterServer) adjustAndBroadcastShardStatus(ctx context.Context, req *
 		if !found {
 			continue
 		}
-		if n.GetAdminAddress() != oldServer.GetAdminAddress() {
+		if n.StoreResource.GetAdminAddress() != oldServer.GetAdminAddress() {
 			continue
 		}
 
 		candidate, _, found := candidateCluster.GetNode(i)
 		if !found {
-			return fmt.Errorf("candidate server for keyspace %s server %s does not exist", req.Keyspace, n.GetAddress())
+			return fmt.Errorf("candidate server for keyspace %s server %s does not exist", req.Keyspace, n.StoreResource.GetAddress())
 		}
 
+		removedShards := cluster.RemoveStore(n.GetStoreResource())
 		// remove the old shard
-		cluster.RemoveNode(n.GetId())
-		for _, shardInfo := range n.GetShardInfoList() {
+		for _, shardInfo := range removedShards {
 			shardInfo.IsPermanentDelete = true
 			ms.notifyDeletion(shardInfo, n.GetStoreResource())
-			log.Printf("removing old shard %v on %s", shardInfo.IdentifierOnThisServer(), n.GetAddress())
+			log.Printf("removing old shard %v on %s", shardInfo.IdentifierOnThisServer(), n.StoreResource.GetAddress())
 		}
 
 		// promote the new shard
-		candidateCluster.RemoveNode(i)
+		promotedShards := candidateCluster.RemoveStore(candidate.GetStoreResource())
 		if candidateCluster.CurrentSize() == 0 {
-			cluster.RemoveNextClusterRing()
+			cluster.RemoveNextCluster()
 		}
-		cluster.SetNode(candidate)
-		for _, shardInfo := range candidate.GetShardInfoList() {
+		for _, shardInfo := range promotedShards {
 			shardInfo.IsCandidate = false
+			cluster.SetShard(candidate.StoreResource, shardInfo)
 			ms.notifyPromotion(shardInfo, candidate.GetStoreResource())
-			log.Printf("promoting new shard %v on %s", shardInfo.IdentifierOnThisServer(), candidate.GetAddress())
+			log.Printf("promoting new shard %v on %s", shardInfo.IdentifierOnThisServer(), candidate.StoreResource.GetAddress())
 		}
 
 	}
@@ -183,11 +184,11 @@ func (ms *masterServer) adjustAndBroadcastShardStatus(ctx context.Context, req *
 }
 
 // 4. let the server to remove the old shard
-func replicateNodeCleanup(ctx context.Context, req *pb.ReplaceNodeRequest, cluster *topology.ClusterRing, newStore *pb.StoreResource, oldServer topology.Node) error {
+func replicateNodeCleanup(ctx context.Context, req *pb.ReplaceNodeRequest, cluster *topology.Cluster, newStore *pb.StoreResource, oldServer *pb.StoreResource) error {
 
 	log.Printf("replicateNodeCleanup %v", req)
 
-	return withConnection(oldServer.GetStoreResource(), func(grpcConnection *grpc.ClientConn) error {
+	return withConnection(oldServer, func(grpcConnection *grpc.ClientConn) error {
 
 		request := &pb.ReplicateNodeCleanupRequest{
 			Keyspace: req.Keyspace,

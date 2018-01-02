@@ -4,14 +4,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 )
 
-func NewNodeFromStore(store *pb.StoreResource, shardId uint32) Node {
-	return NewNode(
-		int(shardId),
-		store,
-	)
-}
-
-func (cluster *ClusterRing) ToCluster() *pb.Cluster {
+func (cluster *Cluster) ToCluster() *pb.Cluster {
 	if cluster == nil {
 		return &pb.Cluster{}
 	}
@@ -24,33 +17,17 @@ func (cluster *ClusterRing) ToCluster() *pb.Cluster {
 	}
 }
 
-func (cluster *ClusterRing) toNodes() (nodes []*pb.ClusterNode) {
+func (cluster *Cluster) toNodes() (nodes []*pb.ClusterNode) {
 	if cluster == nil {
 		return
 	}
-	for i := 0; i < cluster.CurrentSize(); i++ {
-		node, _, ok := cluster.GetNode(i)
-		if !ok {
-			continue
-		}
-		var network, address, adminAddress string
-		if node != nil {
-			network = node.GetNetwork()
-			address = node.GetAddress()
-			adminAddress = node.GetAdminAddress()
-		}
-		for _, shardInfo := range node.GetShardInfoList() {
-			ss := shardInfo
+	for _, shards := range cluster.logicalShards {
+		for _, shard := range shards {
 			nodes = append(
 				nodes,
 				&pb.ClusterNode{
-					StoreResource: &pb.StoreResource{
-						DataCenter:   cluster.dataCenter,
-						Network:      network,
-						Address:      address,
-						AdminAddress: adminAddress,
-					},
-					ShardInfo: ss,
+					StoreResource: shard.StoreResource,
+					ShardInfo:     shard.ShardInfo,
 				},
 			)
 		}

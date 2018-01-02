@@ -116,7 +116,7 @@ func (ss *storeServer) resizeCommitShardInfoNewCluster(ctx context.Context, requ
 
 func (ss *storeServer) deleteOldShardsInNewCluster(ctx context.Context, request *pb.ResizeCleanupRequest) (err error) {
 
-	// do notify master of the deleted shards
+	// do not notify master of the deleted shards
 
 	// physically delete the shards
 	shards, found := ss.keyspaceShards.getShards(request.Keyspace)
@@ -141,6 +141,7 @@ func (ss *storeServer) deleteOldShardsInNewCluster(ctx context.Context, request 
 			os.RemoveAll(dir)
 			ss.keyspaceShards.deleteKeyspace(request.Keyspace)
 			ss.deleteServerStatusInCluster(request.Keyspace)
+			ss.clusterListener.RemoveKeyspace(request.Keyspace)
 		} else {
 			for _, shard := range shards {
 				if !topology.IsShardInLocal(int(shard.id), int(shard.serverId), int(request.TargetClusterSize), shard.clusterRing.ReplicationFactor()) {

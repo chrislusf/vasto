@@ -84,7 +84,7 @@ func (cc *clientChannels) notifyStoreResourceUpdate(keyspace keyspace_name, data
 	)
 }
 
-func (cc *clientChannels) sendClientCluster(keyspace keyspace_name, dataCenter data_center_name, server server_address, cluster *topology.ClusterRing) error {
+func (cc *clientChannels) sendClientCluster(keyspace keyspace_name, dataCenter data_center_name, server server_address, cluster *topology.Cluster) error {
 	return cc.sendClient(
 		keyspace,
 		dataCenter,

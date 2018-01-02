@@ -6,6 +6,8 @@ import (
 	"github.com/chrislusf/vasto/util"
 	"net"
 	"log"
+	"time"
+	"gopkg.in/fatih/pool.v2"
 )
 
 /*
@@ -21,34 +23,56 @@ func (clusterListener *ClusterListener) GetConnectionByShardId(keyspace string, 
 	}
 
 	// find one shard
-	n, replica, ok := r.GetOneNode(shardId, options...)
+	n, replica, ok := r.GetNode(shardId, options...)
 	if !ok {
 		return nil, 0, fmt.Errorf("shardId %d not found", shardId)
 	}
 
-	if r.GetNextClusterRing() != nil {
-		candidate, _, found := r.GetNextClusterRing().GetNode(shardId, options...)
+	if r.GetNextCluster() != nil {
+		candidate, _, found := r.GetNextCluster().GetNode(shardId, options...)
 		if found {
 			if clusterListener.verbose {
-				log.Printf("connecting to candidate %s", candidate.GetAddress())
+				log.Printf("connecting to candidate %s", candidate.StoreResource.Address)
 			}
 			n = candidate
 		}
 	}
 
-	node, ok := n.(*NodeWithConnPool)
-	if !ok {
-		return nil, 0, fmt.Errorf("unexpected node %+v", n)
+	clusterListener.connPoolLock.RLock()
+	connPool, foundPool := clusterListener.connPools[n.StoreResource.Address]
+	clusterListener.connPoolLock.RUnlock()
+	if !foundPool {
+		connPool, _ = pool.NewChannelPool(0, 100,
+			func() (net.Conn, error) {
+				network, address := n.StoreResource.Network, n.StoreResource.Address
+				if unixSocket, ok := util.GetUnixSocketFile(address); ok {
+					network, address = "unix", unixSocket
+				}
+
+				conn, err := net.Dial(network, address)
+				if err != nil {
+					return nil, fmt.Errorf("Failed to dial %s on %s : %v", network, address, err)
+				}
+				conn.SetDeadline(time.Time{})
+				if c, ok := conn.(*net.TCPConn); ok {
+					c.SetKeepAlive(true)
+					c.SetNoDelay(true)
+				}
+				return conn, err
+			})
+		clusterListener.connPoolLock.Lock()
+		clusterListener.connPools[n.StoreResource.Address] = connPool
+		clusterListener.connPoolLock.Unlock()
 	}
 
-	conn, err := node.GetConnection()
+	conn, err := connPool.Get()
 	if err != nil {
-		return nil, 0, fmt.Errorf("GetConnection node %d %s %+v", n.GetId(), n.GetAddress(), err)
+		return nil, 0, fmt.Errorf("GetConnection shard %d %s %+v", shardId, n.StoreResource.Address, err)
 	}
 
 	if clusterListener.verbose {
 		if replica > 0 {
-			log.Printf("connecting to server %d at %s replica=%d", node.id, node.GetAddress(), replica)
+			log.Printf("connecting to server %d at %s replica=%d", shardId, n.StoreResource.Address, replica)
 		}
 	}
 

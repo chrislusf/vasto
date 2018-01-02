@@ -5,29 +5,30 @@ import (
 	"log"
 
 	"google.golang.org/grpc"
+	"github.com/chrislusf/vasto/pb"
 )
 
-func (cluster *ClusterRing) WithConnection(serverId int, fn func(Node, *grpc.ClientConn) error) error {
+func (cluster *Cluster) WithConnection(shardId int, fn func(*pb.ClusterNode, *grpc.ClientConn) error) error {
 
-	node, _, ok := cluster.GetNode(serverId)
+	node, _, ok := cluster.GetNode(shardId)
 
 	if !ok {
-		return fmt.Errorf("server %d not found", serverId)
+		return fmt.Errorf("shard %d not found", shardId)
 	}
 
 	if node == nil {
-		return fmt.Errorf("server %d is missing", serverId)
+		return fmt.Errorf("shard %d is missing", shardId)
 	}
 
-	// log.Printf("connecting to server %d at %s", serverId, node.GetAdminAddress())
+	// log.Printf("connecting to server %d at %s", shardId, node.GetAdminAddress())
 
-	grpcConnection, err := grpc.Dial(node.GetAdminAddress(), grpc.WithInsecure())
+	grpcConnection, err := grpc.Dial(node.StoreResource.AdminAddress, grpc.WithInsecure())
 	if err != nil {
-		return fmt.Errorf("fail to dial %s: %v", node.GetAdminAddress(), err)
+		return fmt.Errorf("fail to dial %s: %v", node.StoreResource.AdminAddress, err)
 	}
 	defer grpcConnection.Close()
 
-	log.Printf("node %d connected to server %d at %s", node.GetId(), serverId, node.GetAdminAddress())
+	log.Printf("connect to shard %s on %s", node.ShardInfo.IdentifierOnThisServer(), node.StoreResource.AdminAddress)
 
 	return fn(node, grpcConnection)
 }

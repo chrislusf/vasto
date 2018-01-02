@@ -7,7 +7,6 @@ import (
 
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
-	"github.com/chrislusf/vasto/topology"
 	"google.golang.org/grpc"
 	"context"
 )
@@ -16,19 +15,19 @@ const (
 	syncProgressFlushInterval = time.Minute
 )
 
-func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConnection *grpc.ClientConn, sourceShardId int, targetClusterSize int) (error) {
+func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcConnection *grpc.ClientConn, sourceShardId int, targetClusterSize int) (error) {
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
-	nextSegment, nextOffset, _, err := s.loadProgress(node.GetAdminAddress())
+	nextSegment, nextOffset, _, err := s.loadProgress(node.StoreResource.GetAdminAddress())
 	if err != nil {
 		log.Printf("read shard %d follow progress: %v", s.id, err)
 	}
 
 	// set in memory progress
-	s.insertInMemoryFollowProgress(node.GetAdminAddress(), nextSegment, nextOffset)
+	s.insertInMemoryFollowProgress(node.StoreResource.GetAdminAddress(), nextSegment, nextOffset)
 
-	log.Printf("shard %v follows server %d from segment %d offset %d", s.String(), node.GetId(), nextSegment, nextOffset)
+	log.Printf("shard %v follows server %d from segment %d offset %d", s.String(), node.ShardInfo.ServerId, nextSegment, nextOffset)
 
 	request := &pb.PullUpdateRequest{
 		Keyspace:          s.keyspace,
@@ -43,7 +42,7 @@ func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConne
 
 	stream, err := client.TailBinlog(ctx, request)
 	if err != nil {
-		return fmt.Errorf("client.TailBinlog to server %d %s: %v", node.GetId(), node.GetAdminAddress(), err)
+		return fmt.Errorf("client.TailBinlog to server %d %s: %v", node.ShardInfo.ServerId, node.StoreResource.GetAdminAddress(), err)
 	}
 
 	for {
@@ -118,7 +117,7 @@ func (s *shard) followChanges(ctx context.Context, node topology.Node, grpcConne
 
 		// set the nextSegment and nextOffset
 		nextSegment, nextOffset = changes.NextSegment, changes.NextOffset
-		if !s.updateInMemoryFollowProgressIfPresent(node.GetAdminAddress(), nextSegment, nextOffset) {
+		if !s.updateInMemoryFollowProgressIfPresent(node.StoreResource.GetAdminAddress(), nextSegment, nextOffset) {
 			// if not found in memory,
 			break
 		}

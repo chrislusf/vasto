@@ -1,7 +1,6 @@
 package cluster_listener
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/chrislusf/vasto/pb"
@@ -11,6 +10,7 @@ import (
 	"sync"
 	"context"
 	"log"
+	"gopkg.in/fatih/pool.v2"
 )
 
 type keyspace_name string
@@ -21,31 +21,34 @@ type keyspace_follow_message struct {
 }
 type ClusterListener struct {
 	sync.RWMutex
-	clusters                  map[keyspace_name]*topology.ClusterRing
+	clusters                  map[keyspace_name]*topology.Cluster
 	keyspaceFollowMessageChan chan keyspace_follow_message
 	dataCenter                string
 	shardEventProcessors      []ShardEventProcessor
 	verbose                   bool
 	clientName                string
+	connPools                 map[string]pool.Pool
+	connPoolLock              sync.RWMutex
 }
 
 func NewClusterClient(dataCenter string, clientName string) *ClusterListener {
 	return &ClusterListener{
-		clusters:                  make(map[keyspace_name]*topology.ClusterRing),
+		clusters:                  make(map[keyspace_name]*topology.Cluster),
 		keyspaceFollowMessageChan: make(chan keyspace_follow_message, 1),
 		dataCenter:                dataCenter,
 		clientName:                clientName,
+		connPools:                 make(map[string]pool.Pool),
 	}
 }
 
 func (clusterListener *ClusterListener) AddExistingKeyspace(keyspace string, clusterSize int, replicationFactor int) {
 	clusterListener.Lock()
-	clusterListener.clusters[keyspace_name(keyspace)] = topology.NewHashRing(keyspace, clusterListener.dataCenter, clusterSize, replicationFactor)
+	clusterListener.clusters[keyspace_name(keyspace)] = topology.NewCluster(keyspace, clusterListener.dataCenter, clusterSize, replicationFactor)
 	clusterListener.Unlock()
 }
 
 // AddNewKeyspace register to listen to one keyspace
-func (clusterListener *ClusterListener) AddNewKeyspace(keyspace string, clusterSize int, replicationFactor int) *topology.ClusterRing {
+func (clusterListener *ClusterListener) AddNewKeyspace(keyspace string, clusterSize int, replicationFactor int) *topology.Cluster {
 	t := clusterListener.GetOrSetClusterRing(keyspace, clusterSize, replicationFactor)
 	clusterListener.keyspaceFollowMessageChan <- keyspace_follow_message{keyspace: keyspace_name(keyspace)}
 	return t
@@ -60,18 +63,18 @@ func (clusterListener *ClusterListener) RemoveKeyspace(keyspace string) {
 	clusterListener.Unlock()
 }
 
-func (clusterListener *ClusterListener) GetClusterRing(keyspace string) (r *topology.ClusterRing, found bool) {
+func (clusterListener *ClusterListener) GetClusterRing(keyspace string) (r *topology.Cluster, found bool) {
 	clusterListener.RLock()
 	r, found = clusterListener.clusters[keyspace_name(keyspace)]
 	clusterListener.RUnlock()
 	return
 }
 
-func (clusterListener *ClusterListener) GetOrSetClusterRing(keyspace string, clusterSize int, replicationFactor int) (*topology.ClusterRing) {
+func (clusterListener *ClusterListener) GetOrSetClusterRing(keyspace string, clusterSize int, replicationFactor int) (*topology.Cluster) {
 	clusterListener.RLock()
 	t, ok := clusterListener.clusters[keyspace_name(keyspace)]
 	if !ok {
-		t = topology.NewHashRing(keyspace, clusterListener.dataCenter, clusterSize, replicationFactor)
+		t = topology.NewCluster(keyspace, clusterListener.dataCenter, clusterSize, replicationFactor)
 		clusterListener.clusters[keyspace_name(keyspace)] = t
 	}
 	t.SetExpectedSize(clusterSize)
@@ -162,7 +165,6 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 						} else if msg.Updates.GetIsDelete() {
 							clusterListener.RemoveNode(msg.Updates.Keyspace, node)
 							for _, shardEventProcess := range clusterListener.shardEventProcessors {
-								log.Printf("node is %+v, shardEventProcess is %v", node, shardEventProcess)
 								shardEventProcess.OnShardRemoveEvent(cluster, node.StoreResource, node.ShardInfo)
 							}
 						} else {
@@ -185,10 +187,10 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 					}
 					r.SetExpectedSize(int(msg.Resize.CurrentClusterSize))
 					if msg.Resize.NextClusterSize != 0 {
-						fmt.Printf("keyspace %s dc %s resizing %d => %d\n", msg.Resize.Keyspace, clusterListener.dataCenter, r.ExpectedSize(), msg.Resize.NextClusterSize)
+						log.Printf("keyspace %s dc %s resizing %d => %d", msg.Resize.Keyspace, clusterListener.dataCenter, r.ExpectedSize(), msg.Resize.NextClusterSize)
 					}
 				} else {
-					fmt.Printf("unknown message %v\n", msg)
+					log.Printf("unknown message %v", msg)
 				}
 			}
 		}

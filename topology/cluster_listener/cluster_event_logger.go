@@ -9,26 +9,26 @@ import (
 type ClusterEventLogger struct {
 }
 
-func (l *ClusterEventLogger) OnShardCreateEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, ShardInfo *pb.ShardInfo) {
+func (l *ClusterEventLogger) OnShardCreateEvent(cluster *topology.Cluster, resource *pb.StoreResource, shardInfo *pb.ShardInfo) {
 	log.Printf("+ dc %s keyspace %s node %d shard %d %s cluster %s", resource.DataCenter,
-		ShardInfo.KeyspaceName, ShardInfo.ServerId, ShardInfo.ShardId, resource.Address, cluster)
+		shardInfo.KeyspaceName, shardInfo.ServerId, shardInfo.ShardId, resource.Address, cluster)
 }
 
-func (l *ClusterEventLogger) OnShardUpdateEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, ShardInfo *pb.ShardInfo, oldShardInfo *pb.ShardInfo) {
+func (l *ClusterEventLogger) OnShardUpdateEvent(cluster *topology.Cluster, resource *pb.StoreResource, shardInfo *pb.ShardInfo, oldShardInfo *pb.ShardInfo) {
 	if oldShardInfo == nil {
-	} else if oldShardInfo.Status != ShardInfo.Status {
-		log.Printf("* dc %s keyspace %s node %d shard %d %s cluster %s status:%s=>%s", resource.DataCenter,
-			ShardInfo.KeyspaceName, ShardInfo.ServerId, ShardInfo.ShardId, resource.GetAddress(), cluster,
-			oldShardInfo.Status, ShardInfo.Status)
+	} else if oldShardInfo.Status != shardInfo.Status {
+		log.Printf("* dc %s %s on %s cluster %s status:%s=>%s", resource.DataCenter,
+			shardInfo.IdentifierOnThisServer(), resource.GetAddress(), cluster,
+			oldShardInfo.Status, shardInfo.Status)
 	}
 }
 
-func (l *ClusterEventLogger) OnShardRemoveEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, ShardInfo *pb.ShardInfo) {
-	log.Printf("- dc %s keyspace %s node %d shard %d %s cluster %s", resource.DataCenter,
-		ShardInfo.KeyspaceName, ShardInfo.ServerId, ShardInfo.ShardId, resource.Address, cluster)
+func (l *ClusterEventLogger) OnShardRemoveEvent(cluster *topology.Cluster, resource *pb.StoreResource, shardInfo *pb.ShardInfo) {
+	log.Printf("- dc %s  %s on %s cluster %s", resource.DataCenter,
+		shardInfo.IdentifierOnThisServer(), resource.Address, cluster)
 }
 
-func (l *ClusterEventLogger) OnShardPromoteEvent(cluster *topology.ClusterRing, resource *pb.StoreResource, ShardInfo *pb.ShardInfo) {
-	log.Printf("=> dc %s keyspace %s node %d shard %d %s cluster %s", resource.DataCenter,
-		ShardInfo.KeyspaceName, ShardInfo.ServerId, ShardInfo.ShardId, resource.Address, cluster)
+func (l *ClusterEventLogger) OnShardPromoteEvent(cluster *topology.Cluster, resource *pb.StoreResource, shardInfo *pb.ShardInfo) {
+	log.Printf("=> dc %s  %s on %s cluster %s", resource.DataCenter,
+		shardInfo.IdentifierOnThisServer(), resource.Address, cluster)
 }

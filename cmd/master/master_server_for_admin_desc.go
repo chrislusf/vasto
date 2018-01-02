@@ -20,8 +20,8 @@ func (ms *masterServer) Describe(ctx context.Context, req *pb.DescribeRequest) (
 					Cluster:     cluster.ToCluster(),
 					ClientCount: uint32(ms.clientsStat.getClusterClientCount(keyspace.name, data_center_name(req.DescCluster.DataCenter))),
 				}
-				if cluster.GetNextClusterRing() != nil {
-					resp.DescCluster.NextCluster = cluster.GetNextClusterRing().ToCluster()
+				if cluster.GetNextCluster() != nil {
+					resp.DescCluster.NextCluster = cluster.GetNextCluster().ToCluster()
 				}
 			}
 		}

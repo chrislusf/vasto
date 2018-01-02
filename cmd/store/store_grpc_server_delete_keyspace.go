@@ -57,6 +57,7 @@ func (ss *storeServer) deleteShards(keyspace string, shouldTellMaster bool) (err
 	os.RemoveAll(dir)
 	ss.keyspaceShards.deleteKeyspace(keyspace)
 	ss.deleteServerStatusInCluster(keyspace)
+	ss.clusterListener.RemoveKeyspace(keyspace)
 
 	return nil
 }

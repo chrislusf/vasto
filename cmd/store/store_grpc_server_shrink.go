@@ -140,7 +140,7 @@ func (ss *storeServer) copyFromRetiringShards(ctx context.Context, request *pb.S
 		}
 
 		return eachInt(retiringServerIds, func(serverId int) error {
-			return shard.clusterRing.WithConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
+			return shard.clusterRing.WithConnection(serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 				_, _, copyErr := shard.writeToSst(ctx, grpcConnection, request.TargetClusterSize, int(shard.id))
 				return copyErr
 			})
@@ -163,7 +163,7 @@ func (ss *storeServer) followRetiringShards(request *pb.ShrinkClusterPrepareRequ
 		}
 
 		return eachInt(retiringServerIds, func(serverId int) error {
-			return shard.clusterRing.WithConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
+			return shard.clusterRing.WithConnection(serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 				return shard.followChanges(context.Background(), node, grpcConnection, int(shard.id), int(request.TargetClusterSize))
 			})
 		})

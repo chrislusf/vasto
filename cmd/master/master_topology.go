@@ -32,7 +32,7 @@ type dataCenter struct {
 type keyspace struct {
 	sync.RWMutex
 	name     keyspace_name
-	clusters map[data_center_name]*topology.ClusterRing
+	clusters map[data_center_name]*topology.Cluster
 }
 
 type dataCenters struct {
@@ -68,7 +68,7 @@ func (ks *keyspaces) getOrCreateKeyspace(keyspaceName string) *keyspace {
 	if !hasData {
 		k = &keyspace{
 			name:     keyspace_name(keyspaceName),
-			clusters: make(map[data_center_name]*topology.ClusterRing),
+			clusters: make(map[data_center_name]*topology.Cluster),
 		}
 		ks.Lock()
 		ks.keyspaces[k.name] = k
@@ -90,7 +90,7 @@ func (ks *keyspaces) removeKeyspace(keyspaceName string) {
 	ks.Unlock()
 }
 
-func (k *keyspace) getCluster(dataCenterName string) (cluster *topology.ClusterRing, found bool) {
+func (k *keyspace) getCluster(dataCenterName string) (cluster *topology.Cluster, found bool) {
 	k.RLock()
 	cluster, found = k.clusters[data_center_name(dataCenterName)]
 	k.RUnlock()
@@ -104,10 +104,10 @@ func (k *keyspace) removeCluster(dataCenterName string) {
 }
 
 func (k *keyspace) doGetOrCreateCluster(dataCenterName string, clusterSize int, replicationFactor int) (
-	cluster *topology.ClusterRing, isNew bool) {
+	cluster *topology.Cluster, isNew bool) {
 	cluster, found := k.getCluster(dataCenterName)
 	if !found {
-		cluster = topology.NewHashRing(string(k.name), dataCenterName, clusterSize, replicationFactor)
+		cluster = topology.NewCluster(string(k.name), dataCenterName, clusterSize, replicationFactor)
 		k.Lock()
 		k.clusters[data_center_name(dataCenterName)] = cluster
 		k.Unlock()
@@ -117,7 +117,7 @@ func (k *keyspace) doGetOrCreateCluster(dataCenterName string, clusterSize int, 
 	return
 }
 
-func (k *keyspace) getOrCreateCluster(dataCenterName string, clusterSize int, replicationFactor int) (*topology.ClusterRing) {
+func (k *keyspace) getOrCreateCluster(dataCenterName string, clusterSize int, replicationFactor int) (*topology.Cluster) {
 	cluster, _ := k.doGetOrCreateCluster(dataCenterName, clusterSize, replicationFactor)
 	cluster.SetExpectedSize(clusterSize)
 	cluster.SetReplicationFactor(replicationFactor)

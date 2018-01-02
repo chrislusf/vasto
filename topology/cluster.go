@@ -6,110 +6,186 @@ import (
 
 	"github.com/dgryski/go-jump"
 	"github.com/chrislusf/vasto/pb"
+	"sort"
 )
 
 // --------------------
 //      Hash FixedCluster
 // --------------------
 
-type ClusterRing struct {
+type Cluster struct {
 	keyspace          string
 	dataCenter        string
-	nodes             []Node
+	logicalShards     []LogicalShardGroup
 	expectedSize      int
 	replicationFactor int
-	nextClusterRing   *ClusterRing
+	nextCluster       *Cluster
 }
 
-// adds a address (+virtual hosts to the ring)
-func (cluster *ClusterRing) SetNode(n Node) {
-	if len(cluster.nodes) < n.GetId()+1 {
-		capacity := n.GetId() + 1
-		nodes := make([]Node, capacity)
-		copy(nodes, cluster.nodes)
-		cluster.nodes = nodes
+type LogicalShardGroup []*pb.ClusterNode
+
+func (shards LogicalShardGroup) String() string {
+	if len(shards) == 0 {
+		return ""
 	}
-	cluster.nodes[n.GetId()] = n
-}
-
-func (cluster *ClusterRing) RemoveNode(nodeId int) Node {
-	if nodeId < len(cluster.nodes) {
-		n := cluster.nodes[nodeId]
-		cluster.nodes[nodeId] = nil
-		return n
+	var buf bytes.Buffer
+	buf.WriteString(fmt.Sprintf("%d@", shards[0].ShardInfo.ShardId))
+	for i, shard := range shards {
+		if i != 0 {
+			buf.WriteString(",")
+		}
+		buf.WriteString(fmt.Sprintf("%d", shard.ShardInfo.ServerId))
 	}
-	return nil
+	return buf.String()
 }
 
-func (cluster *ClusterRing) SetShardInfo(shardInfo *pb.ShardInfo) {
-	node, _, found := cluster.GetNode(int(shardInfo.ServerId))
-	if !found {
+func (cluster *Cluster) SetShard(store *pb.StoreResource, shard *pb.ShardInfo) (oldShardInfo *pb.ShardInfo) {
+	shardId := int(shard.ShardId)
+	if len(cluster.logicalShards) < shardId+1 {
+		capacity := shardId + 1
+		nodes := make([]LogicalShardGroup, capacity)
+		copy(nodes, cluster.logicalShards)
+		cluster.logicalShards = nodes
+	}
+	shardGroup := cluster.logicalShards[shardId]
+	for i := 0; i < len(shardGroup); i++ {
+		if shardGroup[i].StoreResource.Address == store.Address && shardGroup[i].ShardInfo.ShardId == shard.ShardId {
+			oldShardInfo = shardGroup[i].ShardInfo
+			shardGroup[i].ShardInfo = shard
+			return
+		}
+	}
+	shardGroup = append(shardGroup, &pb.ClusterNode{
+		StoreResource: store,
+		ShardInfo:     shard,
+	})
+	cluster.logicalShards[shardId] = sortedShards(shardGroup)
+	return
+}
+
+// RemoveShard returns true if no other shards is on this store
+func (cluster *Cluster) RemoveShard(store *pb.StoreResource, shard *pb.ShardInfo) (storeDeleted bool) {
+	shardId := int(shard.ShardId)
+	if len(cluster.logicalShards) <= shardId {
 		return
 	}
-	node.RemoveShardInfo(shardInfo)
-	if len(node.GetShardInfoList()) == 0 {
-		cluster.RemoveNode(node.GetId())
+	shardGroup := cluster.logicalShards[shardId]
+	for i := 0; i < len(shardGroup); i++ {
+		if shardGroup[i].StoreResource.Address == store.Address && shardGroup[i].ShardInfo.ShardId == shard.ShardId {
+			copy(shardGroup[i:], shardGroup[i+1:])
+			shardGroup[len(shardGroup)-1] = nil // or the zero value of T
+			shardGroup = shardGroup[:len(shardGroup)-1]
+			cluster.logicalShards[shardId] = sortedShards(shardGroup)
+			break
+		}
 	}
+
+	// check other shards that may be using the store
+	for _, shardGroup := range cluster.logicalShards {
+		for i := 0; i < len(shardGroup); i++ {
+			if shardGroup[i].StoreResource.Address == store.Address {
+				return false
+			}
+		}
+	}
+	return !cluster.isStoreInUse(store) && !cluster.GetNextCluster().isStoreInUse(store)
 }
 
-func (cluster *ClusterRing) RemoveShardInfo(shardInfo *pb.ShardInfo) {
-	node, _, found := cluster.GetNode(int(shardInfo.ServerId))
-	if !found {
-		return
+func (cluster *Cluster) RemoveStore(store *pb.StoreResource) (removedShards []*pb.ShardInfo) {
+	for shardId, shardGroup := range cluster.logicalShards {
+		for i := 0; i < len(shardGroup); i++ {
+			if shardGroup[i].StoreResource.Address == store.Address {
+
+				removedShards = append(removedShards, shardGroup[i].ShardInfo)
+
+				copy(shardGroup[i:], shardGroup[i+1:])
+				shardGroup[len(shardGroup)-1] = nil // or the zero value of T
+				shardGroup = shardGroup[:len(shardGroup)-1]
+				i--
+			}
+		}
+		cluster.logicalShards[shardId] = sortedShards(shardGroup)
 	}
-	node.RemoveShardInfo(shardInfo)
-	if len(node.GetShardInfoList()) == 0 {
-		cluster.RemoveNode(node.GetId())
+	return
+}
+
+func (cluster *Cluster) isStoreInUse(store *pb.StoreResource) bool {
+	if cluster == nil {
+		return false
 	}
+	// check other shards that may be using the store
+	for _, shardGroup := range cluster.logicalShards {
+		for i := 0; i < len(shardGroup); i++ {
+			if shardGroup[i].StoreResource.Address == store.Address {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func sortedShards(shards LogicalShardGroup) LogicalShardGroup {
+	sort.Slice(shards, func(i, j int) bool {
+		x := int(shards[i].ShardInfo.ServerId) - int(shards[i].ShardInfo.ShardId)
+		if x < 0 {
+			x += len(shards)
+		}
+		y := int(shards[j].ShardInfo.ServerId) - int(shards[j].ShardInfo.ShardId)
+		if y < 0 {
+			y += len(shards)
+		}
+		return x < y
+	})
+	return shards
 }
 
 // calculates a Jump hash for the keyHash provided
-func (cluster *ClusterRing) FindShardId(keyHash uint64) int {
+func (cluster *Cluster) FindShardId(keyHash uint64) int {
 	return int(jump.Hash(keyHash, cluster.expectedSize))
 }
 
-func (cluster *ClusterRing) ExpectedSize() int {
+func (cluster *Cluster) ExpectedSize() int {
 	return cluster.expectedSize
 }
 
-func (cluster *ClusterRing) ReplicationFactor() int {
+func (cluster *Cluster) ReplicationFactor() int {
 	return cluster.replicationFactor
 }
 
-func (cluster *ClusterRing) SetExpectedSize(expectedSize int) {
+func (cluster *Cluster) SetExpectedSize(expectedSize int) {
 	if expectedSize > 0 {
 		cluster.expectedSize = expectedSize
-		if len(cluster.nodes) == 0 {
-			cluster.nodes = make([]Node, expectedSize)
+		if len(cluster.logicalShards) == 0 {
+			cluster.logicalShards = make([]LogicalShardGroup, expectedSize)
 		}
-		if expectedSize < len(cluster.nodes) {
-			cluster.nodes = cluster.nodes[0:expectedSize]
+		if expectedSize < len(cluster.logicalShards) {
+			cluster.logicalShards = cluster.logicalShards[0:expectedSize]
 		}
 	}
 }
 
-func (cluster *ClusterRing) SetNextClusterRing(expectedSize int, replicationFactor int) *ClusterRing {
-	cluster.nextClusterRing = NewHashRing(cluster.keyspace, cluster.dataCenter, expectedSize, replicationFactor)
-	return cluster.nextClusterRing
+func (cluster *Cluster) SetNextCluster(expectedSize int, replicationFactor int) *Cluster {
+	cluster.nextCluster = NewCluster(cluster.keyspace, cluster.dataCenter, expectedSize, replicationFactor)
+	return cluster.nextCluster
 }
 
-func (cluster *ClusterRing) GetNextClusterRing() *ClusterRing {
-	return cluster.nextClusterRing
+func (cluster *Cluster) GetNextCluster() *Cluster {
+	return cluster.nextCluster
 }
 
-func (cluster *ClusterRing) RemoveNextClusterRing() {
-	cluster.nextClusterRing = nil
+func (cluster *Cluster) RemoveNextCluster() {
+	cluster.nextCluster = nil
 }
 
-func (cluster *ClusterRing) SetReplicationFactor(replicationFactor int) {
+func (cluster *Cluster) SetReplicationFactor(replicationFactor int) {
 	if replicationFactor > 0 {
 		cluster.replicationFactor = replicationFactor
 	}
 }
 
-func (cluster *ClusterRing) CurrentSize() int {
-	for i := len(cluster.nodes); i > 0; i-- {
-		if cluster.nodes[i-1] == nil || cluster.nodes[i-1].GetAddress() == "" {
+func (cluster *Cluster) CurrentSize() int {
+	for i := len(cluster.logicalShards); i > 0; i-- {
+		if len(cluster.logicalShards[i-1]) == 0 {
 			continue
 		}
 		return i
@@ -117,81 +193,57 @@ func (cluster *ClusterRing) CurrentSize() int {
 	return 0
 }
 
-func (cluster *ClusterRing) GetNode(shardId int, options ...AccessOption) (Node, int, bool) {
+func (cluster *Cluster) GetNode(shardId int, options ...AccessOption) (*pb.ClusterNode, int, bool) {
 	replica := 0
-	serverId := shardId
-	clusterSize := len(cluster.nodes)
+	shards := cluster.getShards(shardId)
 	for _, option := range options {
-		serverId, replica = option(serverId, clusterSize)
+		_, replica = option(shardId, cluster.expectedSize)
 	}
-	if serverId < 0 || serverId >= len(cluster.nodes) {
+	if replica < 0 || replica >= len(shards) {
 		return nil, 0, false
 	}
-	if cluster.nodes[serverId] == nil {
-		return nil, 0, false
-	}
-	return cluster.nodes[serverId], replica, true
+
+	return shards[replica], replica, true
 }
 
-func (cluster *ClusterRing) GetOneNode(shardId int, options ...AccessOption) (Node, int, bool) {
-	replica := 0
-	serverId := shardId
-	clusterSize := len(cluster.nodes)
-	for _, option := range options {
-		serverId, replica = option(serverId, clusterSize)
+func (cluster *Cluster) getShards(shardId int) LogicalShardGroup {
+	if shardId < 0 || shardId >= len(cluster.logicalShards) {
+		return nil
 	}
-	if serverId < 0 || serverId >= len(cluster.nodes) {
-		return nil, 0, false
-	}
-	if cluster.nodes[serverId] == nil {
-		if replica == 0 {
-			// try other locations if replica is not specified
-			for i := 1; i < cluster.replicationFactor; i++ {
-				position := serverId + i
-				if position >= cluster.expectedSize {
-					position -= cluster.expectedSize
-				}
-				if cluster.nodes[position] != nil {
-					return cluster.nodes[position], i, true
-				}
-			}
-		}
-		return nil, 0, false
-	}
-	return cluster.nodes[serverId], replica, true
+	return cluster.logicalShards[shardId]
 }
 
-// NewHashRing creates a new hash ring.
-func NewHashRing(keyspace, dataCenter string, expectedSize int, replicationFactor int) *ClusterRing {
-	return &ClusterRing{
+func (cluster *Cluster) GetAllShards() []LogicalShardGroup {
+	return cluster.logicalShards
+}
+
+// NewCluster creates a new cluster.
+func NewCluster(keyspace, dataCenter string, expectedSize int, replicationFactor int) *Cluster {
+	return &Cluster{
 		keyspace:          keyspace,
 		dataCenter:        dataCenter,
-		nodes:             make([]Node, expectedSize),
+		logicalShards:     make([]LogicalShardGroup, expectedSize),
 		expectedSize:      expectedSize,
 		replicationFactor: replicationFactor,
 	}
 }
 
-func (cluster *ClusterRing) String() string {
+func (cluster *Cluster) String() string {
 	var output bytes.Buffer
 	output.Write([]byte{'['})
-	for i := 0; i < len(cluster.nodes); i++ {
+	for i := 0; i < len(cluster.logicalShards); i++ {
 		if i != 0 {
 			output.Write([]byte{' '})
 		}
-		n := cluster.nodes[i]
-		if n == nil || n.GetAddress() == "" {
+		shards := cluster.logicalShards[i]
+		if len(shards) == 0 {
 			output.Write([]byte{'_'})
 		} else {
-			output.WriteString(fmt.Sprintf("%d", n.GetId()))
+			output.WriteString(shards.String())
 		}
 	}
 	output.Write([]byte{']'})
 	output.WriteString(fmt.Sprintf(" size %d/%d ", cluster.CurrentSize(), cluster.ExpectedSize()))
 
 	return output.String()
-}
-
-func (cluster *ClusterRing) GetNodes() []Node {
-	return cluster.nodes
 }

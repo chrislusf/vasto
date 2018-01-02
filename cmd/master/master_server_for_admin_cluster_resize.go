@@ -32,9 +32,9 @@ func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest
 		return
 	}
 
-	if cluster.GetNextClusterRing() != nil {
+	if cluster.GetNextCluster() != nil {
 		resp.Error = fmt.Sprintf("cluster %s %s is resizing %d => %d in progress ...",
-			req.Keyspace, req.DataCenter, cluster.CurrentSize(), cluster.GetNextClusterRing().ExpectedSize())
+			req.Keyspace, req.DataCenter, cluster.CurrentSize(), cluster.GetNextCluster().ExpectedSize())
 		return
 	}
 
@@ -44,11 +44,10 @@ func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest
 	}
 
 	var existingServers, newServers []*pb.StoreResource
-	for _, node := range cluster.GetNodes() {
-		existingServers = append(existingServers, &pb.StoreResource{
-			Address:      node.GetAddress(),
-			AdminAddress: node.GetAdminAddress(),
-		})
+	for i := 0; i < cluster.ExpectedSize(); i++ {
+		if node, _, found := cluster.GetNode(i); found {
+			existingServers = append(existingServers, node.StoreResource)
+		}
 	}
 
 	// 1. allocate new servers for the growing cluster
@@ -101,13 +100,15 @@ func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest
 }
 
 // TODO add tags for filtering
-func allocateServers(cluster *topology.ClusterRing, dc *dataCenter, serverCount int, eachShardSizeGb float64) ([]*pb.StoreResource, error) {
+func allocateServers(cluster *topology.Cluster, dc *dataCenter, serverCount int, eachShardSizeGb float64) ([]*pb.StoreResource, error) {
 	servers, err := dc.allocateServers(serverCount, eachShardSizeGb,
 		func(resource *pb.StoreResource) bool {
 
-			for _, node := range cluster.GetNodes() {
-				if node.GetAddress() == resource.GetAddress() {
-					return false
+			for i := 0; i < cluster.ExpectedSize(); i++ {
+				if node, _, found := cluster.GetNode(i); found {
+					if node.StoreResource.GetAddress() == resource.GetAddress() {
+						return false
+					}
 				}
 			}
 
@@ -170,7 +171,7 @@ func resizeCommit(ctx context.Context, keyspace string, clusterSize uint32, stor
 	})
 }
 
-func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Context, req *pb.ResizeRequest, cluster *topology.ClusterRing, newStores []*pb.StoreResource, existingServers []*pb.StoreResource) error {
+func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Context, req *pb.ResizeRequest, cluster *topology.Cluster, newStores []*pb.StoreResource, existingServers []*pb.StoreResource) error {
 
 	log.Printf("adjustAndBroadcastUpcomingShardStatuses %v", req)
 
@@ -178,75 +179,45 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 	time.Sleep(time.Second)
 	// TODO wait until all updated shards are reported back
 
-	candidateCluster := cluster.GetNextClusterRing()
+	candidateCluster := cluster.GetNextCluster()
 
 	newClusterSize := int(req.TargetClusterSize)
-	oldClusterSize := cluster.ExpectedSize()
 	replicationFactor := cluster.ReplicationFactor()
 
-	maxClusterSize := newClusterSize
-	if maxClusterSize < oldClusterSize {
-		maxClusterSize = oldClusterSize
+	// promote candidate shards into the real cluster
+	if candidateCluster != nil {
+		for _, logicalShardGroup := range candidateCluster.GetAllShards() {
+			for _, node := range logicalShardGroup {
+				node.ShardInfo.IsCandidate = false
+				cluster.SetShard(node.StoreResource, node.ShardInfo)
+				ms.notifyPromotion(node.ShardInfo, node.StoreResource)
+				log.Printf("promoting new shard %v on %s", node.ShardInfo.IdentifierOnThisServer(), node.StoreResource.GetAddress())
+			}
+		}
 	}
+	cluster.RemoveNextCluster()
 
-	// report new shards, update shards, and delete retiring shards
-	for serverId := 0; serverId < maxClusterSize; serverId++ {
-
-		oldServer, _, oldServerFound := cluster.GetNode(serverId)
-		if oldServerFound {
-			// these should be to-be-removed servers, or no-change servers, only change the cluster size
-			for _, shardInfo := range oldServer.GetShardInfoList() {
-				if topology.IsShardInLocal(int(shardInfo.ShardId), int(shardInfo.ServerId), newClusterSize, replicationFactor) {
-					// change shards that will be on the new cluster
-					shardInfo.IsCandidate = false
-					shardInfo.ClusterSize = uint32(newClusterSize)
-					ms.notifyUpdate(shardInfo, oldServer.GetStoreResource())
-					log.Printf("change shard %v on %s to cluster size %d", shardInfo.IdentifierOnThisServer(), oldServer.GetAddress(), newClusterSize)
-				} else {
-					oldServer.RemoveShardInfo(shardInfo)
-					shardInfo.IsPermanentDelete = true
-					ms.notifyDeletion(shardInfo, oldServer.GetStoreResource())
-					log.Printf("delete shard %v on %s for cluster size %d", shardInfo.IdentifierOnThisServer(), oldServer.GetAddress(), newClusterSize)
+	// fix existing shards and drop retiring shards
+	var toBeRemoved []*pb.ClusterNode
+	for _, logicalShardGroup := range cluster.GetAllShards() {
+		for _, node := range logicalShardGroup {
+			if topology.IsShardInLocal(int(node.ShardInfo.ShardId), int(node.ShardInfo.ServerId), newClusterSize, replicationFactor) {
+				if int(node.ShardInfo.ClusterSize) != newClusterSize {
+					node.ShardInfo.ClusterSize = uint32(newClusterSize)
+					ms.notifyUpdate(node.ShardInfo, node.GetStoreResource())
+					log.Printf("change shard %v on %s to cluster size %d", node.ShardInfo.IdentifierOnThisServer(), node.StoreResource.GetAddress(), newClusterSize)
 				}
-			}
-			if len(oldServer.GetShardInfoList()) == 0 {
-				cluster.RemoveNode(serverId)
-			}
-		}
-
-		if candidateCluster == nil {
-			continue // no new servers or shards are created
-		}
-
-		if newServer, _, newServerFound := candidateCluster.GetNode(serverId); newServerFound {
-			// these are new servers with new or updated shards
-			for _, shardInfo := range newServer.GetShardInfoList() {
-				if topology.IsShardInLocal(int(shardInfo.ShardId), int(shardInfo.ServerId), newClusterSize, replicationFactor) {
-					// double check shards that will be on the new cluster, may not be necessary
-					shardInfo.IsCandidate = false
-					ms.notifyPromotion(shardInfo, newServer.GetStoreResource())
-					log.Printf("promote shard %v on %s to cluster size %d", shardInfo.IdentifierOnThisServer(), newServer.GetAddress(), newClusterSize)
-				} else {
-					log.Printf("something wrong here! %s on server %s", shardInfo.IdentifierOnThisServer(), newServer.GetAddress())
-				}
-			}
-
-			// promote the node into the cluster
-			candidateCluster.RemoveNode(serverId)
-			if candidateCluster.CurrentSize() == 0 {
-				cluster.RemoveNextClusterRing()
-			}
-			if !oldServerFound {
-				// simply move the new server into the cluster
-				cluster.SetNode(newServer)
 			} else {
-				// move off the shards onto the existing server
-				for _, shardInfo := range newServer.GetShardInfoList() {
-					oldServer.SetShardInfo(shardInfo)
-				}
+				// move removing outside to avoid modifying when iterating
+				toBeRemoved = append(toBeRemoved, node)
 			}
 		}
-
+	}
+	for _, node := range toBeRemoved {
+		cluster.RemoveShard(node.StoreResource, node.ShardInfo)
+		node.ShardInfo.IsPermanentDelete = true
+		ms.notifyDeletion(node.ShardInfo, node.GetStoreResource())
+		log.Printf("delete shard %v on %s for cluster size %d", node.ShardInfo.IdentifierOnThisServer(), node.StoreResource.GetAddress(), newClusterSize)
 	}
 
 	return nil

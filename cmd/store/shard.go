@@ -12,6 +12,7 @@ import (
 	"github.com/chrislusf/vasto/util"
 	"time"
 	"google.golang.org/grpc"
+	"github.com/chrislusf/vasto/pb"
 )
 
 type shard_id int
@@ -23,7 +24,7 @@ type shard struct {
 	serverId           server_id
 	db                 *rocks.Rocks
 	lm                 *binlog.LogManager
-	clusterRing        *topology.ClusterRing
+	clusterRing        *topology.Cluster
 	clusterListener    *cluster_listener.ClusterListener
 	nodeFinishChan     chan bool
 	cancelFunc         context.CancelFunc
@@ -36,7 +37,7 @@ func (s *shard) String() string {
 	return fmt.Sprintf("%s.%d.%d", s.keyspace, s.serverId, s.id)
 }
 
-func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.ClusterRing,
+func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.Cluster,
 	clusterListener *cluster_listener.ClusterListener,
 	replicationFactor int, logFileSizeMb int, logFileCount int) (context.Context, *shard) {
 
@@ -66,8 +67,6 @@ func (s *shard) shutdownNode() {
 	s.isShutdown = true
 
 	s.cancelFunc()
-
-	s.clusterListener.RemoveKeyspace(s.keyspace)
 
 	s.clusterListener.UnregisterShardEventProcessor(s)
 
@@ -132,7 +131,7 @@ func (s *shard) startWithBootstrapPlan(ctx context.Context, bootstrapOption *top
 
 func (s *shard) doFollow(ctx context.Context, serverId int, sourceShardId int, targetClusterSize int) error {
 
-	return s.clusterRing.WithConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
+	return s.clusterRing.WithConnection(serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 		return s.followChanges(ctx, node, grpcConnection, sourceShardId, targetClusterSize)
 	})
 

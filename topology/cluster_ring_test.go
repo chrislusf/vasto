@@ -8,32 +8,9 @@ import (
 	"github.com/chrislusf/vasto/pb"
 )
 
-// tests the GetAddress function on the Node interface
-func TestNode(t *testing.T) {
-	host := "localhost:7000"
-	n := NewNode(3, &pb.StoreResource{
-		DataCenter:"dc1",
-		Network: "tcp",
-		Address:host,
-	})
-
-	// validate address name
-	assert.Equal(t, host, n.GetAddress())
-	assert.Equal(t, 3, n.GetId())
-}
-
 // closure function for benchmarking multiple clusters
 func baselineBenchmark(hosts int) func(b *testing.B) {
-	ring := NewHashRing("ks1", "dc1", hosts, 2)
-	for i := 0; i < hosts; i++ {
-		n := NewNode(i, &pb.StoreResource{
-			DataCenter:"dc1",
-			Network: "tcp",
-			Address:fmt.Sprint("localhost:", 7000+i),
-			AdminAddress:fmt.Sprint("localhost:", 8000+i),
-		})
-		ring.SetNode(n)
-	}
+	ring := createRing(hosts)
 
 	return func(b *testing.B) {
 		// use the ring hash a number
@@ -89,16 +66,28 @@ func TestHashing(t *testing.T) {
 	assert.True(t, actualMovedPercentage < expectedMovePercentage+0.002)
 }
 
-func createRing(hosts int) *ClusterRing {
-	ring := NewHashRing("ks1", "dc1", hosts, 2)
+func createRing(hosts int) *Cluster {
+	replicationFactor := 2
+	ring := NewCluster("ks1", "dc1", hosts, replicationFactor)
 	for i := 0; i < hosts; i++ {
-		n := NewNode(i, &pb.StoreResource{
-			DataCenter:"dc1",
-			Network: "tcp",
-			Address:fmt.Sprint("localhost:", 7000+i),
-			AdminAddress:fmt.Sprint("localhost:", 8000+i),
-		})
-		ring.SetNode(n)
+		for r := 0; r < replicationFactor; r++ {
+			shardId := i - r;
+			if shardId < 0 {
+				shardId += hosts
+			}
+			ring.SetShard(&pb.StoreResource{
+				DataCenter:   "dc1",
+				Network:      "tcp",
+				Address:      fmt.Sprint("localhost:", 7000+i),
+				AdminAddress: fmt.Sprint("localhost:", 8000+i),
+			}, &pb.ShardInfo{
+				KeyspaceName:      "ks1",
+				ServerId:          uint32(i),
+				ShardId:           uint32(shardId),
+				ClusterSize:       uint32(hosts),
+				ReplicationFactor: uint32(replicationFactor),
+			})
+		}
 	}
 	return ring
 }

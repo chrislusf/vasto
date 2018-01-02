@@ -36,7 +36,7 @@ func (s *shard) maybeBootstrapAfterRestart(ctx context.Context) error {
 
 	log.Printf("bootstrap from server %d ...", bestPeerToCopy)
 
-	return s.clusterRing.WithConnection(bestPeerToCopy, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
+	return s.clusterRing.WithConnection(bestPeerToCopy, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 		_, canTailBinlog, err := s.checkBinlogAvailable(ctx, grpcConnection, node)
 		if err != nil {
 			return err
@@ -65,7 +65,7 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapOption *topolo
 
 		log.Printf("bootstrap from server %d ...", bestPeerToCopy)
 
-		return s.clusterRing.WithConnection(bestPeerToCopy, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
+		return s.clusterRing.WithConnection(bestPeerToCopy, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 			return s.doBootstrapCopy(ctx, grpcConnection, node)
 		})
 	}
@@ -75,16 +75,16 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapOption *topolo
 		bootstrapSourceServerIds = append(bootstrapSourceServerIds, shard.ServerId)
 	}
 	return eachInt(bootstrapSourceServerIds, func(serverId int) error {
-		return s.clusterRing.WithConnection(serverId, func(node topology.Node, grpcConnection *grpc.ClientConn) error {
+		return s.clusterRing.WithConnection(serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 			return s.doBootstrapCopy(ctx, grpcConnection, node)
 		})
 	})
 
 }
 
-func (s *shard) checkBinlogAvailable(ctx context.Context, grpcConnection *grpc.ClientConn, node topology.Node) (latestSegment uint32, canTailBinlog bool, err error) {
+func (s *shard) checkBinlogAvailable(ctx context.Context, grpcConnection *grpc.ClientConn, node *pb.ClusterNode) (latestSegment uint32, canTailBinlog bool, err error) {
 
-	segment, _, hasProgress, err := s.loadProgress(node.GetAdminAddress())
+	segment, _, hasProgress, err := s.loadProgress(node.StoreResource.GetAdminAddress())
 
 	// println("shard", s.id, "segment", segment, "hasProgress", hasProgress, "err", err)
 
@@ -110,7 +110,7 @@ func (s *shard) checkBinlogAvailable(ctx context.Context, grpcConnection *grpc.C
 
 }
 
-func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.ClientConn, node topology.Node) error {
+func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.ClientConn, node *pb.ClusterNode) error {
 
 	segment, offset, err := s.writeToSst(ctx, grpcConnection, 0, 0)
 
@@ -118,7 +118,7 @@ func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.Client
 		return fmt.Errorf("writeToSst: %v", err)
 	}
 
-	return s.saveProgress(node.GetAdminAddress(), segment, offset)
+	return s.saveProgress(node.StoreResource.GetAdminAddress(), segment, offset)
 
 }
 
