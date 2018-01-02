@@ -85,7 +85,7 @@ func (d *Rocks) Close() {
 			break
 		}
 		log.Printf("waiting to close db %s ...", d.path)
-		time.Sleep(3 * time.Second)
+		time.Sleep(300 * time.Millisecond)
 	}
 	d.wo.Destroy()
 	d.ro.Destroy()
