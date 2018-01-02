@@ -165,7 +165,9 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 						} else if msg.Updates.GetIsDelete() {
 							clusterListener.RemoveNode(msg.Updates.Keyspace, node)
 							for _, shardEventProcess := range clusterListener.shardEventProcessors {
-								shardEventProcess.OnShardRemoveEvent(cluster, node.StoreResource, node.ShardInfo)
+								if shardEventProcess != nil {
+									shardEventProcess.OnShardRemoveEvent(cluster, node.StoreResource, node.ShardInfo)
+								}
 							}
 						} else {
 							oldShardInfo := clusterListener.AddNode(msg.Updates.Keyspace, node)
