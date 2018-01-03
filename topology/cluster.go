@@ -59,7 +59,7 @@ func (cluster *Cluster) SetShard(store *pb.StoreResource, shard *pb.ShardInfo) (
 		StoreResource: store,
 		ShardInfo:     shard,
 	})
-	cluster.logicalShards[shardId] = sortedShards(shardGroup)
+	cluster.logicalShards[shardId] = sortedShards(shardGroup, len(cluster.logicalShards))
 	return
 }
 
@@ -75,7 +75,7 @@ func (cluster *Cluster) RemoveShard(store *pb.StoreResource, shard *pb.ShardInfo
 			copy(shardGroup[i:], shardGroup[i+1:])
 			shardGroup[len(shardGroup)-1] = nil // or the zero value of T
 			shardGroup = shardGroup[:len(shardGroup)-1]
-			cluster.logicalShards[shardId] = sortedShards(shardGroup)
+			cluster.logicalShards[shardId] = sortedShards(shardGroup, len(cluster.logicalShards))
 			break
 		}
 	}
@@ -104,7 +104,7 @@ func (cluster *Cluster) RemoveStore(store *pb.StoreResource) (removedShards []*p
 				i--
 			}
 		}
-		cluster.logicalShards[shardId] = sortedShards(shardGroup)
+		cluster.logicalShards[shardId] = sortedShards(shardGroup, len(cluster.logicalShards))
 	}
 	return
 }
@@ -124,15 +124,15 @@ func (cluster *Cluster) isStoreInUse(store *pb.StoreResource) bool {
 	return false
 }
 
-func sortedShards(shards LogicalShardGroup) LogicalShardGroup {
+func sortedShards(shards LogicalShardGroup, clusterSize int) LogicalShardGroup {
 	sort.Slice(shards, func(i, j int) bool {
 		x := int(shards[i].ShardInfo.ServerId) - int(shards[i].ShardInfo.ShardId)
 		if x < 0 {
-			x += len(shards)
+			x += clusterSize
 		}
 		y := int(shards[j].ShardInfo.ServerId) - int(shards[j].ShardInfo.ShardId)
 		if y < 0 {
-			y += len(shards)
+			y += clusterSize
 		}
 		return x < y
 	})
