@@ -98,7 +98,7 @@ func deleteShards(ctx context.Context, req *pb.DeleteClusterRequest, stores []*p
 				Keyspace: req.Keyspace,
 			}
 
-			log.Printf("delete shard on %v: %v", store.AdminAddress, request)
+			log.Printf("delete keyspace on %v: %v", store.AdminAddress, request)
 			resp, err := client.DeleteKeyspace(ctx, request)
 			if err != nil {
 				return err
