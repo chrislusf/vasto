@@ -129,8 +129,8 @@ func printCluster(out io.Writer, cluster *pb.Cluster) {
 		fmt.Fprintf(out, "Cluster Current  Size: %d\n", cluster.CurrentClusterSize)
 
 		for _, node := range cluster.Nodes {
-			fmt.Fprintf(out, "        * node %v shard %v %v\n",
-				node.ShardInfo.ServerId, node.ShardInfo.ShardId, node.StoreResource.Address)
+			fmt.Fprintf(out, "        * shard %v server %v %v\n",
+				node.ShardInfo.ShardId, node.ShardInfo.ServerId, node.StoreResource.Address)
 		}
 
 	}
