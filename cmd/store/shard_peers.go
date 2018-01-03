@@ -17,12 +17,12 @@ func (s *shard) isBootstrapNeeded(ctx context.Context, bootstrapOption *topology
 	bestPeerToCopy = -1
 	checkedServerCount := 0
 	for _, peer := range peerShards {
-		_, _, ok := s.clusterRing.GetNode(peer.ServerId)
+		_, _, ok := s.cluster.GetNode(peer.ServerId)
 		if !ok {
 			continue
 		}
 		checkedServerCount++
-		go s.clusterRing.WithConnection(peer.ServerId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+		go s.cluster.WithConnection(peer.ServerId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 
 			latestSegment, canTailBinlog, err := s.checkBinlogAvailable(ctx, grpcConnection, node)
 			if err != nil {

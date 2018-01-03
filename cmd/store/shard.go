@@ -24,7 +24,7 @@ type shard struct {
 	serverId           server_id
 	db                 *rocks.Rocks
 	lm                 *binlog.LogManager
-	clusterRing        *topology.Cluster
+	cluster            *topology.Cluster
 	clusterListener    *cluster_listener.ClusterListener
 	nodeFinishChan     chan bool
 	cancelFunc         context.CancelFunc
@@ -48,7 +48,7 @@ func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.
 		id:              shard_id(nodeId),
 		serverId:        server_id(serverId),
 		db:              rocks.New(dir),
-		clusterRing:     cluster,
+		cluster:         cluster,
 		clusterListener: clusterListener,
 		nodeFinishChan:  make(chan bool),
 		cancelFunc:      cancelFunc,
@@ -88,7 +88,7 @@ func (s *shard) startWithBootstrapPlan(ctx context.Context, bootstrapOption *top
 
 	// bootstrap the data
 	if bootstrapOption.IsNormalStart {
-		if s.clusterRing != nil && bootstrapOption.IsNormalStartBootstrapNeeded {
+		if s.cluster != nil && bootstrapOption.IsNormalStartBootstrapNeeded {
 			err := s.maybeBootstrapAfterRestart(ctx)
 			if err != nil {
 				log.Printf("bootstrap: %v", err)
@@ -108,7 +108,7 @@ func (s *shard) startWithBootstrapPlan(ctx context.Context, bootstrapOption *top
 	for _, peer := range s.peerShards() {
 		serverId, shardId := peer.ServerId, peer.ShardId
 		go util.RetryUntil(ctx, fmt.Sprintf("shard %s follow server %d", s.String(), serverId), func() bool {
-			clusterSize, replicationFactor := s.clusterRing.ExpectedSize(), s.clusterRing.ReplicationFactor()
+			clusterSize, replicationFactor := s.cluster.ExpectedSize(), s.cluster.ReplicationFactor()
 			return topology.IsShardInLocal(shardId, serverId, clusterSize, replicationFactor)
 		}, func() error {
 			return s.doFollow(ctx, serverId, shardId, 0)
@@ -118,7 +118,7 @@ func (s *shard) startWithBootstrapPlan(ctx context.Context, bootstrapOption *top
 	// add one time follow during transitional period, there are no retries, assuming the source shards are already up
 	for _, shard := range bootstrapOption.TransitionalFollowSource {
 		go func(shard topology.ClusterShard) {
-			sourceShard, _, found := s.clusterRing.GetNode(int(shard.ServerId))
+			sourceShard, _, found := s.cluster.GetNode(int(shard.ServerId))
 			if found && sourceShard.GetStoreResource().GetAdminAddress() != selfAdminAddress {
 				if err := s.doFollow(ctx, shard.ServerId, shard.ShardId, bootstrapOption.ToClusterSize); err != nil {
 					log.Printf("shard %s stop following server %s : %v", s, sourceShard.GetStoreResource().GetAddress(), err)
@@ -135,7 +135,7 @@ func (s *shard) startWithBootstrapPlan(ctx context.Context, bootstrapOption *top
 
 func (s *shard) doFollow(ctx context.Context, serverId int, sourceShardId int, targetClusterSize int) error {
 
-	return s.clusterRing.WithConnection(serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+	return s.cluster.WithConnection(serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 		return s.followChanges(ctx, node, grpcConnection, sourceShardId, targetClusterSize)
 	})
 

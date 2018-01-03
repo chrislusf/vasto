@@ -125,7 +125,7 @@ func (ss *storeServer) deleteOldShardsInNewCluster(ctx context.Context, request 
 	}
 
 	for _, shard := range shards {
-		if !topology.IsShardInLocal(int(shard.id), int(shard.serverId), int(request.TargetClusterSize), shard.clusterRing.ReplicationFactor()) {
+		if !topology.IsShardInLocal(int(shard.id), int(shard.serverId), int(request.TargetClusterSize), shard.cluster.ReplicationFactor()) {
 			ss.UnregisterPeriodicTask(shard)
 			shard.shutdownNode()
 			shard.db.Close()
@@ -144,7 +144,7 @@ func (ss *storeServer) deleteOldShardsInNewCluster(ctx context.Context, request 
 			ss.clusterListener.RemoveKeyspace(request.Keyspace)
 		} else {
 			for _, shard := range shards {
-				if !topology.IsShardInLocal(int(shard.id), int(shard.serverId), int(request.TargetClusterSize), shard.clusterRing.ReplicationFactor()) {
+				if !topology.IsShardInLocal(int(shard.id), int(shard.serverId), int(request.TargetClusterSize), shard.cluster.ReplicationFactor()) {
 					delete(localShardsStatus.ShardMap, uint32(shard.id))
 				}
 			}
