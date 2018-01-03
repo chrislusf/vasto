@@ -5,7 +5,7 @@ import (
 )
 
 func (clusterListener *ClusterListener) AddNode(keyspace string, n *pb.ClusterNode) (oldShardInfo *pb.ShardInfo) {
-	cluster := clusterListener.GetOrSetClusterRing(keyspace, int(n.ShardInfo.ClusterSize), int(n.ShardInfo.ReplicationFactor))
+	cluster := clusterListener.GetOrSetCluster(keyspace, int(n.ShardInfo.ClusterSize), int(n.ShardInfo.ReplicationFactor))
 
 	if n.ShardInfo.IsCandidate {
 		if cluster.GetNextCluster() == nil {
@@ -18,7 +18,7 @@ func (clusterListener *ClusterListener) AddNode(keyspace string, n *pb.ClusterNo
 }
 
 func (clusterListener *ClusterListener) RemoveNode(keyspace string, n *pb.ClusterNode) {
-	cluster, found := clusterListener.GetClusterRing(keyspace)
+	cluster, found := clusterListener.GetCluster(keyspace)
 	if !found {
 		return
 	}
@@ -42,7 +42,7 @@ func (clusterListener *ClusterListener) RemoveNode(keyspace string, n *pb.Cluste
 }
 
 func (clusterListener *ClusterListener) PromoteNode(keyspace string, n *pb.ClusterNode) {
-	cluster, foundCluster := clusterListener.GetClusterRing(keyspace)
+	cluster, foundCluster := clusterListener.GetCluster(keyspace)
 	if !foundCluster {
 		return
 	}

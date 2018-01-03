@@ -40,7 +40,7 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 		isKeysOnly = false
 	}
 
-	r, found := c.client.ClusterListener.GetClusterRing(*c.client.Option.Keyspace)
+	r, found := c.client.ClusterListener.GetCluster(*c.client.Option.Keyspace)
 	if !found {
 		return fmt.Errorf("no keyspace %s", *c.client.Option.Keyspace)
 	}

@@ -17,7 +17,7 @@ import (
 
 func (clusterListener *ClusterListener) GetConnectionByShardId(keyspace string, shardId int, options ...topology.AccessOption) (net.Conn, int, error) {
 
-	r, found := clusterListener.GetClusterRing(keyspace)
+	r, found := clusterListener.GetCluster(keyspace)
 	if !found {
 		return nil, 0, fmt.Errorf("no keyspace %s", keyspace)
 	}
@@ -82,7 +82,7 @@ func (clusterListener *ClusterListener) GetConnectionByShardId(keyspace string, 
 
 func (clusterListener *ClusterListener) GetShardId(keyspace string, partitionKey []byte) (shardId int, partitionHash uint64) {
 	partitionHash = util.Hash(partitionKey)
-	r, found := clusterListener.GetClusterRing(keyspace)
+	r, found := clusterListener.GetCluster(keyspace)
 	if !found {
 		return -1, partitionHash
 	}

@@ -17,6 +17,25 @@ func (cluster *Cluster) WithConnection(serverId int, fn func(*pb.ClusterNode, *g
 		return fmt.Errorf("server %d not found", serverId)
 	}
 
+	return doWithConnect(node, serverId, fn)
+}
+
+type PrimaryShards []*pb.ClusterNode
+
+func (nodes PrimaryShards) WithConnection(serverId int, fn func(*pb.ClusterNode, *grpc.ClientConn) error) error {
+
+	if serverId < 0 || serverId >= len(nodes) {
+		return fmt.Errorf("server %d not found", serverId)
+	}
+
+	node := nodes[serverId]
+
+	return doWithConnect(node, serverId, fn)
+
+}
+
+func doWithConnect(node *pb.ClusterNode, serverId int, fn func(*pb.ClusterNode, *grpc.ClientConn) error) error {
+
 	if node == nil {
 		return fmt.Errorf("server %d is missing", serverId)
 	}

@@ -1,5 +1,10 @@
 package topology
 
+import (
+	"bytes"
+	"fmt"
+)
+
 type BootstrapRequest struct {
 	ServerId          int
 	ShardId           int
@@ -105,4 +110,39 @@ func BootstrapPlanWithTopoChange(req *BootstrapRequest) (plan *BootstrapPlan) {
 			return
 		}
 	}
+}
+
+func (plan *BootstrapPlan) String() string {
+	var buf bytes.Buffer
+	if plan.IsNormalStart {
+		if plan.IsNormalStartBootstrapNeeded {
+			buf.WriteString("check peer shards")
+		}
+	} else {
+		if len(plan.BootstrapSource) > 0 {
+			buf.WriteString("bootstraps from ")
+			if plan.PickBestBootstrapSource {
+				buf.WriteString("one of [")
+			}
+			for i := 0; i < len(plan.BootstrapSource); i++ {
+				if i != 0 {
+					buf.WriteString(",")
+				}
+				buf.WriteString(fmt.Sprintf("%d@%d", plan.BootstrapSource[i].ShardId, plan.BootstrapSource[i].ServerId))
+			}
+			buf.WriteString("] ")
+		}
+
+		if len(plan.TransitionalFollowSource) > 0 {
+			buf.WriteString("temporarily follows [")
+			for i := 0; i < len(plan.TransitionalFollowSource); i++ {
+				if i != 0 {
+					buf.WriteString(",")
+				}
+				buf.WriteString(fmt.Sprintf("%d@%d", plan.TransitionalFollowSource[i].ShardId, plan.TransitionalFollowSource[i].ServerId))
+			}
+			buf.WriteString("]")
+		}
+	}
+	return buf.String()
 }

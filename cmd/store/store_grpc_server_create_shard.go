@@ -32,6 +32,16 @@ func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardR
 
 func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, replicationFactor int, isCandidate bool, planGen func(shardId int) *topology.BootstrapPlan) (error) {
 
+	var existingPrimaryShards []*pb.ClusterNode
+	if cluster, found := ss.clusterListener.GetCluster(keyspace); found {
+		for i := 0; i < cluster.ExpectedSize(); i++ {
+			if n, _, ok := cluster.GetNode(i); ok {
+				existingPrimaryShards = append(existingPrimaryShards, n)
+			}
+		}
+		log.Printf("existing shards: %+v", existingPrimaryShards)
+	}
+
 	ss.clusterListener.AddNewKeyspace(keyspace, clusterSize, replicationFactor)
 
 	if _, found := ss.keyspaceShards.getShards(keyspace); found {
@@ -65,7 +75,10 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 			IsCandidate:       isCandidate,
 		}
 
-		if err := ss.bootstrapShard(shardInfo, planGen(clusterShard.ShardId)); err != nil {
+		plan := planGen(clusterShard.ShardId)
+		log.Printf("shard %s %s", clusterShard.ShardId, plan.String())
+
+		if err := ss.bootstrapShard(shardInfo, plan, existingPrimaryShards); err != nil {
 			return fmt.Errorf("bootstrap shard %v : %v", shardInfo.IdentifierOnThisServer(), err)
 		}
 
@@ -84,13 +97,13 @@ func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.L
 		ss.bootstrapShard(shardInfo, &topology.BootstrapPlan{
 			IsNormalStart:                true,
 			IsNormalStartBootstrapNeeded: *ss.option.Bootstrap,
-		})
+		}, nil)
 	}
 }
 
-func (ss *storeServer) bootstrapShard(shardInfo *pb.ShardInfo, bootstrapOption *topology.BootstrapPlan) error {
+func (ss *storeServer) bootstrapShard(shardInfo *pb.ShardInfo, bootstrapOption *topology.BootstrapPlan, existingPrimaryShards []*pb.ClusterNode) error {
 
-	cluster := ss.clusterListener.GetOrSetClusterRing(shardInfo.KeyspaceName, int(shardInfo.ClusterSize), int(shardInfo.ReplicationFactor))
+	cluster := ss.clusterListener.GetOrSetCluster(shardInfo.KeyspaceName, int(shardInfo.ClusterSize), int(shardInfo.ReplicationFactor))
 
 	dir := fmt.Sprintf("%s/%s/%d", *ss.option.Dir, shardInfo.KeyspaceName, shardInfo.ShardId)
 	err := os.MkdirAll(dir, 0755)
@@ -104,6 +117,6 @@ func (ss *storeServer) bootstrapShard(shardInfo *pb.ShardInfo, bootstrapOption *
 	// println("loading shard", shard.String())
 	ss.keyspaceShards.addShards(shardInfo.KeyspaceName, shard)
 	ss.RegisterPeriodicTask(shard)
-	return shard.startWithBootstrapPlan(ctx, bootstrapOption, ss.selfAdminAddress())
+	return shard.startWithBootstrapPlan(ctx, bootstrapOption, ss.selfAdminAddress(), existingPrimaryShards)
 
 }

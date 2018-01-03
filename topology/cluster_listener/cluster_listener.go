@@ -49,7 +49,7 @@ func (clusterListener *ClusterListener) AddExistingKeyspace(keyspace string, clu
 
 // AddNewKeyspace register to listen to one keyspace
 func (clusterListener *ClusterListener) AddNewKeyspace(keyspace string, clusterSize int, replicationFactor int) *topology.Cluster {
-	t := clusterListener.GetOrSetClusterRing(keyspace, clusterSize, replicationFactor)
+	t := clusterListener.GetOrSetCluster(keyspace, clusterSize, replicationFactor)
 	clusterListener.keyspaceFollowMessageChan <- keyspace_follow_message{keyspace: keyspace_name(keyspace)}
 	return t
 }
@@ -63,14 +63,14 @@ func (clusterListener *ClusterListener) RemoveKeyspace(keyspace string) {
 	clusterListener.Unlock()
 }
 
-func (clusterListener *ClusterListener) GetClusterRing(keyspace string) (r *topology.Cluster, found bool) {
+func (clusterListener *ClusterListener) GetCluster(keyspace string) (r *topology.Cluster, found bool) {
 	clusterListener.RLock()
 	r, found = clusterListener.clusters[keyspace_name(keyspace)]
 	clusterListener.RUnlock()
 	return
 }
 
-func (clusterListener *ClusterListener) GetOrSetClusterRing(keyspace string, clusterSize int, replicationFactor int) (*topology.Cluster) {
+func (clusterListener *ClusterListener) GetOrSetCluster(keyspace string, clusterSize int, replicationFactor int) (*topology.Cluster) {
 	clusterListener.RLock()
 	t, ok := clusterListener.clusters[keyspace_name(keyspace)]
 	if !ok {
@@ -103,7 +103,7 @@ func (clusterListener *ClusterListener) SetNodes(keyspace string, fixedCluster s
 		}
 		nodes = append(nodes, node)
 	}
-	clusterListener.GetOrSetClusterRing(keyspace, len(servers), 1)
+	clusterListener.GetOrSetCluster(keyspace, len(servers), 1)
 	for _, node := range nodes {
 		clusterListener.AddNode(keyspace, node)
 	}
@@ -135,7 +135,7 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 			case msg := <-clientMessageChan:
 				if msg.GetCluster() != nil {
 					// log.Printf("listener get cluster: %v", msg.GetCluster())
-					r := clusterListener.GetOrSetClusterRing(msg.Cluster.Keyspace, int(msg.Cluster.ExpectedClusterSize), int(msg.Cluster.ReplicationFactor))
+					r := clusterListener.GetOrSetCluster(msg.Cluster.Keyspace, int(msg.Cluster.ExpectedClusterSize), int(msg.Cluster.ReplicationFactor))
 					for _, node := range msg.Cluster.Nodes {
 						clusterListener.AddNode(msg.Cluster.Keyspace, node)
 						for _, shardEventProcess := range clusterListener.shardEventProcessors {
@@ -150,7 +150,7 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 					}
 				} else if msg.GetUpdates() != nil {
 					// log.Printf("listener get update: %v", msg.GetUpdates())
-					cluster, found := clusterListener.GetClusterRing(msg.Updates.Keyspace)
+					cluster, found := clusterListener.GetCluster(msg.Updates.Keyspace)
 					if !found {
 						log.Printf("no keyspace %s found to update", msg.Updates.Keyspace)
 						continue
@@ -182,7 +182,7 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 					}
 				} else if msg.GetResize() != nil {
 					// log.Printf("listener get resize: %v", msg.GetResize())
-					r, found := clusterListener.GetClusterRing(msg.Resize.Keyspace)
+					r, found := clusterListener.GetCluster(msg.Resize.Keyspace)
 					if !found {
 						log.Printf("no keyspace %s found to resize", msg.Resize.Keyspace)
 						continue

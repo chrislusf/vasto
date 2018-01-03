@@ -17,7 +17,7 @@ func (c *VastoClient) BatchGet(keyspace string, keys [][]byte, options ...topolo
 
 	shardIdToRequests := make(map[int][]*pb.Request)
 
-	r, found := c.ClusterListener.GetClusterRing(keyspace)
+	r, found := c.ClusterListener.GetCluster(keyspace)
 	if !found {
 		return nil, fmt.Errorf("no keyspace %s", keyspace)
 	}

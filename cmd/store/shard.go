@@ -84,7 +84,7 @@ func (s *shard) setCompactionFilterClusterSize(clusterSize int) {
 
 }
 
-func (s *shard) startWithBootstrapPlan(ctx context.Context, bootstrapOption *topology.BootstrapPlan, selfAdminAddress string) error {
+func (s *shard) startWithBootstrapPlan(ctx context.Context, bootstrapOption *topology.BootstrapPlan, selfAdminAddress string, existingPrimaryShards []*pb.ClusterNode) error {
 
 	// bootstrap the data
 	if bootstrapOption.IsNormalStart {
@@ -97,7 +97,7 @@ func (s *shard) startWithBootstrapPlan(ctx context.Context, bootstrapOption *top
 		}
 
 	} else {
-		if err := s.topoChangeBootstrap(ctx, bootstrapOption); err != nil {
+		if err := s.topoChangeBootstrap(ctx, bootstrapOption, existingPrimaryShards); err != nil {
 			log.Printf("bootstrap: %v", err)
 			return fmt.Errorf("bootstrap: %v", err)
 		}

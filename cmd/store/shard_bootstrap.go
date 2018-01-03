@@ -50,15 +50,15 @@ func (s *shard) maybeBootstrapAfterRestart(ctx context.Context) error {
 
 }
 
-func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapOption *topology.BootstrapPlan) error {
+func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology.BootstrapPlan, existingPrimaryShards []*pb.ClusterNode) error {
 
-	if bootstrapOption == nil {
+	if bootstrapPlan == nil {
 		return nil
 	}
 
-	if bootstrapOption.PickBestBootstrapSource {
+	if bootstrapPlan.PickBestBootstrapSource {
 
-		bestPeerToCopy, isNeeded := s.isBootstrapNeeded(ctx, bootstrapOption)
+		bestPeerToCopy, isNeeded := s.isBootstrapNeeded(ctx, bootstrapPlan)
 		if !isNeeded {
 			// log.Printf("bootstrap shard %d is not needed", s.id)
 			return nil
@@ -66,19 +66,31 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapOption *topolo
 
 		log.Printf("bootstrap from server %d ...", bestPeerToCopy)
 
-		return s.cluster.WithConnection(bestPeerToCopy, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
-			return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapOption.ToClusterSize, int(s.id))
-		})
+		if existingPrimaryShards != nil {
+			return topology.PrimaryShards(existingPrimaryShards).WithConnection(bestPeerToCopy, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+				return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapPlan.ToClusterSize, int(s.id))
+			})
+		} else {
+			return s.cluster.WithConnection(bestPeerToCopy, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+				return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapPlan.ToClusterSize, int(s.id))
+			})
+		}
 	}
 
 	var bootstrapSourceServerIds []int
-	for _, shard := range bootstrapOption.BootstrapSource {
+	for _, shard := range bootstrapPlan.BootstrapSource {
 		bootstrapSourceServerIds = append(bootstrapSourceServerIds, shard.ServerId)
 	}
 	return eachInt(bootstrapSourceServerIds, func(serverId int) error {
-		return s.cluster.WithConnection(serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
-			return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapOption.ToClusterSize, int(s.id))
-		})
+		if existingPrimaryShards != nil {
+			return topology.PrimaryShards(existingPrimaryShards).WithConnection(serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+				return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapPlan.ToClusterSize, int(s.id))
+			})
+		} else {
+			return s.cluster.WithConnection(serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+				return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapPlan.ToClusterSize, int(s.id))
+			})
+		}
 	})
 
 }

@@ -14,7 +14,7 @@ func (c *VastoClient) Put(keyspace string, rows []*Row, options ...topology.Acce
 		return nil
 	}
 
-	cluster, found := c.ClusterListener.GetClusterRing(keyspace)
+	cluster, found := c.ClusterListener.GetCluster(keyspace)
 	if !found {
 		return fmt.Errorf("no keyspace %s", keyspace)
 	}
