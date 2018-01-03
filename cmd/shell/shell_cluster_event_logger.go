@@ -6,45 +6,45 @@ import (
 	"fmt"
 )
 
-func (s *shell) OnShardCreateEvent(cluster *topology.Cluster, resource *pb.StoreResource, ShardInfo *pb.ShardInfo) {
-	// fmt.Printf("cluster %v, but shell cluster %v", cluster, s.vastoClient.ClusterListener.GetClusterRing(ShardInfo.KeyspaceName))
-	if *s.option.DataCenter == resource.DataCenter && *s.option.Keyspace == ShardInfo.KeyspaceName {
-		fmt.Printf("\n+ node %d shard %d %s cluster %s\n> ", ShardInfo.ServerId, ShardInfo.ShardId, resource.Address, cluster)
+func (s *shell) OnShardCreateEvent(cluster *topology.Cluster, resource *pb.StoreResource, shardInfo *pb.ShardInfo) {
+	// fmt.Printf("cluster %v, but shell cluster %v", cluster, s.vastoClient.ClusterListener.GetClusterRing(shardInfo.KeyspaceName))
+	if *s.option.DataCenter == resource.DataCenter && *s.option.Keyspace == shardInfo.KeyspaceName {
+		fmt.Printf("\n+ server %d shard %d %s cluster %s\n> ", shardInfo.ServerId, shardInfo.ShardId, resource.Address, cluster)
 	} else {
-		fmt.Printf("\n+ dc %s keyspace %s node %d shard %d %s cluster %s\n> ", resource.DataCenter,
-			ShardInfo.KeyspaceName, ShardInfo.ServerId, ShardInfo.ShardId, resource.Address, cluster)
+		fmt.Printf("\n+ dc %s %s %s cluster %s\n> ", resource.DataCenter,
+			shardInfo.IdentifierOnThisServer(), resource.Address, cluster)
 	}
 }
 
-func (s *shell) OnShardUpdateEvent(cluster *topology.Cluster, resource *pb.StoreResource, ShardInfo *pb.ShardInfo, oldShardInfo *pb.ShardInfo) {
+func (s *shell) OnShardUpdateEvent(cluster *topology.Cluster, resource *pb.StoreResource, shardInfo *pb.ShardInfo, oldShardInfo *pb.ShardInfo) {
 	if oldShardInfo == nil {
-	} else if oldShardInfo.Status != ShardInfo.Status {
-		if *s.option.DataCenter == resource.DataCenter && *s.option.Keyspace == ShardInfo.KeyspaceName {
-			fmt.Printf("\n* node %d shard %d %s cluster %s status:%s=>%s\n> ",
-				ShardInfo.ServerId, ShardInfo.ShardId, resource.GetAddress(), cluster,
-				oldShardInfo.Status, ShardInfo.Status)
+	} else if oldShardInfo.Status != shardInfo.Status {
+		if *s.option.DataCenter == resource.DataCenter && *s.option.Keyspace == shardInfo.KeyspaceName {
+			fmt.Printf("\n* server %d shard %d %s cluster %s status:%s=>%s\n> ",
+				shardInfo.ServerId, shardInfo.ShardId, resource.GetAddress(), cluster,
+				oldShardInfo.Status, shardInfo.Status)
 		} else {
-			fmt.Printf("\n* dc %s keyspace %s node %d shard %d %s cluster %s status:%s=>%s\n> ", resource.DataCenter,
-				ShardInfo.KeyspaceName, ShardInfo.ServerId, ShardInfo.ShardId, resource.GetAddress(), cluster,
-				oldShardInfo.Status, ShardInfo.Status)
+			fmt.Printf("\n* dc %s %s %s cluster %s status:%s=>%s\n> ", resource.DataCenter,
+				shardInfo.IdentifierOnThisServer(), resource.GetAddress(), cluster,
+				oldShardInfo.Status, shardInfo.Status)
 		}
 	}
 }
 
-func (s *shell) OnShardRemoveEvent(cluster *topology.Cluster, resource *pb.StoreResource, ShardInfo *pb.ShardInfo) {
-	if *s.option.DataCenter == resource.DataCenter && *s.option.Keyspace == ShardInfo.KeyspaceName {
-		fmt.Printf("\n- node %d shard %d %s cluster %s\n> ", ShardInfo.ServerId, ShardInfo.ShardId, resource.Address, cluster)
+func (s *shell) OnShardRemoveEvent(cluster *topology.Cluster, resource *pb.StoreResource, shardInfo *pb.ShardInfo) {
+	if *s.option.DataCenter == resource.DataCenter && *s.option.Keyspace == shardInfo.KeyspaceName {
+		fmt.Printf("\n- server %d shard %d %s cluster %s\n> ", shardInfo.ServerId, shardInfo.ShardId, resource.Address, cluster)
 	} else {
-		fmt.Printf("\n- dc %s keyspace %s node %d shard %d %s cluster %s\n> ", resource.DataCenter,
-			ShardInfo.KeyspaceName, ShardInfo.ServerId, ShardInfo.ShardId, resource.Address, cluster)
+		fmt.Printf("\n- dc %s %s %s cluster %s\n> ", resource.DataCenter,
+			shardInfo.IdentifierOnThisServer(), resource.Address, cluster)
 	}
 }
 
-func (s *shell) OnShardPromoteEvent(cluster *topology.Cluster, resource *pb.StoreResource, ShardInfo *pb.ShardInfo) {
-	if *s.option.DataCenter == resource.DataCenter && *s.option.Keyspace == ShardInfo.KeyspaceName {
-		fmt.Printf("\n=> node %d shard %d %s cluster %s\n> ", ShardInfo.ServerId, ShardInfo.ShardId, resource.Address, cluster)
+func (s *shell) OnShardPromoteEvent(cluster *topology.Cluster, resource *pb.StoreResource, shardInfo *pb.ShardInfo) {
+	if *s.option.DataCenter == resource.DataCenter && *s.option.Keyspace == shardInfo.KeyspaceName {
+		fmt.Printf("\n=> server %d shard %d %s cluster %s\n> ", shardInfo.ServerId, shardInfo.ShardId, resource.Address, cluster)
 	} else {
-		fmt.Printf("\n=> dc %s keyspace %s node %d shard %d %s cluster %s\n> ", resource.DataCenter,
-			ShardInfo.KeyspaceName, ShardInfo.ServerId, ShardInfo.ShardId, resource.Address, cluster)
+		fmt.Printf("\n=> dc %s %s %s cluster %s\n> ", resource.DataCenter,
+			shardInfo.IdentifierOnThisServer(), resource.Address, cluster)
 	}
 }
