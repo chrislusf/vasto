@@ -10,6 +10,7 @@ import (
 	"github.com/tecbot/gorocksdb"
 	"google.golang.org/grpc"
 	"context"
+	"sync"
 )
 
 func (s *shard) peerShards() []topology.ClusterShard {
@@ -176,5 +177,20 @@ func (s *shard) writeToSst(ctx context.Context, grpcConnection *grpc.ClientConn,
 
 	})
 
+	return
+}
+
+func eachInt(ints []int, eachFunc func(x int) error) (err error) {
+	var wg sync.WaitGroup
+	for _, x := range ints {
+		wg.Add(1)
+		go func(x int) {
+			defer wg.Done()
+			if eachErr := eachFunc(x); eachErr != nil {
+				err = eachErr
+			}
+		}(x)
+	}
+	wg.Wait()
 	return
 }

@@ -66,13 +66,6 @@ service VastoStore {
     rpc ReplicateNodeCleanup (ReplicateNodeCleanupRequest) returns (ReplicateNodeCleanupResponse) {
     }
 
-    rpc ShrinkClusterPrepare (ShrinkClusterPrepareRequest) returns (ShrinkClusterPrepareResponse) {
-    }
-    rpc ShrinkClusterCommit (ShrinkClusterCommitRequest) returns (ShrinkClusterCommitResponse) {
-    }
-    rpc ShrinkClusterCleanup (ShrinkClusterCleanupRequest) returns (ShrinkClusterCleanupResponse) {
-    }
-
     rpc ResizePrepare (ResizeCreateShardRequest) returns (ResizeCreateShardResponse) {
     }
     rpc ResizeCommit (ResizeCommitRequest) returns (ResizeCommitResponse) {
@@ -462,31 +455,6 @@ message ReplicateNodeCleanupRequest {
     string keyspace = 1;
 }
 message ReplicateNodeCleanupResponse {
-    string error = 1;
-}
-
-message ShrinkClusterPrepareRequest {
-    string keyspace = 1;
-    uint32 target_cluster_size = 2;
-    uint32 replication_factor = 3;
-}
-message ShrinkClusterPrepareResponse {
-    string error = 1;
-}
-
-message ShrinkClusterCommitRequest {
-    string keyspace = 1;
-    uint32 target_cluster_size = 2;
-}
-message ShrinkClusterCommitResponse {
-    string error = 1;
-}
-
-
-message ShrinkClusterCleanupRequest {
-    string keyspace = 1;
-}
-message ShrinkClusterCleanupResponse {
     string error = 1;
 }
 
