@@ -30,7 +30,7 @@ func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardR
 
 }
 
-func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, replicationFactor int, isCandidate bool, planGen func(shardId int) *topology.BootstrapPlan) (err error) {
+func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, replicationFactor int, isCandidate bool, planGen func(shardId int) *topology.BootstrapPlan) (error) {
 
 	ss.clusterListener.AddNewKeyspace(keyspace, clusterSize, replicationFactor)
 
@@ -65,7 +65,9 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 			IsCandidate:       isCandidate,
 		}
 
-		ss.bootstrapShard(shardInfo, planGen(clusterShard.ShardId))
+		if err := ss.bootstrapShard(shardInfo, planGen(clusterShard.ShardId)); err != nil {
+			return fmt.Errorf("bootstrap shard %v : %v", shardInfo.IdentifierOnThisServer(), err)
+		}
 
 		localShards.ShardMap[uint32(clusterShard.ShardId)] = shardInfo
 
@@ -86,7 +88,7 @@ func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.L
 	}
 }
 
-func (ss *storeServer) bootstrapShard(shardInfo *pb.ShardInfo, bootstrapOption *topology.BootstrapPlan) {
+func (ss *storeServer) bootstrapShard(shardInfo *pb.ShardInfo, bootstrapOption *topology.BootstrapPlan) error {
 
 	cluster := ss.clusterListener.GetOrSetClusterRing(shardInfo.KeyspaceName, int(shardInfo.ClusterSize), int(shardInfo.ReplicationFactor))
 
@@ -94,7 +96,7 @@ func (ss *storeServer) bootstrapShard(shardInfo *pb.ShardInfo, bootstrapOption *
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
 		log.Printf("mkdir %s: %v", dir, err)
-		return
+		return fmt.Errorf("mkdir %s: %v", dir, err)
 	}
 
 	ctx, shard := newShard(shardInfo.KeyspaceName, dir, int(shardInfo.ServerId), int(shardInfo.ShardId), cluster, ss.clusterListener,
@@ -102,6 +104,6 @@ func (ss *storeServer) bootstrapShard(shardInfo *pb.ShardInfo, bootstrapOption *
 	// println("loading shard", shard.String())
 	ss.keyspaceShards.addShards(shardInfo.KeyspaceName, shard)
 	ss.RegisterPeriodicTask(shard)
-	shard.startWithBootstrapPlan(ctx, bootstrapOption, ss.selfAdminAddress())
+	return shard.startWithBootstrapPlan(ctx, bootstrapOption, ss.selfAdminAddress())
 
 }
