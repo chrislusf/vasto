@@ -174,7 +174,7 @@ func (s *shard) writeToSst(ctx context.Context, grpcConnection *grpc.ClientConn,
 
 				for _, keyValue := range response.KeyValues {
 
-					// fmt.Printf("add to sst: %v\n", keyValue.String())
+					// fmt.Printf("%s add to sst: %v\n", sourceShardInfo.IdentifierOnThisServer(), string(keyValue.Key))
 
 					err = w.Add(keyValue.Key, keyValue.Value)
 					if err != nil {
