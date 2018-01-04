@@ -86,7 +86,9 @@ func RunStore(option *StoreOption) {
 	}
 
 	for keyspaceName, storeStatus := range ss.statusInCluster {
-		ss.startExistingNodes(keyspaceName, storeStatus)
+		if err := ss.startExistingNodes(keyspaceName, storeStatus); err!=nil{
+			log.Fatalf("load existing keyspace: %v", keyspaceName, err)
+		}
 	}
 
 	if *option.TcpPort != 0 {

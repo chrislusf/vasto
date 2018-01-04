@@ -15,6 +15,16 @@ type progressValue struct {
 	offset  uint64
 }
 
+var (
+	INTERNAL_PREFIX = []byte("_vasto.")
+)
+
+func genSegmentOffsetKeys(serverAdminAddress string, shardId shard_id) (segmentKey []byte, offsetKey []byte) {
+	segmentKey = []byte(fmt.Sprintf("_vasto.next.segment.%s.%d", serverAdminAddress, shardId))
+	offsetKey = []byte(fmt.Sprintf("_vasto.next.offset.%s.%d", serverAdminAddress, shardId))
+	return
+}
+
 // implementing PeriodicTask
 func (s *shard) EverySecond() {
 	// log.Printf("%s every second", s)
@@ -31,8 +41,7 @@ func (s *shard) EverySecond() {
 
 func (s *shard) loadProgress(serverAdminAddress string) (segment uint32, offset uint64, hasProgress bool, err error) {
 
-	segmentKey := []byte(fmt.Sprintf("%s.%d.next.segment", serverAdminAddress, s.id))
-	offsetKey := []byte(fmt.Sprintf("%s.%d.next.offset", serverAdminAddress, s.id))
+	segmentKey, offsetKey := genSegmentOffsetKeys(serverAdminAddress, s.id)
 
 	nextSegment := uint32(0)
 	nextOffset := uint64(0)
@@ -54,8 +63,7 @@ func (s *shard) saveProgress(serverAdminAddress string, segment uint32, offset u
 
 	log.Printf("shard %s follow server %v next segment %d offset %d", s, serverAdminAddress, segment, offset)
 
-	segmentKey := []byte(fmt.Sprintf("%s.%d.next.segment", serverAdminAddress, s.id))
-	offsetKey := []byte(fmt.Sprintf("%s.%d.next.offset", serverAdminAddress, s.id))
+	segmentKey, offsetKey := genSegmentOffsetKeys(serverAdminAddress, s.id)
 
 	err = s.db.Put(segmentKey, util.Uint32toBytes(segment))
 	if err != nil {
@@ -73,8 +81,7 @@ func (s *shard) clearProgress(serverAdminAddress string) {
 
 	log.Printf("shard %s stops following server %v", s, serverAdminAddress)
 
-	segmentKey := []byte(fmt.Sprintf("%s.%d.next.segment", serverAdminAddress, s.id))
-	offsetKey := []byte(fmt.Sprintf("%s.%d.next.offset", serverAdminAddress, s.id))
+	segmentKey, offsetKey := genSegmentOffsetKeys(serverAdminAddress, s.id)
 
 	s.db.Delete(segmentKey)
 	s.db.Delete(offsetKey)

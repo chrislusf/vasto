@@ -6,6 +6,7 @@ import (
 	"log"
 	"context"
 	"github.com/chrislusf/vasto/pb"
+	"fmt"
 )
 
 func (s *shard) isBootstrapNeeded(ctx context.Context, bootstrapOption *topology.BootstrapPlan) (bestPeerToCopy int, isNeeded bool) {
@@ -22,7 +23,7 @@ func (s *shard) isBootstrapNeeded(ctx context.Context, bootstrapOption *topology
 			continue
 		}
 		checkedServerCount++
-		go s.cluster.WithConnection(peer.ServerId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+		go s.cluster.WithConnection(fmt.Sprintf("%s bootstrap_check peer %d.%d", s.String(), peer.ServerId, peer.ShardId), peer.ServerId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 
 			latestSegment, canTailBinlog, err := s.checkBinlogAvailable(ctx, grpcConnection, node)
 			if err != nil {

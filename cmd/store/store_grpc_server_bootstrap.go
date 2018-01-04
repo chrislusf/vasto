@@ -6,6 +6,7 @@ import (
 	"log"
 	"github.com/chrislusf/vasto/storage/codec"
 	"github.com/dgryski/go-jump"
+	"bytes"
 )
 
 // BootstrapCopy sends all data if BootstrapCopyRequest's TargetClusterSize==0,
@@ -16,7 +17,7 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 
 	shard, found := ss.keyspaceShards.getShard(request.Keyspace, shard_id(request.ShardId))
 	if !found {
-		return fmt.Errorf("shard: %s.%d not found", request.Keyspace, request.ShardId)
+		return fmt.Errorf("BootstrapCopy: %s shard %d not found", request.Keyspace, request.ShardId)
 	}
 
 	segment, offset := shard.lm.GetSegmentOffset()
@@ -33,16 +34,19 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 	err := shard.db.FullScan(batchSize, func(rows []*pb.KeyValue) error {
 
 		var filteredRows []*pb.KeyValue
-		if targetClusterSize > 0 {
-			for _, row := range rows {
+		for _, row := range rows {
+			if bytes.HasPrefix(row.Key, INTERNAL_PREFIX) {
+				continue
+			}
+			if targetClusterSize > 0 {
 				partitionHash := codec.GetPartitionHashFromBytes(row.Value)
 				if jump.Hash(partitionHash, targetClusterSize) == targetShardId {
 					t := row
 					filteredRows = append(filteredRows, t)
 				}
+			} else {
+				filteredRows = append(filteredRows, row)
 			}
-		} else {
-			filteredRows = rows
 		}
 
 		t := &pb.BootstrapCopyResponse{

@@ -57,7 +57,7 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 		ch := make(chan *pb.KeyValue)
 		chans[i] = ch
 
-		go r.WithConnection(i, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+		go r.WithConnection("dump", i, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 
 			client := pb.NewVastoStoreClient(grpcConnection)
 

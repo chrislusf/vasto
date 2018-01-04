@@ -37,7 +37,7 @@ func (s *shard) maybeBootstrapAfterRestart(ctx context.Context) error {
 
 	log.Printf("bootstrap from server %d ...", bestPeerToCopy)
 
-	return s.cluster.WithConnection(bestPeerToCopy, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+	return s.cluster.WithConnection(fmt.Sprintf("%s bootstrap after restart", s.String()), bestPeerToCopy, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 		_, canTailBinlog, err := s.checkBinlogAvailable(ctx, grpcConnection, node)
 		if err != nil {
 			return err
@@ -64,14 +64,14 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 			return nil
 		}
 
-		log.Printf("bootstrap from server %d ...", bestPeerToCopy)
+		log.Printf("bootstrap from one server %d ...", bestPeerToCopy)
 
 		if existingPrimaryShards != nil {
-			return topology.PrimaryShards(existingPrimaryShards).WithConnection(bestPeerToCopy, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+			return topology.PrimaryShards(existingPrimaryShards).WithConnection(fmt.Sprintf("%s bootstrap from one exisitng server %d", s.String(), bestPeerToCopy), bestPeerToCopy, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 				return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapPlan.ToClusterSize, int(s.id))
 			})
 		} else {
-			return s.cluster.WithConnection(bestPeerToCopy, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+			return s.cluster.WithConnection(fmt.Sprintf("%s bootstrap from one server %d", s.String(), bestPeerToCopy), bestPeerToCopy, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 				return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapPlan.ToClusterSize, int(s.id))
 			})
 		}
@@ -83,11 +83,11 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 	}
 	return eachInt(bootstrapSourceServerIds, func(serverId int) error {
 		if existingPrimaryShards != nil {
-			return topology.PrimaryShards(existingPrimaryShards).WithConnection(serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+			return topology.PrimaryShards(existingPrimaryShards).WithConnection(fmt.Sprintf("%s bootstrap from existing server %d", s.String(), serverId), serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 				return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapPlan.ToClusterSize, int(s.id))
 			})
 		} else {
-			return s.cluster.WithConnection(serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+			return s.cluster.WithConnection(fmt.Sprintf("%s bootstrap from server %d", s.String(), serverId), serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 				return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapPlan.ToClusterSize, int(s.id))
 			})
 		}
@@ -127,7 +127,7 @@ func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.Client
 
 	log.Printf("bootstrap %s from %s %s filter by %d/%d", s.String(), node.StoreResource.Address, node.ShardInfo.IdentifierOnThisServer(), targetShardId, targetClusterSize)
 
-	segment, offset, err := s.writeToSst(ctx, grpcConnection, targetClusterSize, targetShardId)
+	segment, offset, err := s.writeToSst(ctx, grpcConnection, node.ShardInfo, targetClusterSize, targetShardId)
 
 	if err != nil {
 		return fmt.Errorf("writeToSst: %v", err)
@@ -137,13 +137,13 @@ func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.Client
 
 }
 
-func (s *shard) writeToSst(ctx context.Context, grpcConnection *grpc.ClientConn, targetClusterSize int, targetShardId int) (segment uint32, offset uint64, err error) {
+func (s *shard) writeToSst(ctx context.Context, grpcConnection *grpc.ClientConn, sourceShardInfo *pb.ShardInfo, targetClusterSize int, targetShardId int) (segment uint32, offset uint64, err error) {
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
 	request := &pb.BootstrapCopyRequest{
 		Keyspace:          s.keyspace,
-		ShardId:           uint32(s.id),
+		ShardId:           sourceShardInfo.ShardId,
 		TargetClusterSize: uint32(targetClusterSize),
 		TargetShardId:     uint32(targetShardId),
 		Origin:            s.String(),
@@ -154,42 +154,44 @@ func (s *shard) writeToSst(ctx context.Context, grpcConnection *grpc.ClientConn,
 		return 0, 0, fmt.Errorf("client.TailBinlog: %v", err)
 	}
 
-	err = s.db.AddSstByWriter(func(w *gorocksdb.SSTFileWriter) (int, error) {
+	err = s.db.AddSstByWriter(fmt.Sprintf("bootstrap %s from %s %d/%d", s.String(), sourceShardInfo.IdentifierOnThisServer(), targetShardId, targetClusterSize),
 
-		var counter int
+		func(w *gorocksdb.SSTFileWriter) (int, error) {
 
-		for {
+			var counter int
 
-			// println("TailBinlog receive from", s.id)
+			for {
 
-			response, err := stream.Recv()
-			if err == io.EOF {
-				return counter, nil
-			}
-			if err != nil {
-				return counter, fmt.Errorf("bootstrap copy: %v", err)
-			}
+				// println("TailBinlog receive from", s.id)
 
-			for _, keyValue := range response.KeyValues {
-
-				// fmt.Printf("add to sst: %v\n", keyValue.String())
-
-				err = w.Add(keyValue.Key, keyValue.Value)
-				if err != nil {
-					return counter, fmt.Errorf("add to sst: %v", err)
+				response, err := stream.Recv()
+				if err == io.EOF {
+					return counter, nil
 				}
-				counter++
+				if err != nil {
+					return counter, fmt.Errorf("bootstrap copy: %v", err)
+				}
+
+				for _, keyValue := range response.KeyValues {
+
+					// fmt.Printf("add to sst: %v\n", keyValue.String())
+
+					err = w.Add(keyValue.Key, keyValue.Value)
+					if err != nil {
+						return counter, fmt.Errorf("add to sst: %v", err)
+					}
+					counter++
+
+				}
+
+				if response.BinlogTailProgress != nil {
+					segment = response.BinlogTailProgress.Segment
+					offset = response.BinlogTailProgress.Offset
+				}
 
 			}
 
-			if response.BinlogTailProgress != nil {
-				segment = response.BinlogTailProgress.Segment
-				offset = response.BinlogTailProgress.Offset
-			}
-
-		}
-
-	})
+		})
 
 	return
 }

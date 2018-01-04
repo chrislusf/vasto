@@ -5,11 +5,12 @@ import (
 	"github.com/tecbot/gorocksdb"
 	"io/ioutil"
 	"os"
+	"log"
 )
 
-func (d *Rocks) addSst(next func() (bool, []byte, []byte)) error {
+func (d *Rocks) addSst(name string, next func() (bool, []byte, []byte)) error {
 
-	return d.AddSstByWriter(func(w *gorocksdb.SSTFileWriter) (int, error) {
+	return d.AddSstByWriter(name, func(w *gorocksdb.SSTFileWriter) (int, error) {
 		var counter int
 		var hasNext bool
 		var key, value []byte
@@ -28,7 +29,7 @@ func (d *Rocks) addSst(next func() (bool, []byte, []byte)) error {
 
 }
 
-func (d *Rocks) AddSstByWriter(writerFunc func(*gorocksdb.SSTFileWriter) (int, error)) error {
+func (d *Rocks) AddSstByWriter(name string, writerFunc func(*gorocksdb.SSTFileWriter) (int, error)) error {
 	envOpts := gorocksdb.NewDefaultEnvOptions()
 	defer envOpts.Destroy()
 	opts := gorocksdb.NewDefaultOptions()
@@ -59,6 +60,7 @@ func (d *Rocks) AddSstByWriter(writerFunc func(*gorocksdb.SSTFileWriter) (int, e
 	if counter == 0 {
 		return nil
 	}
+	log.Printf("%s: added %d entries", name, counter)
 
 	err = w.Finish()
 	if err != nil {
@@ -72,8 +74,9 @@ func (d *Rocks) AddSstByWriter(writerFunc func(*gorocksdb.SSTFileWriter) (int, e
 	ingestOpts.SetIngestionBehind(true)
 	err = d.db.IngestExternalFile([]string{filePath.Name()}, ingestOpts)
 	if err != nil {
-		return fmt.Errorf("ingest sst file: %v", err)
+		return fmt.Errorf("%s: db %s ingest sst file %s: %v", name, d.path, filePath.Name(), err)
 	}
+	log.Printf("%s: db %s ingested %s", name, d.path, filePath.Name())
 
 	return nil
 }

@@ -14,9 +14,7 @@ func (d *Rocks) FullScan(batchSize int, fn func([]*pb.KeyValue) error) error {
 	opts := gorocksdb.NewDefaultReadOptions()
 	opts.SetFillCache(false)
 	defer opts.Destroy()
-	d.iteratorLock.Lock()
 	iter := d.db.NewIterator(opts)
-	d.iteratorLock.Unlock()
 	defer iter.Close()
 
 	var rowCount int

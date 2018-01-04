@@ -116,8 +116,9 @@ func (plan *BootstrapPlan) String() string {
 	var buf bytes.Buffer
 	if plan.IsNormalStart {
 		if plan.IsNormalStartBootstrapNeeded {
-			buf.WriteString("check peer shards")
+			buf.WriteString("check peer shards, ")
 		}
+		buf.WriteString("normal start")
 	} else {
 		if len(plan.BootstrapSource) > 0 {
 			buf.WriteString("bootstraps from ")
@@ -128,7 +129,7 @@ func (plan *BootstrapPlan) String() string {
 				if i != 0 {
 					buf.WriteString(",")
 				}
-				buf.WriteString(fmt.Sprintf("%d@%d", plan.BootstrapSource[i].ShardId, plan.BootstrapSource[i].ServerId))
+				buf.WriteString(fmt.Sprintf("%d.%d", plan.BootstrapSource[i].ServerId, plan.BootstrapSource[i].ShardId))
 			}
 			buf.WriteString("] ")
 		}
@@ -139,10 +140,11 @@ func (plan *BootstrapPlan) String() string {
 				if i != 0 {
 					buf.WriteString(",")
 				}
-				buf.WriteString(fmt.Sprintf("%d@%d", plan.TransitionalFollowSource[i].ShardId, plan.TransitionalFollowSource[i].ServerId))
+				buf.WriteString(fmt.Sprintf("%d.%d", plan.TransitionalFollowSource[i].ServerId, plan.TransitionalFollowSource[i].ShardId))
 			}
-			buf.WriteString("]")
+			buf.WriteString("] ")
 		}
+		buf.WriteString("bootstrap start")
 	}
 	return buf.String()
 }

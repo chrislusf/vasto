@@ -8,7 +8,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 )
 
-func (cluster *Cluster) WithConnection(serverId int, fn func(*pb.ClusterNode, *grpc.ClientConn) error) error {
+func (cluster *Cluster) WithConnection(name string, serverId int, fn func(*pb.ClusterNode, *grpc.ClientConn) error) error {
 
 	node, _, ok := cluster.GetNode(serverId)
 
@@ -17,12 +17,12 @@ func (cluster *Cluster) WithConnection(serverId int, fn func(*pb.ClusterNode, *g
 		return fmt.Errorf("server %d not found", serverId)
 	}
 
-	return doWithConnect(node, serverId, fn)
+	return doWithConnect(name, node, serverId, fn)
 }
 
 type PrimaryShards []*pb.ClusterNode
 
-func (nodes PrimaryShards) WithConnection(serverId int, fn func(*pb.ClusterNode, *grpc.ClientConn) error) error {
+func (nodes PrimaryShards) WithConnection(name string, serverId int, fn func(*pb.ClusterNode, *grpc.ClientConn) error) error {
 
 	if serverId < 0 || serverId >= len(nodes) {
 		return fmt.Errorf("server %d not found", serverId)
@@ -30,25 +30,25 @@ func (nodes PrimaryShards) WithConnection(serverId int, fn func(*pb.ClusterNode,
 
 	node := nodes[serverId]
 
-	return doWithConnect(node, serverId, fn)
+	return doWithConnect(name, node, serverId, fn)
 
 }
 
-func doWithConnect(node *pb.ClusterNode, serverId int, fn func(*pb.ClusterNode, *grpc.ClientConn) error) error {
+func doWithConnect(name string, node *pb.ClusterNode, serverId int, fn func(*pb.ClusterNode, *grpc.ClientConn) error) error {
 
 	if node == nil {
-		return fmt.Errorf("server %d is missing", serverId)
+		return fmt.Errorf("%s: server %d is missing", name, serverId)
 	}
 
 	// log.Printf("connecting to server %d at %s", serverId, node.GetAdminAddress())
 
 	grpcConnection, err := grpc.Dial(node.StoreResource.AdminAddress, grpc.WithInsecure())
 	if err != nil {
-		return fmt.Errorf("fail to dial %s: %v", node.StoreResource.AdminAddress, err)
+		return fmt.Errorf("%s: fail to dial %s: %v", name, node.StoreResource.AdminAddress, err)
 	}
 	defer grpcConnection.Close()
 
-	log.Printf("connect to shard %s on %s", node.ShardInfo.IdentifierOnThisServer(), node.StoreResource.AdminAddress)
+	log.Printf("%s: connect to shard %s on %s", name, node.ShardInfo.IdentifierOnThisServer(), node.StoreResource.AdminAddress)
 
 	return fn(node, grpcConnection)
 }

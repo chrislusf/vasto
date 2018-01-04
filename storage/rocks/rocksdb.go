@@ -7,7 +7,6 @@ import (
 	"github.com/tecbot/gorocksdb"
 	"sync/atomic"
 	"time"
-	"sync"
 )
 
 type Rocks struct {
@@ -20,8 +19,6 @@ type Rocks struct {
 
 	// used for locking
 	clientCounter int32
-
-	iteratorLock sync.Mutex
 }
 
 func New(path string) *Rocks {

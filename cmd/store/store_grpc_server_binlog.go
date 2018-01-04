@@ -107,7 +107,7 @@ func (ss *storeServer) CheckBinlog(ctx context.Context, request *pb.CheckBinlogR
 
 	node, found := ss.keyspaceShards.getShard(request.Keyspace, shard_id(request.ShardId))
 	if !found {
-		return nil, fmt.Errorf("shard: %s.%d not found", request.Keyspace, request.ShardId)
+		return nil, fmt.Errorf("checkbinlog: %s shard %d not found", request.Keyspace, request.ShardId)
 	}
 
 	earliestSegment, latestSegment := node.lm.GetSegmentRange()

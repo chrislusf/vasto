@@ -31,6 +31,7 @@ type shard struct {
 	isShutdown         bool
 	followProgress     map[progressKey]progressValue
 	followProgressLock sync.Mutex
+	ctx                context.Context
 }
 
 func (s *shard) String() string {
@@ -39,7 +40,7 @@ func (s *shard) String() string {
 
 func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.Cluster,
 	clusterListener *cluster_listener.ClusterListener,
-	replicationFactor int, logFileSizeMb int, logFileCount int) (context.Context, *shard) {
+	replicationFactor int, logFileSizeMb int, logFileCount int) (*shard) {
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
@@ -53,13 +54,14 @@ func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.
 		nodeFinishChan:  make(chan bool),
 		cancelFunc:      cancelFunc,
 		followProgress:  make(map[progressKey]progressValue),
+		ctx:             ctx,
 	}
 	if logFileSizeMb > 0 {
 		s.lm = binlog.NewLogManager(dir, nodeId, int64(logFileSizeMb*1024*1024), logFileCount)
 		s.lm.Initialze()
 	}
 
-	return ctx, s
+	return s
 }
 
 func (s *shard) shutdownNode() {
@@ -84,22 +86,22 @@ func (s *shard) setCompactionFilterClusterSize(clusterSize int) {
 
 }
 
-func (s *shard) startWithBootstrapPlan(ctx context.Context, bootstrapOption *topology.BootstrapPlan, selfAdminAddress string, existingPrimaryShards []*pb.ClusterNode) error {
+func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, selfAdminAddress string, existingPrimaryShards []*pb.ClusterNode) error {
 
 	// bootstrap the data
 	if bootstrapOption.IsNormalStart {
 		if s.cluster != nil && bootstrapOption.IsNormalStartBootstrapNeeded {
-			err := s.maybeBootstrapAfterRestart(ctx)
+			err := s.maybeBootstrapAfterRestart(s.ctx)
 			if err != nil {
-				log.Printf("bootstrap: %v", err)
-				return fmt.Errorf("bootstrap: %v", err)
+				log.Printf("normal bootstrap %s: %v", s.String(), err)
+				return fmt.Errorf("normal bootstrap %s: %v", s.String(), err)
 			}
 		}
 
 	} else {
-		if err := s.topoChangeBootstrap(ctx, bootstrapOption, existingPrimaryShards); err != nil {
-			log.Printf("bootstrap: %v", err)
-			return fmt.Errorf("bootstrap: %v", err)
+		if err := s.topoChangeBootstrap(s.ctx, bootstrapOption, existingPrimaryShards); err != nil {
+			log.Printf("topo bootstrap %s: %v", s.String(), err)
+			return fmt.Errorf("topo bootstrap %s: %v", s.String(), err)
 		}
 
 	}
@@ -107,11 +109,11 @@ func (s *shard) startWithBootstrapPlan(ctx context.Context, bootstrapOption *top
 	// add normal follow
 	for _, peer := range s.peerShards() {
 		serverId, shardId := peer.ServerId, peer.ShardId
-		go util.RetryUntil(ctx, fmt.Sprintf("shard %s follow server %d", s.String(), serverId), func() bool {
+		go util.RetryUntil(s.ctx, fmt.Sprintf("shard %s follow server %d", s.String(), serverId), func() bool {
 			clusterSize, replicationFactor := s.cluster.ExpectedSize(), s.cluster.ReplicationFactor()
 			return topology.IsShardInLocal(shardId, serverId, clusterSize, replicationFactor)
 		}, func() error {
-			return s.doFollow(ctx, serverId, shardId, 0)
+			return s.doFollow(s.ctx, serverId, shardId, 0)
 		}, 2*time.Second)
 	}
 
@@ -120,7 +122,7 @@ func (s *shard) startWithBootstrapPlan(ctx context.Context, bootstrapOption *top
 		go func(shard topology.ClusterShard) {
 			sourceShard, _, found := s.cluster.GetNode(int(shard.ServerId))
 			if found && sourceShard.GetStoreResource().GetAdminAddress() != selfAdminAddress {
-				if err := s.doFollow(ctx, shard.ServerId, shard.ShardId, bootstrapOption.ToClusterSize); err != nil {
+				if err := s.doFollow(s.ctx, shard.ServerId, shard.ShardId, bootstrapOption.ToClusterSize); err != nil {
 					log.Printf("shard %s stop following server %s : %v", s, sourceShard.GetStoreResource().GetAddress(), err)
 				}
 			}
@@ -135,7 +137,7 @@ func (s *shard) startWithBootstrapPlan(ctx context.Context, bootstrapOption *top
 
 func (s *shard) doFollow(ctx context.Context, serverId int, sourceShardId int, targetClusterSize int) error {
 
-	return s.cluster.WithConnection(serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+	return s.cluster.WithConnection(fmt.Sprintf("%s follow", s.String()), serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 		return s.followChanges(ctx, node, grpcConnection, sourceShardId, targetClusterSize)
 	})
 

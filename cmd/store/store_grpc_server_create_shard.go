@@ -61,30 +61,39 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 
 	for _, clusterShard := range topology.LocalShards(serverId, clusterSize, replicationFactor) {
 
-		if _, found := localShards.ShardMap[uint32(clusterShard.ShardId)]; found {
-			// skip existing shards
-			continue
+		shardInfo, foundShardInfo := localShards.ShardMap[uint32(clusterShard.ShardId)]
+
+		if !foundShardInfo {
+			shardInfo = &pb.ShardInfo{
+				ServerId:          uint32(serverId),
+				ShardId:           uint32(clusterShard.ShardId),
+				KeyspaceName:      keyspace,
+				ClusterSize:       uint32(clusterSize),
+				ReplicationFactor: uint32(replicationFactor),
+				IsCandidate:       isCandidate,
+			}
 		}
 
-		shardInfo := &pb.ShardInfo{
-			ServerId:          uint32(serverId),
-			ShardId:           uint32(clusterShard.ShardId),
-			KeyspaceName:      keyspace,
-			ClusterSize:       uint32(clusterSize),
-			ReplicationFactor: uint32(replicationFactor),
-			IsCandidate:       isCandidate,
+		shard, foundShard := ss.keyspaceShards.getShard(keyspace, shard_id(clusterShard.ShardId))
+		if !foundShard {
+			var shardCreationError error
+			if shard, shardCreationError = ss.openShard(shardInfo); shardCreationError != nil {
+				return fmt.Errorf("creating %s: %v", shardInfo.IdentifierOnThisServer(), shardCreationError)
+			}
 		}
 
 		plan := planGen(clusterShard.ShardId)
-		log.Printf("shard %s %s", clusterShard.ShardId, plan.String())
+		log.Printf("shard %s bootstrap plan: %s", shardInfo.IdentifierOnThisServer(), plan.String())
 
-		if err := ss.bootstrapShard(shardInfo, plan, existingPrimaryShards); err != nil {
+		if err := shard.startWithBootstrapPlan(plan, ss.selfAdminAddress(), existingPrimaryShards); err != nil {
 			return fmt.Errorf("bootstrap shard %v : %v", shardInfo.IdentifierOnThisServer(), err)
 		}
 
 		localShards.ShardMap[uint32(clusterShard.ShardId)] = shardInfo
 
-		ss.sendShardInfoToMaster(shardInfo, pb.ShardInfo_READY)
+		if !foundShardInfo {
+			ss.sendShardInfoToMaster(shardInfo, pb.ShardInfo_READY)
+		}
 
 	}
 
@@ -92,31 +101,38 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 
 }
 
-func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.LocalShardsInCluster) {
+func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.LocalShardsInCluster) error {
 	for _, shardInfo := range storeStatus.ShardMap {
-		ss.bootstrapShard(shardInfo, &topology.BootstrapPlan{
-			IsNormalStart:                true,
-			IsNormalStartBootstrapNeeded: *ss.option.Bootstrap,
-		}, nil)
+		if shard, shardOpenError := ss.openShard(shardInfo); shardOpenError != nil {
+			return fmt.Errorf("open %s: %v", shardInfo.IdentifierOnThisServer(), shardOpenError)
+		} else {
+			if err := shard.startWithBootstrapPlan(&topology.BootstrapPlan{
+				IsNormalStart:                true,
+				IsNormalStartBootstrapNeeded: *ss.option.Bootstrap,
+			}, ss.selfAdminAddress(), nil); err != nil {
+				return fmt.Errorf("bootstrap shard %v : %v", shardInfo.IdentifierOnThisServer(), err)
+			}
+		}
 	}
+	return nil
 }
 
-func (ss *storeServer) bootstrapShard(shardInfo *pb.ShardInfo, bootstrapOption *topology.BootstrapPlan, existingPrimaryShards []*pb.ClusterNode) error {
+func (ss *storeServer) openShard(shardInfo *pb.ShardInfo) (shard *shard, err error) {
 
 	cluster := ss.clusterListener.GetOrSetCluster(shardInfo.KeyspaceName, int(shardInfo.ClusterSize), int(shardInfo.ReplicationFactor))
 
 	dir := fmt.Sprintf("%s/%s/%d", *ss.option.Dir, shardInfo.KeyspaceName, shardInfo.ShardId)
-	err := os.MkdirAll(dir, 0755)
+	err = os.MkdirAll(dir, 0755)
 	if err != nil {
 		log.Printf("mkdir %s: %v", dir, err)
-		return fmt.Errorf("mkdir %s: %v", dir, err)
+		return nil, fmt.Errorf("mkdir %s: %v", dir, err)
 	}
 
-	ctx, shard := newShard(shardInfo.KeyspaceName, dir, int(shardInfo.ServerId), int(shardInfo.ShardId), cluster, ss.clusterListener,
+	shard = newShard(shardInfo.KeyspaceName, dir, int(shardInfo.ServerId), int(shardInfo.ShardId), cluster, ss.clusterListener,
 		int(shardInfo.ReplicationFactor), *ss.option.LogFileSizeMb, *ss.option.LogFileCount)
 	// println("loading shard", shard.String())
 	ss.keyspaceShards.addShards(shardInfo.KeyspaceName, shard)
 	ss.RegisterPeriodicTask(shard)
-	return shard.startWithBootstrapPlan(ctx, bootstrapOption, ss.selfAdminAddress(), existingPrimaryShards)
+	return shard, nil
 
 }
