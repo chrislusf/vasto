@@ -40,7 +40,9 @@ func TestAddBySst(t *testing.T) {
 
 	i := -1
 
-	db.addSst(func() (bool, []byte, []byte) {
+	var err error
+
+	err = db.addSst("testing1", func() (bool, []byte, []byte) {
 		i++
 		if i >= limit {
 			return false, nil, nil
@@ -49,6 +51,24 @@ func TestAddBySst(t *testing.T) {
 		value := []byte(fmt.Sprintf("v%5d", i))
 		return true, key, value
 	})
+	if err != nil {
+		t.Errorf("failed to ingest: %v", err)
+	}
+
+	// if overlapping ranges, the addSst will fail
+	// i, limit = 4, 7
+	err = db.addSst("testing2", func() (bool, []byte, []byte) {
+		i++
+		if i >= limit {
+			return false, nil, nil
+		}
+		key := []byte(fmt.Sprintf("k%5d", i))
+		value := []byte(fmt.Sprintf("v%5d", i))
+		return true, key, value
+	})
+	if err != nil {
+		t.Errorf("failed to ingest: %v", err)
+	}
 
 	fmt.Printf("%d messages inserted by sst in: %v\n", limit, time.Now().Sub(now))
 
