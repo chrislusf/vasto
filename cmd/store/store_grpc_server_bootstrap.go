@@ -46,7 +46,7 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 			}
 			partitionHash := codec.GetPartitionHashFromBytes(row.Value)
 			if jump.Hash(partitionHash, currentClusterSize) != currentShardId {
-				log.Printf("skipping key=%s currentClusterSize=%d currentShardId=%d", string(row.Key), currentClusterSize, currentShardId)
+				// log.Printf("skipping key=%s currentClusterSize=%d currentShardId=%d", string(row.Key), currentClusterSize, currentShardId)
 				continue
 			}
 			if targetClusterSize > 0 {
