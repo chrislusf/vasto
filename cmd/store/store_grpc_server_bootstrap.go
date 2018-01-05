@@ -9,6 +9,10 @@ import (
 	"bytes"
 )
 
+const(
+	BOOTSTRAP_COPY_BATCH_SIZE = 1024
+)
+
 // BootstrapCopy sends all data if BootstrapCopyRequest's TargetClusterSize==0,
 // or sends all data belong to TargetShardId in cluster of TargetClusterSize
 func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb.VastoStore_BootstrapCopyServer) error {
@@ -26,7 +30,7 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 
 	targetShardId := int32(request.TargetShardId)
 	targetClusterSize := int(request.TargetClusterSize)
-	batchSize := 1024
+	batchSize := BOOTSTRAP_COPY_BATCH_SIZE
 	if targetClusterSize > 0 && targetShardId != int32(request.ShardId) {
 		batchSize *= targetClusterSize
 	}

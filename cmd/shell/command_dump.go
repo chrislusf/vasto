@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io"
 
-	"bytes"
-	"container/heap"
 	"context"
 	"github.com/chrislusf/vasto/cmd/client"
 	"github.com/chrislusf/vasto/pb"
@@ -40,16 +38,16 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 		isKeysOnly = false
 	}
 
-	r, found := c.client.ClusterListener.GetCluster(*c.client.Option.Keyspace)
+	cluster, found := c.client.ClusterListener.GetCluster(*c.client.Option.Keyspace)
 	if !found {
 		return fmt.Errorf("no keyspace %s", *c.client.Option.Keyspace)
 	}
 
-	chans := make([]chan *pb.KeyValue, r.ExpectedSize())
+	chans := make([]chan *pb.KeyValue, cluster.ExpectedSize())
 
-	for i := 0; i < r.ExpectedSize(); i++ {
+	for i := 0; i < cluster.ExpectedSize(); i++ {
 
-		_, _, ok := r.GetNode(i)
+		_, _, ok := cluster.GetNode(i)
 		if !ok {
 			continue
 		}
@@ -57,13 +55,16 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 		ch := make(chan *pb.KeyValue)
 		chans[i] = ch
 
-		go r.WithConnection("dump", i, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+		go cluster.WithConnection("dump", i, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 
 			client := pb.NewVastoStoreClient(grpcConnection)
 
 			request := &pb.BootstrapCopyRequest{
-				Keyspace: *c.client.Option.Keyspace,
-				ShardId:  uint32(node.ShardInfo.ShardId),
+				Keyspace:          *c.client.Option.Keyspace,
+				ShardId:           uint32(node.ShardInfo.ShardId),
+				TargetClusterSize: uint32(cluster.ExpectedSize()),
+				TargetShardId:     uint32(node.ShardInfo.ShardId),
+				Origin:            "shell dump",
 			}
 
 			defer close(ch)
@@ -97,71 +98,13 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 
 	}
 
-	pq := make(priorityQueue, 0, r.ExpectedSize())
-
-	for i := 0; i < r.ExpectedSize(); i++ {
-		if chans[i] == nil {
-			continue
-		}
-		keyValue := <-chans[i]
-		if keyValue != nil {
-			pq = append(pq, &item{
-				KeyValue:  keyValue,
-				chanIndex: i,
-			})
-		}
-	}
-	heap.Init(&pq)
-
-	for pq.Len() > 0 {
-		t := heap.Pop(&pq).(*item)
+	return pb.MergeSorted(chans, func(t *pb.KeyValue) error {
 		if isKeysOnly {
 			fmt.Fprintf(writer, "%v\n", string(t.Key))
 		} else {
 			fmt.Fprintf(writer, "%v,%v\n", string(t.Key), string(t.Value))
 		}
-		newT, hasMore := <-chans[t.chanIndex]
-		if hasMore {
-			heap.Push(&pq, &item{
-				KeyValue:  newT,
-				chanIndex: t.chanIndex,
-			})
-			heap.Fix(&pq, len(pq)-1)
-		}
-	}
+		return nil
+	})
 
-	return
-
-}
-
-// An item is something we manage in a priority queue.
-type item struct {
-	*pb.KeyValue
-	chanIndex int
-}
-
-// A priorityQueue implements heap.Interface and holds Items.
-type priorityQueue []*item
-
-func (pq priorityQueue) Len() int { return len(pq) }
-
-func (pq priorityQueue) Less(i, j int) bool {
-	return bytes.Compare(pq[i].Key, pq[j].Key) < 0
-}
-
-func (pq priorityQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-}
-
-func (pq *priorityQueue) Push(x interface{}) {
-	item := x.(*item)
-	*pq = append(*pq, item)
-}
-
-func (pq *priorityQueue) Pop() interface{} {
-	old := *pq
-	n := len(old)
-	item := old[n-1]
-	*pq = old[0: n-1]
-	return item
 }
