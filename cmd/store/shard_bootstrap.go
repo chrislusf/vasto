@@ -56,6 +56,14 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 		return nil
 	}
 
+	if len(existingPrimaryShards) == 0 {
+		for i := 0; i < s.cluster.ExpectedSize(); i++ {
+			if n, _, ok := s.cluster.GetNode(i); ok {
+				existingPrimaryShards = append(existingPrimaryShards, n)
+			}
+		}
+	}
+
 	if bootstrapPlan.PickBestBootstrapSource {
 
 		bestPeerToCopy, isNeeded := s.isBootstrapNeeded(ctx, bootstrapPlan)
@@ -66,15 +74,9 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 
 		log.Printf("bootstrap from one server %d ...", bestPeerToCopy)
 
-		if existingPrimaryShards != nil {
-			return topology.PrimaryShards(existingPrimaryShards).WithConnection(fmt.Sprintf("%s bootstrap from one exisitng server %d", s.String(), bestPeerToCopy), bestPeerToCopy, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
-				return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapPlan.ToClusterSize, int(s.id))
-			})
-		} else {
-			return s.cluster.WithConnection(fmt.Sprintf("%s bootstrap from one server %d", s.String(), bestPeerToCopy), bestPeerToCopy, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
-				return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapPlan.ToClusterSize, int(s.id))
-			})
-		}
+		return topology.PrimaryShards(existingPrimaryShards).WithConnection(fmt.Sprintf("%s bootstrap from one exisitng server %d", s.String(), bestPeerToCopy), bestPeerToCopy, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+			return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapPlan.ToClusterSize, int(s.id))
+		})
 	}
 
 	var bootstrapSourceServerIds []int
@@ -82,15 +84,9 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 		bootstrapSourceServerIds = append(bootstrapSourceServerIds, shard.ServerId)
 	}
 	return eachInt(bootstrapSourceServerIds, func(serverId int) error {
-		if existingPrimaryShards != nil {
-			return topology.PrimaryShards(existingPrimaryShards).WithConnection(fmt.Sprintf("%s bootstrap from existing server %d", s.String(), serverId), serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
-				return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapPlan.ToClusterSize, int(s.id))
-			})
-		} else {
-			return s.cluster.WithConnection(fmt.Sprintf("%s bootstrap from server %d", s.String(), serverId), serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
-				return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapPlan.ToClusterSize, int(s.id))
-			})
-		}
+		return topology.PrimaryShards(existingPrimaryShards).WithConnection(fmt.Sprintf("%s bootstrap from existing server %d", s.String(), serverId), serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+			return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapPlan.ToClusterSize, int(s.id))
+		})
 	})
 
 }
