@@ -90,8 +90,8 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		pullErr = eachInt(bootstrapSourceServerIds, func(serverId int) error {
-			sourceChan := sourceRowChans[serverId]
+		pullErr = eachInt(bootstrapSourceServerIds, func(index, serverId int) error {
+			sourceChan := sourceRowChans[index]
 			defer close(sourceChan)
 			return topology.PrimaryShards(existingPrimaryShards).WithConnection(
 				fmt.Sprintf("%s bootstrap copy from existing server %d", s.String(), serverId),
@@ -293,16 +293,16 @@ func (s *shard) writeToSst(ctx context.Context, grpcConnection *grpc.ClientConn,
 	return
 }
 
-func eachInt(ints []int, eachFunc func(x int) error) (err error) {
+func eachInt(ints []int, eachFunc func(index, x int) error) (err error) {
 	var wg sync.WaitGroup
-	for _, x := range ints {
+	for index, x := range ints {
 		wg.Add(1)
-		go func(x int) {
+		go func(index, x int) {
 			defer wg.Done()
-			if eachErr := eachFunc(x); eachErr != nil {
+			if eachErr := eachFunc(index, x); eachErr != nil {
 				err = eachErr
 			}
-		}(x)
+		}(index, x)
 	}
 	wg.Wait()
 	return
