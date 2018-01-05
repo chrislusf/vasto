@@ -62,6 +62,7 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 			request := &pb.BootstrapCopyRequest{
 				Keyspace:          *c.client.Option.Keyspace,
 				ShardId:           uint32(node.ShardInfo.ShardId),
+				ClusterSize:       uint32(cluster.ExpectedSize()),
 				TargetClusterSize: uint32(cluster.ExpectedSize()),
 				TargetShardId:     uint32(node.ShardInfo.ShardId),
 				Origin:            "shell dump",

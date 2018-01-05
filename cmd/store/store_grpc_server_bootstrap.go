@@ -9,7 +9,7 @@ import (
 	"bytes"
 )
 
-const(
+const (
 	BOOTSTRAP_COPY_BATCH_SIZE = 1024
 )
 
@@ -30,6 +30,8 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 
 	targetShardId := int32(request.TargetShardId)
 	targetClusterSize := int(request.TargetClusterSize)
+	currentClusterSize := int(request.ClusterSize)
+	currentShardId := int32(shard.id)
 	batchSize := BOOTSTRAP_COPY_BATCH_SIZE
 	if targetClusterSize > 0 && targetShardId != int32(request.ShardId) {
 		batchSize *= targetClusterSize
@@ -42,11 +44,14 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 			if bytes.HasPrefix(row.Key, INTERNAL_PREFIX) {
 				continue
 			}
+			partitionHash := codec.GetPartitionHashFromBytes(row.Value)
+			if jump.Hash(partitionHash, currentClusterSize) != currentShardId {
+				log.Printf("skipping key=%s currentClusterSize=%d currentShardId=%d", string(row.Key), currentClusterSize, currentShardId)
+				continue
+			}
 			if targetClusterSize > 0 {
-				partitionHash := codec.GetPartitionHashFromBytes(row.Value)
 				if jump.Hash(partitionHash, targetClusterSize) == targetShardId {
-					t := row
-					filteredRows = append(filteredRows, t)
+					filteredRows = append(filteredRows, row)
 				}
 			} else {
 				filteredRows = append(filteredRows, row)

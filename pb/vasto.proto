@@ -272,9 +272,10 @@ message CopyDoneMessge {
 message BootstrapCopyRequest {
     string keyspace = 1;
     uint32 shard_id = 2;
-    uint32 target_shard_id = 3;
-    uint32 target_cluster_size = 4;
-    string origin = 5;
+    uint32 cluster_size = 3;
+    uint32 target_shard_id = 4;
+    uint32 target_cluster_size = 5;
+    string origin = 6;
 }
 message BootstrapCopyResponse {
 
