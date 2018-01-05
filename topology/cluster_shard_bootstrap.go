@@ -123,8 +123,9 @@ func (plan *BootstrapPlan) String() string {
 		if len(plan.BootstrapSource) > 0 {
 			buf.WriteString("bootstraps from ")
 			if plan.PickBestBootstrapSource {
-				buf.WriteString("one of [")
+				buf.WriteString("one of ")
 			}
+			buf.WriteString("[")
 			for i := 0; i < len(plan.BootstrapSource); i++ {
 				if i != 0 {
 					buf.WriteString(",")
