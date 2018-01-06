@@ -130,6 +130,7 @@ func (ss *storeServer) openShard(shardInfo *pb.ShardInfo) (shard *shard, err err
 
 	shard = newShard(shardInfo.KeyspaceName, dir, int(shardInfo.ServerId), int(shardInfo.ShardId), cluster, ss.clusterListener,
 		int(shardInfo.ReplicationFactor), *ss.option.LogFileSizeMb, *ss.option.LogFileCount)
+	shard.setCompactionFilterClusterSize(int(shardInfo.ClusterSize))
 	// println("loading shard", shard.String())
 	ss.keyspaceShards.addShards(shardInfo.KeyspaceName, shard)
 	ss.RegisterPeriodicTask(shard)

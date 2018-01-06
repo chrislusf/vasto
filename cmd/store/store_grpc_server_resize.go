@@ -108,7 +108,20 @@ func (ss *storeServer) resizeCommitShardInfoNewCluster(ctx context.Context, requ
 	}
 
 	if hasChanges {
-		err = ss.saveClusterConfig(localShardsStatus, request.Keyspace)
+		if err = ss.saveClusterConfig(localShardsStatus, request.Keyspace); err != nil {
+			return err
+		}
+	}
+
+	shards, found := ss.keyspaceShards.getShards(request.Keyspace)
+	if !found {
+		return fmt.Errorf("unexpected shards not found for %s", request.Keyspace)
+	}
+
+	for _, shard := range shards {
+		if topology.IsShardInLocal(int(shard.id), int(shard.serverId), int(request.TargetClusterSize), shard.cluster.ReplicationFactor()) {
+			shard.setCompactionFilterClusterSize(int(request.TargetClusterSize))
+		}
 	}
 
 	return
