@@ -40,6 +40,9 @@ func (ss *storeServer) processPut(shard *shard, putRequest *pb.PutRequest) *pb.P
 func (s *shard) logPut(putRequest *pb.PutRequest, updatedAtNs uint64) {
 
 	// println("logPut1", putRequest.String())
+	if s.cluster.ReplicationFactor() <= 1 {
+		return
+	}
 
 	if s.lm == nil {
 		return

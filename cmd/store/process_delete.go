@@ -25,6 +25,10 @@ func (ss *storeServer) processDelete(shard *shard, deleteRequest *pb.DeleteReque
 
 func (s *shard) logDelete(key []byte, partitionHash uint64, updatedAtNs uint64) {
 
+	if s.cluster.ReplicationFactor() <= 1 {
+		return
+	}
+
 	if s.lm == nil {
 		return
 	}
