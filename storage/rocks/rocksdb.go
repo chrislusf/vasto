@@ -97,3 +97,7 @@ func (d *Rocks) Size() (sum uint64) {
 	}
 	return sum
 }
+
+func (d *Rocks) GetLiveFilesMetaData() ([]gorocksdb.LiveFileMetadata) {
+	return d.db.GetLiveFilesMetaData()
+}
