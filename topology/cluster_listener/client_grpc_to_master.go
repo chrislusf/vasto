@@ -27,7 +27,7 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 
 	go func() {
 		for keyspace, _ := range clusterListener.clusters {
-			log.Printf("register cluster keyspace(%v) datacenter(%v)", keyspace, dataCenter)
+			// log.Printf("register cluster keyspace(%v) datacenter(%v)", keyspace, dataCenter)
 			if err := registerForClusterAtMaster(stream, string(keyspace), dataCenter, false, clusterListener.clientName); err != nil {
 				log.Printf("register cluster keyspace(%v) datacenter(%v): %v", keyspace, dataCenter, err)
 				return
@@ -55,7 +55,7 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 
 	// log.Printf("Reporting allocated %v", as.allocatedResource)
 
-	log.Printf("register client to master %s", master)
+	// log.Printf("register client to master %s", master)
 
 	for {
 		msg, err := stream.Recv()
