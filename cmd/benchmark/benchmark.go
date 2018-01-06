@@ -2,10 +2,11 @@ package benchmark
 
 import (
 	"fmt"
-	"github.com/chrislusf/vasto/cmd/client"
 	"sync"
 	"time"
 	"context"
+
+	"github.com/chrislusf/vasto/cmd/client"
 )
 
 type BenchmarkOption struct {
@@ -19,10 +20,11 @@ type BenchmarkOption struct {
 	DataCenter *string
 	Keyspace   *string
 	// detail options
-	ClientCount  *int32
-	RequestCount *int32
-	BatchSize    *int32
-	Tests        *string
+	ClientCount       *int32
+	RequestCount      *int32
+	RequestCountStart *int32
+	BatchSize         *int32
+	Tests             *string
 }
 
 type benchmarker struct {
@@ -38,7 +40,7 @@ func RunBenchmarker(option *BenchmarkOption) {
 	b.runBenchmarkerOnCluster(context.Background(), option)
 }
 
-func (b *benchmarker) startThreads(name string, requestCount int, fn func(hist *Histogram, start, stop, batchSize int)) {
+func (b *benchmarker) startThreads(name string, requestCount int, requestNumberStart int, fn func(hist *Histogram, start, stop, batchSize int)) {
 	start := time.Now()
 	clientCount := int(*b.option.ClientCount)
 
@@ -48,13 +50,13 @@ func (b *benchmarker) startThreads(name string, requestCount int, fn func(hist *
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			fn(&hists[i], i*requestCount, (i+1)*requestCount, int(*b.option.BatchSize))
+			fn(&hists[i], i*requestCount+requestNumberStart, (i+1)*requestCount+requestNumberStart, int(*b.option.BatchSize))
 		}(i)
 	}
 	wg.Wait()
 
 	elapsed := time.Since(start)
-	speed := float64(*b.option.RequestCount * *b.option.BatchSize) * 1e9 / float64(elapsed)
+	speed := float64(*b.option.RequestCount * *b.option.BatchSize) / float64(elapsed.Seconds())
 	fmt.Printf("%-10s : %9.1f op/s\n", name, speed)
 
 	var hist = hists[0]
@@ -68,7 +70,7 @@ func (b *benchmarker) startThreadsWithClient(ctx context.Context, name string, f
 
 	requestCount := int(*b.option.RequestCount / *b.option.ClientCount)
 
-	b.startThreads(name, requestCount, func(hist *Histogram, start, stop, batchSize int) {
+	b.startThreads(name, requestCount, int(*b.option.RequestCountStart), func(hist *Histogram, start, stop, batchSize int) {
 		c := client.NewClient(&client.ClientOption{
 			FixedCluster: b.option.FixedCluster,
 			Master:       b.option.Master,

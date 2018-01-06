@@ -9,51 +9,86 @@ import (
 	"github.com/chrislusf/vasto/cmd/client"
 	"strings"
 	"context"
+	"github.com/gosuri/uiprogress"
 )
 
 func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *BenchmarkOption) {
 
-	b.startThreadsWithClient(ctx, *option.Tests, func(hist *Histogram, c *client.VastoClient, start, stop, batchSize int) {
-		for _, t := range strings.Split(*option.Tests, ",") {
-			switch t {
-			case "put":
+	uiprogress.Start()
+
+	for _, t := range strings.Split(*option.Tests, ",") {
+
+		switch t {
+		case "put":
+
+			bar := uiprogress.AddBar(int(*option.RequestCount)).AppendCompleted().PrependElapsed()
+			bar.PrependFunc(func(b *uiprogress.Bar) string {
+				return "put : "
+			})
+			bar.AppendFunc(func(b *uiprogress.Bar) string {
+				return fmt.Sprintf("%.2f ops/sec", float64(b.Current())/b.TimeElapsed().Seconds())
+			})
+
+			b.startThreadsWithClient(ctx, *option.Tests, func(hist *Histogram, c *client.VastoClient, start, stop, batchSize int) {
 				b.execute(hist, c, start, stop, batchSize, func(c *client.VastoClient, i int) error {
 
 					var rows []*client.Row
 
 					for t := 0; t < batchSize; t++ {
-						key := []byte(fmt.Sprintf("k%5d", i+t))
-						value := []byte(fmt.Sprintf("v%5d", i+t))
+						key := []byte(fmt.Sprintf("k%d", i+t))
+						value := []byte(fmt.Sprintf("v%d", i+t))
 
 						row := client.NewRow(key, value)
 
 						rows = append(rows, row)
+
+						bar.Incr()
 					}
 
 					return c.Put(*b.option.Keyspace, rows)
 				})
-			case "get":
+			})
+		case "get":
+
+			bar := uiprogress.AddBar(int(*option.RequestCount)).AppendCompleted().PrependElapsed()
+			bar.PrependFunc(func(b *uiprogress.Bar) string {
+				return "get : "
+			})
+			bar.AppendFunc(func(b *uiprogress.Bar) string {
+				return fmt.Sprintf("%.2f ops/sec", float64(b.Current())/b.TimeElapsed().Seconds())
+			})
+
+			b.startThreadsWithClient(ctx, *option.Tests, func(hist *Histogram, c *client.VastoClient, start, stop, batchSize int) {
 				b.execute(hist, c, start, stop, batchSize, func(c *client.VastoClient, i int) error {
 
-					key := []byte(fmt.Sprintf("k%5d", i))
-					value := []byte(fmt.Sprintf("v%5d", i))
+					for t := 0; t < batchSize; t++ {
+						key := []byte(fmt.Sprintf("k%d", i+t))
+						value := []byte(fmt.Sprintf("v%d", i+t))
 
-					data, err := c.Get(*b.option.Keyspace, key)
-					if err != nil {
-						log.Printf("read %s: %v", string(key), err)
-						return err
-					}
-					if bytes.Compare(data, value) != 0 {
-						log.Printf("read %s, expected %s", string(data), string(value))
-						return nil
+						data, err := c.Get(*b.option.Keyspace, key)
+
+						bar.Incr()
+
+						if err != nil {
+							log.Printf("read %s: %v", string(key), err)
+							return err
+						}
+						if bytes.Compare(data, value) != 0 {
+							log.Printf("read %s, expected %s", string(data), string(value))
+							return nil
+						}
+
+						bar.Incr()
 					}
 
 					return nil
 
 				})
-			}
+			})
 		}
-	})
+	}
+
+	uiprogress.Stop()
 
 }
 

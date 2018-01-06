@@ -79,6 +79,7 @@ var (
 		DisableUnixSocket: bench.Flag("disableUnixSocket", "store listening unix socket").Default("false").Bool(),
 		ClientCount:       bench.Flag("clientCount", "parallel client count").Default("2").Short('c').Int32(),
 		RequestCount:      bench.Flag("requestCount", "total request count").Default("1024000").Short('n').Int32(),
+		RequestCountStart: bench.Flag("requestNumberStart", "starting request index").Default("0").Int32(),
 		BatchSize:         bench.Flag("batchSize", "put requests in batch").Default("1").Short('b').Int32(),
 		FixedCluster: bench.Flag("fixed.cluster",
 			"overwrite --cluster.master, format network:host:port[,network:host:port]*").Default("").String(),
