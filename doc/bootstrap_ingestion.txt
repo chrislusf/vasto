@@ -1,0 +1,16 @@
+If ingesting multiple SSTable files, the ranges can not overlap.
+However, backfill via SSTable files:
+1. is much(?) faster than inserting individual entries
+2. allows write behind and latest updates wins
+
+To work around this:
+1. When increasing cluster size, since the db is new, the bootstrap sources can be merge sorted into one SSTable file.
+2. When decreasing cluster size, the source data should also be merge sorted for better performance.
+   During ingestion, each row should be inserted one by one, and checking existing entry's updatedAtNs.
+
+
+To simplify this even further:
+1. Do not use the SSTable ingestions.
+2. Only ensure ordered-insert.
+3. During insert, use MergeOperator to speed up dup checking
+
