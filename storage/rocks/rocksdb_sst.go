@@ -72,6 +72,7 @@ func (d *Rocks) AddSstByWriter(name string, writerFunc func(*gorocksdb.SSTFileWr
 	ingestOpts.SetMoveFiles(true)
 	// TODO Required but not avaiable for now
 	ingestOpts.SetIngestionBehind(true)
+	ingestOpts.SetAllowGlobalSeqNo(true)
 	err = d.db.IngestExternalFile([]string{filePath.Name()}, ingestOpts)
 	if err != nil {
 		return fmt.Errorf("%s: db %s ingest sst file %s: %v", name, d.path, filePath.Name(), err)
