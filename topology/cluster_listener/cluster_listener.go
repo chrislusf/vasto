@@ -169,9 +169,7 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 								}
 							}
 						} else {
-							log.Printf("listener cluster size1: %d", cluster.ExpectedSize())
 							oldShardInfo := AddNode(cluster, node)
-							log.Printf("listener cluster size2: %d", cluster.ExpectedSize())
 							for _, shardEventProcess := range clusterListener.shardEventProcessors {
 								if oldShardInfo == nil {
 									shardEventProcess.OnShardCreateEvent(cluster, node.StoreResource, node.ShardInfo)
@@ -179,7 +177,6 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 									shardEventProcess.OnShardUpdateEvent(cluster, node.StoreResource, node.ShardInfo, oldShardInfo)
 								}
 							}
-							log.Printf("listener cluster size3: %d", cluster.ExpectedSize())
 						}
 					}
 				} else if msg.GetResize() != nil {
