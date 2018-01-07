@@ -3,6 +3,7 @@ package cluster_listener
 import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
+	"log"
 )
 
 type ShardEventProcessor interface {
@@ -14,6 +15,15 @@ type ShardEventProcessor interface {
 }
 
 func (clusterListener *ClusterListener) RegisterShardEventProcessor(shardEventProcess ShardEventProcessor) {
+	found := -1
+	for k, p := range clusterListener.shardEventProcessors {
+		if p == shardEventProcess {
+			found = k
+		}
+	}
+	if found >= 0 {
+		return
+	}
 	clusterListener.shardEventProcessors = append(clusterListener.shardEventProcessors, shardEventProcess)
 }
 
@@ -25,6 +35,7 @@ func (clusterListener *ClusterListener) UnregisterShardEventProcessor(shardEvent
 		}
 	}
 	if found < 0 {
+		log.Printf("removing failed! %+v", shardEventProcess)
 		return
 	}
 	copy(clusterListener.shardEventProcessors[found:], clusterListener.shardEventProcessors[found+1:])
