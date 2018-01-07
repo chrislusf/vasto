@@ -8,8 +8,11 @@ import (
 
 // FullScan scan through all entries
 func (d *Rocks) FullScan(batchSize int, fn func([]*pb.KeyValue) error) error {
-	atomic.AddInt32(&d.clientCounter, 1)
+	newClientCounter := atomic.AddInt32(&d.clientCounter, 1)
 	defer atomic.AddInt32(&d.clientCounter, -1)
+	if newClientCounter <= 0 {
+		return ERR_SHUTDOWN
+	}
 
 	opts := gorocksdb.NewDefaultReadOptions()
 	opts.SetFillCache(false)

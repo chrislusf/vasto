@@ -7,6 +7,7 @@ import (
 	"github.com/tecbot/gorocksdb"
 	"sync/atomic"
 	"time"
+	"errors"
 )
 
 type Rocks struct {
@@ -20,6 +21,10 @@ type Rocks struct {
 	// used for locking
 	clientCounter int32
 }
+
+var (
+	ERR_SHUTDOWN = errors.New("shutdown in progress")
+)
 
 func New(path string) *Rocks {
 	r := &Rocks{
@@ -48,27 +53,36 @@ func (d *Rocks) setup(path string) {
 	d.ro = gorocksdb.NewDefaultReadOptions()
 }
 
-func (d *Rocks) Put(key []byte, msg []byte) error {
+func (d *Rocks) Put(key []byte, msg []byte) (err error) {
 	// println("put", string(key), "value", string(msg))
-	atomic.AddInt32(&d.clientCounter, 1)
-	err := d.db.Put(d.wo, key, msg)
+	if newClientCounter := atomic.AddInt32(&d.clientCounter, 1); newClientCounter > 0 {
+		err = d.db.Put(d.wo, key, msg)
+	} else {
+		err = ERR_SHUTDOWN
+	}
 	atomic.AddInt32(&d.clientCounter, -1)
-	return err
+	return
 }
 
-func (d *Rocks) Get(key []byte) ([]byte, error) {
-	atomic.AddInt32(&d.clientCounter, 1)
-	data, err := d.db.GetBytes(d.ro, key)
+func (d *Rocks) Get(key []byte) (data []byte, err error) {
+	if newClientCounter := atomic.AddInt32(&d.clientCounter, 1); newClientCounter > 0 {
+		data, err = d.db.GetBytes(d.ro, key)
+	} else {
+		err = ERR_SHUTDOWN
+	}
 	atomic.AddInt32(&d.clientCounter, -1)
-	return data, err
+	return
 }
 
-func (d *Rocks) Delete(k []byte) error {
+func (d *Rocks) Delete(k []byte) (err error) {
 	// println("del", string(k))
-	atomic.AddInt32(&d.clientCounter, 1)
-	err := d.db.Delete(d.wo, k)
+	if newClientCounter := atomic.AddInt32(&d.clientCounter, 1); newClientCounter > 0 {
+		err = d.db.Delete(d.wo, k)
+	} else {
+		err = ERR_SHUTDOWN
+	}
 	atomic.AddInt32(&d.clientCounter, -1)
-	return err
+	return
 }
 
 func (d *Rocks) Destroy() {
@@ -77,8 +91,8 @@ func (d *Rocks) Destroy() {
 
 func (d *Rocks) Close() {
 	for {
-		count := atomic.LoadInt32(&d.clientCounter)
-		if count <= 0 {
+		swapped := atomic.CompareAndSwapInt32(&d.clientCounter, 0, -100)
+		if swapped {
 			break
 		}
 		log.Printf("waiting to close db %s ...", d.path)

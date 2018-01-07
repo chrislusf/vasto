@@ -10,7 +10,10 @@ import (
 // PrefixScan paginate through all entries with the prefix
 // the first scan can have empty lastKey and limit = 0
 func (d *Rocks) PrefixScan(prefix, lastKey []byte, limit int, fn func(key, value []byte) bool) error {
-	atomic.AddInt32(&d.clientCounter, 1)
+	if newClientCounter := atomic.AddInt32(&d.clientCounter, 1); newClientCounter <= 0 {
+		atomic.AddInt32(&d.clientCounter, -1)
+		return ERR_SHUTDOWN
+	}
 
 	opts := gorocksdb.NewDefaultReadOptions()
 	opts.SetFillCache(false)
