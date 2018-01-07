@@ -2,10 +2,10 @@ package cluster_listener
 
 import (
 	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/topology"
 )
 
-func (clusterListener *ClusterListener) AddNode(keyspace string, n *pb.ClusterNode) (oldShardInfo *pb.ShardInfo) {
-	cluster := clusterListener.GetOrSetCluster(keyspace, int(n.ShardInfo.ClusterSize), int(n.ShardInfo.ReplicationFactor))
+func AddNode(cluster *topology.Cluster, n *pb.ClusterNode) (oldShardInfo *pb.ShardInfo) {
 
 	if n.ShardInfo.IsCandidate {
 		if cluster.GetNextCluster() == nil {
@@ -41,11 +41,7 @@ func (clusterListener *ClusterListener) RemoveNode(keyspace string, n *pb.Cluste
 	}
 }
 
-func (clusterListener *ClusterListener) PromoteNode(keyspace string, n *pb.ClusterNode) {
-	cluster, foundCluster := clusterListener.GetCluster(keyspace)
-	if !foundCluster {
-		return
-	}
+func PromoteNode(cluster *topology.Cluster, n *pb.ClusterNode) {
 
 	candidateCluster := cluster.GetNextCluster()
 

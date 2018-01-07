@@ -31,7 +31,7 @@ func (c *VastoClient) Delete(keyspace string, key []byte, options ...topology.Ac
 	_, err = pb.SendRequests(conn, requests)
 	conn.Close()
 	if err != nil {
-		return fmt.Errorf("put error: %v", err)
+		return fmt.Errorf("delete error: %v", err)
 	}
 
 	return nil

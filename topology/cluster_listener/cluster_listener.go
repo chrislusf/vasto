@@ -103,9 +103,9 @@ func (clusterListener *ClusterListener) SetNodes(keyspace string, fixedCluster s
 		}
 		nodes = append(nodes, node)
 	}
-	clusterListener.GetOrSetCluster(keyspace, len(servers), 1)
+	cluster := clusterListener.GetOrSetCluster(keyspace, len(servers), 1)
 	for _, node := range nodes {
-		clusterListener.AddNode(keyspace, node)
+		AddNode(cluster, node)
 	}
 }
 
@@ -135,11 +135,11 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 			case msg := <-clientMessageChan:
 				if msg.GetCluster() != nil {
 					// log.Printf("listener get cluster: %v", msg.GetCluster())
-					r := clusterListener.GetOrSetCluster(msg.Cluster.Keyspace, int(msg.Cluster.ExpectedClusterSize), int(msg.Cluster.ReplicationFactor))
+					cluster := clusterListener.GetOrSetCluster(msg.Cluster.Keyspace, int(msg.Cluster.ExpectedClusterSize), int(msg.Cluster.ReplicationFactor))
 					for _, node := range msg.Cluster.Nodes {
-						clusterListener.AddNode(msg.Cluster.Keyspace, node)
+						AddNode(cluster, node)
 						for _, shardEventProcess := range clusterListener.shardEventProcessors {
-							shardEventProcess.OnShardCreateEvent(r, node.StoreResource, node.ShardInfo)
+							shardEventProcess.OnShardCreateEvent(cluster, node.StoreResource, node.ShardInfo)
 						}
 					}
 					if !clientConnected {
@@ -149,7 +149,7 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 						}
 					}
 				} else if msg.GetUpdates() != nil {
-					// log.Printf("listener get update: %v", msg.GetUpdates())
+					log.Printf("listener get update: %v", msg.GetUpdates())
 					cluster, found := clusterListener.GetCluster(msg.Updates.Keyspace)
 					if !found {
 						log.Printf("no keyspace %s found to update", msg.Updates.Keyspace)
@@ -157,8 +157,7 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 					}
 					for _, node := range msg.Updates.Nodes {
 						if msg.Updates.GetIsPromotion() {
-							cluster.SetExpectedSize(int(node.ShardInfo.ClusterSize))
-							clusterListener.PromoteNode(msg.Updates.Keyspace, node)
+							PromoteNode(cluster, node)
 							for _, shardEventProcess := range clusterListener.shardEventProcessors {
 								shardEventProcess.OnShardPromoteEvent(cluster, node.StoreResource, node.ShardInfo)
 							}
@@ -170,7 +169,9 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 								}
 							}
 						} else {
-							oldShardInfo := clusterListener.AddNode(msg.Updates.Keyspace, node)
+							log.Printf("listener cluster size1: %d", cluster.ExpectedSize())
+							oldShardInfo := AddNode(cluster, node)
+							log.Printf("listener cluster size2: %d", cluster.ExpectedSize())
 							for _, shardEventProcess := range clusterListener.shardEventProcessors {
 								if oldShardInfo == nil {
 									shardEventProcess.OnShardCreateEvent(cluster, node.StoreResource, node.ShardInfo)
@@ -178,19 +179,17 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 									shardEventProcess.OnShardUpdateEvent(cluster, node.StoreResource, node.ShardInfo, oldShardInfo)
 								}
 							}
+							log.Printf("listener cluster size3: %d", cluster.ExpectedSize())
 						}
 					}
 				} else if msg.GetResize() != nil {
-					// log.Printf("listener get resize: %v", msg.GetResize())
+					log.Printf("listener get resize: %v", msg.GetResize())
 					r, found := clusterListener.GetCluster(msg.Resize.Keyspace)
 					if !found {
 						log.Printf("no keyspace %s found to resize", msg.Resize.Keyspace)
 						continue
 					}
-					r.SetExpectedSize(int(msg.Resize.CurrentClusterSize))
-					if msg.Resize.NextClusterSize != 0 {
-						log.Printf("keyspace %s dc %s resizing %d => %d", msg.Resize.Keyspace, clusterListener.dataCenter, r.ExpectedSize(), msg.Resize.NextClusterSize)
-					}
+					r.SetExpectedSize(int(msg.Resize.TargetClusterSize))
 				} else {
 					log.Printf("unknown message %v", msg)
 				}

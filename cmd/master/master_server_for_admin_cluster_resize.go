@@ -181,6 +181,7 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 
 	candidateCluster := cluster.GetNextCluster()
 
+	oldClusterSize := cluster.ExpectedSize()
 	newClusterSize := int(req.TargetClusterSize)
 	replicationFactor := cluster.ReplicationFactor()
 
@@ -213,6 +214,14 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 			}
 		}
 	}
+
+	// notify the new cluster size, clients can write to the new set of servers now
+	ms.clientChans.notifyClusterResize(keyspace_name(req.Keyspace), data_center_name(req.DataCenter), uint32(oldClusterSize), req.TargetClusterSize)
+
+	// wait a bit for the slow-to-change clients
+	time.Sleep(time.Second)
+
+	// remove retiring shards
 	for _, node := range toBeRemoved {
 		cluster.RemoveShard(node.StoreResource, node.ShardInfo)
 		node.ShardInfo.IsPermanentDelete = true

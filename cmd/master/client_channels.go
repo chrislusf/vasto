@@ -95,14 +95,14 @@ func (cc *clientChannels) sendClientCluster(keyspace keyspace_name, dataCenter d
 	)
 }
 
-func (cc *clientChannels) notifyClusterSize(keyspace keyspace_name, dataCenter data_center_name, currentClusterSize, nextClusterSize uint32) error {
+func (cc *clientChannels) notifyClusterResize(keyspace keyspace_name, dataCenter data_center_name, currentClusterSize, targetClusterSize uint32) error {
 	return cc.notifyClients(
 		keyspace,
 		dataCenter,
 		&pb.ClientMessage{
 			Resize: &pb.ClientMessage_Resize{
 				CurrentClusterSize: currentClusterSize,
-				NextClusterSize:    nextClusterSize,
+				TargetClusterSize:  targetClusterSize,
 				Keyspace:           string(keyspace),
 			},
 		},

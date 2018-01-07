@@ -65,7 +65,7 @@ func (c *VastoClient) batchPut(keyspace string, shardId int, rows []*Row, option
 	_, err = pb.SendRequests(conn, requests)
 	conn.Close()
 	if err != nil {
-		return fmt.Errorf("put error: %v", err)
+		return fmt.Errorf("batch put error: %v", err)
 	}
 
 	return nil
