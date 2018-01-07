@@ -106,6 +106,11 @@ func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.L
 		if shard, shardOpenError := ss.openShard(shardInfo); shardOpenError != nil {
 			return fmt.Errorf("open %s: %v", shardInfo.IdentifierOnThisServer(), shardOpenError)
 		} else {
+
+			for fileId, meta := range shard.db.GetLiveFilesMetaData() {
+				log.Printf("%d name:%s, level:%d size:%d SmallestKey:%s LargestKey:%s", fileId, meta.Name, meta.Level, meta.Size, string(meta.SmallestKey), string(meta.LargestKey))
+			}
+
 			if err := shard.startWithBootstrapPlan(&topology.BootstrapPlan{
 				IsNormalStart:                true,
 				IsNormalStartBootstrapNeeded: *ss.option.Bootstrap,
