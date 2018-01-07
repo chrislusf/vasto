@@ -45,7 +45,7 @@ func (ss *storeServer) ResizeCommit(ctx context.Context, request *pb.ResizeCommi
 
 }
 
-// 3. cleanup old shards
+// 3. cleanup old shards, and stop one-time follows
 func (ss *storeServer) ResizeCleanup(ctx context.Context, request *pb.ResizeCleanupRequest) (*pb.ResizeCleanupResponse, error) {
 
 	log.Printf("cleanup old shards %v", request)
@@ -138,6 +138,7 @@ func (ss *storeServer) deleteOldShardsInNewCluster(ctx context.Context, request 
 	}
 
 	for _, shard := range shards {
+		shard.oneTimeFollowCancel()
 		if !topology.IsShardInLocal(int(shard.id), int(shard.serverId), int(request.TargetClusterSize), shard.cluster.ReplicationFactor()) {
 			ss.shutdownShard(shard)
 		}

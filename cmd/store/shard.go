@@ -19,19 +19,20 @@ type shard_id int
 type server_id int
 
 type shard struct {
-	keyspace           string
-	id                 shard_id
-	serverId           server_id
-	db                 *rocks.Rocks
-	lm                 *binlog.LogManager
-	cluster            *topology.Cluster
-	clusterListener    *cluster_listener.ClusterListener
-	nodeFinishChan     chan bool
-	cancelFunc         context.CancelFunc
-	isShutdown         bool
-	followProgress     map[progressKey]progressValue
-	followProgressLock sync.Mutex
-	ctx                context.Context
+	keyspace            string
+	id                  shard_id
+	serverId            server_id
+	db                  *rocks.Rocks
+	lm                  *binlog.LogManager
+	cluster             *topology.Cluster
+	clusterListener     *cluster_listener.ClusterListener
+	nodeFinishChan      chan bool
+	cancelFunc          context.CancelFunc
+	isShutdown          bool
+	followProgress      map[progressKey]progressValue
+	followProgressLock  sync.Mutex
+	ctx                 context.Context
+	oneTimeFollowCancel context.CancelFunc
 }
 
 func (s *shard) String() string {
@@ -115,17 +116,20 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 		}, 2*time.Second)
 	}
 
+	oneTimeFollowCtx, oneTimeFollowCancelFunc := context.WithCancel(context.Background())
+
 	// add one time follow during transitional period, there are no retries, assuming the source shards are already up
 	for _, shard := range bootstrapOption.TransitionalFollowSource {
 		go func(shard topology.ClusterShard) {
 			sourceShard, _, found := s.cluster.GetNode(int(shard.ServerId))
 			if found && sourceShard.GetStoreResource().GetAdminAddress() != selfAdminAddress {
-				if err := s.doFollow(s.ctx, shard.ServerId, shard.ShardId, bootstrapOption.ToClusterSize); err != nil {
+				if err := s.doFollow(oneTimeFollowCtx, shard.ServerId, shard.ShardId, bootstrapOption.ToClusterSize); err != nil {
 					log.Printf("shard %s stop following server %s : %v", s, sourceShard.GetStoreResource().GetAddress(), err)
 				}
 			}
 		}(shard)
 	}
+	s.oneTimeFollowCancel = oneTimeFollowCancelFunc
 
 	s.clusterListener.RegisterShardEventProcessor(s)
 
