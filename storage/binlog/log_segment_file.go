@@ -104,10 +104,13 @@ func (f *logSegmentFile) readOneEntry(offset int64) (entry *LogEntry, nextOffset
 	}
 	dataLen := binary.LittleEndian.Uint32(f.sizeBufForRead)
 	data := make([]byte, dataLen)
-	_, err = f.file.ReadAt(data, offset+4)
+	n, err := f.file.ReadAt(data, offset+4)
 	if err != nil {
 		println("reading", f.fullName, "offset", offset, "size", dataLen, err.Error())
 		return nil, 0, fmt.Errorf("read entry data: %v", err)
+	}
+	if n != int(dataLen) {
+		return nil, 0, fmt.Errorf("read wrong data size: %d, expecting %d", n, dataLen)
 	}
 	entry, err = FromBytes(data)
 	return entry, offset + int64(dataLen+4), nil
