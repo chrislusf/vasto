@@ -70,8 +70,6 @@ func (s *shard) shutdownNode() {
 
 	s.cancelFunc()
 
-	s.clusterListener.UnregisterShardEventProcessor(s)
-
 	close(s.nodeFinishChan)
 
 	if s.lm != nil {

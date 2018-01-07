@@ -139,10 +139,7 @@ func (ss *storeServer) deleteOldShardsInNewCluster(ctx context.Context, request 
 
 	for _, shard := range shards {
 		if !topology.IsShardInLocal(int(shard.id), int(shard.serverId), int(request.TargetClusterSize), shard.cluster.ReplicationFactor()) {
-			ss.UnregisterPeriodicTask(shard)
-			shard.shutdownNode()
-			shard.db.Close()
-			shard.db.Destroy()
+			ss.shutdownShard(shard)
 		}
 	}
 

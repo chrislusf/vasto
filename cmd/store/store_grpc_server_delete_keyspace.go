@@ -46,10 +46,7 @@ func (ss *storeServer) deleteShards(keyspace string, shouldTellMaster bool) (err
 		return nil
 	}
 	for _, shard := range shards {
-		ss.UnregisterPeriodicTask(shard)
-		shard.shutdownNode()
-		shard.db.Close()
-		shard.db.Destroy()
+		ss.shutdownShard(shard)
 	}
 
 	// remove all meta info and in-memory objects
@@ -60,4 +57,12 @@ func (ss *storeServer) deleteShards(keyspace string, shouldTellMaster bool) (err
 	ss.clusterListener.RemoveKeyspace(keyspace)
 
 	return nil
+}
+
+func (ss *storeServer) shutdownShard(shard *shard) {
+	ss.UnregisterPeriodicTask(shard)
+	shard.clusterListener.UnregisterShardEventProcessor(shard)
+	shard.shutdownNode()
+	shard.db.Close()
+	shard.db.Destroy()
 }
