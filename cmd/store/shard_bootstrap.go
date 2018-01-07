@@ -12,6 +12,7 @@ import (
 	"context"
 	"sync"
 	"github.com/chrislusf/vasto/util"
+	"github.com/chrislusf/vasto/storage/codec"
 )
 
 func (s *shard) peerShards() []topology.ClusterShard {
@@ -87,6 +88,14 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 		sourceRowChans = append(sourceRowChans, make(chan *pb.KeyValue, BOOTSTRAP_COPY_BATCH_SIZE))
 	}
 
+	alreadyHasIngestedSst := false
+	for fileId, meta := range s.db.GetLiveFilesMetaData() {
+		log.Printf("%d name:%s, level:%d size:%d SmallestKey:%s LargestKey:%s", fileId, meta.Name, meta.Level, meta.Size, string(meta.SmallestKey), string(meta.LargestKey))
+		if meta.Level >= 6 {
+			alreadyHasIngestedSst = true
+		}
+	}
+
 	return util.Parallel(
 		func() error {
 			return eachInt(bootstrapSourceServerIds, func(index, serverId int) error {
@@ -102,20 +111,45 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 			})
 		},
 		func() error {
-			return s.db.AddSstByWriter(fmt.Sprintf("%s bootstrapCopy write", s.String()),
-				func(w *gorocksdb.SSTFileWriter) (int, error) {
-					var counter int
-					err := pb.MergeSorted(sourceRowChans, func(keyValue *pb.KeyValue) error {
+			if !alreadyHasIngestedSst {
+				return s.db.AddSstByWriter(fmt.Sprintf("%s bootstrapCopy write", s.String()),
+					func(w *gorocksdb.SSTFileWriter) (int, error) {
+						var counter int
+						err := pb.MergeSorted(sourceRowChans, func(keyValue *pb.KeyValue) error {
 
-						if err := w.Add(keyValue.Key, keyValue.Value); err != nil {
-							return fmt.Errorf("add to sst: %v", err)
-						}
-						counter++
-						return nil
-					})
-					return counter, err
-				},
-			)
+							if err := w.Add(keyValue.Key, keyValue.Value); err != nil {
+								return fmt.Errorf("add to sst: %v", err)
+							}
+							counter++
+							return nil
+						})
+						return counter, err
+					},
+				)
+			}
+
+			// slow way to backfill
+			return pb.MergeSorted(sourceRowChans, func(keyValue *pb.KeyValue) error {
+
+				b, err := s.db.Get(keyValue.Key)
+				if err != nil || len(b) == 0 {
+					return s.db.Put(keyValue.Key, keyValue.Value)
+				}
+
+				existingRow := codec.FromBytes(b)
+				if existingRow.IsExpired() {
+					return s.db.Put(keyValue.Key, keyValue.Value)
+				}
+
+				incomingRow := codec.FromBytes(keyValue.Value)
+				if existingRow.UpdatedAtNs < incomingRow.UpdatedAtNs {
+					return s.db.Put(keyValue.Key, keyValue.Value)
+				}
+
+				return nil
+
+			})
+
 		},
 	)
 
