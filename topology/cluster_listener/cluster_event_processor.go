@@ -15,6 +15,9 @@ type ShardEventProcessor interface {
 }
 
 func (clusterListener *ClusterListener) RegisterShardEventProcessor(shardEventProcess ShardEventProcessor) {
+
+	log.Printf("RegisterShardEventProcessor: %+v", shardEventProcess)
+
 	found := -1
 	for k, p := range clusterListener.shardEventProcessors {
 		if p == shardEventProcess {
@@ -22,12 +25,16 @@ func (clusterListener *ClusterListener) RegisterShardEventProcessor(shardEventPr
 		}
 	}
 	if found >= 0 {
+		log.Printf("RegisterShardEventProcessor already exists!: %+v", shardEventProcess)
 		return
 	}
 	clusterListener.shardEventProcessors = append(clusterListener.shardEventProcessors, shardEventProcess)
 }
 
 func (clusterListener *ClusterListener) UnregisterShardEventProcessor(shardEventProcess ShardEventProcessor) {
+
+	log.Printf("UnregisterShardEventProcessor: %+v", shardEventProcess)
+
 	found := -1
 	for k, p := range clusterListener.shardEventProcessors {
 		if p == shardEventProcess {
@@ -35,7 +42,7 @@ func (clusterListener *ClusterListener) UnregisterShardEventProcessor(shardEvent
 		}
 	}
 	if found < 0 {
-		log.Printf("removing failed! %+v", shardEventProcess)
+		log.Printf("UnregisterShardEventProcessor removing failed! %+v", shardEventProcess)
 		return
 	}
 	copy(clusterListener.shardEventProcessors[found:], clusterListener.shardEventProcessors[found+1:])

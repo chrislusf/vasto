@@ -181,8 +181,6 @@ func RunStore(option *StoreOption) {
 		}
 	}
 
-	// TODO register to keyspaces/datacenters on startup
-
 	log.Printf("Vasto store starts on %s", *option.Dir)
 
 	select {}

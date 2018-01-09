@@ -33,6 +33,7 @@ type shard struct {
 	followProgressLock  sync.Mutex
 	ctx                 context.Context
 	oneTimeFollowCancel context.CancelFunc
+	hasBackfilled       bool // whether addSst() has been called on this db
 }
 
 func (s *shard) String() string {
@@ -66,6 +67,8 @@ func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.
 }
 
 func (s *shard) shutdownNode() {
+
+	log.Printf("shutdownNode: %+v", s)
 
 	s.isShutdown = true
 
@@ -108,11 +111,12 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 	// add normal follow
 	for _, peer := range s.peerShards() {
 		serverId, shardId := peer.ServerId, peer.ShardId
-		go util.RetryUntil(s.ctx, fmt.Sprintf("shard %s follow server %d", s.String(), serverId), func() bool {
+		go util.RetryUntil(s.ctx, fmt.Sprintf("shard %s follow %d.%d", s.String(), serverId, shardId), func() bool {
 			clusterSize, replicationFactor := s.cluster.ExpectedSize(), s.cluster.ReplicationFactor()
 			return topology.IsShardInLocal(shardId, serverId, clusterSize, replicationFactor)
 		}, func() error {
-			return s.doFollow(s.ctx, serverId, shardId, 0)
+			return s.doFollow(s.ctx, fmt.Sprintf("%s follow %d.%d", s.String(), serverId, shardId),
+				serverId, shardId, 0)
 		}, 2*time.Second)
 	}
 
@@ -123,8 +127,10 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 		go func(shard topology.ClusterShard) {
 			sourceShard, _, found := s.cluster.GetNode(int(shard.ServerId))
 			if found && sourceShard.GetStoreResource().GetAdminAddress() != selfAdminAddress {
-				if err := s.doFollow(oneTimeFollowCtx, shard.ServerId, shard.ShardId, bootstrapOption.ToClusterSize); err != nil {
-					log.Printf("shard %s stop following server %s : %v", s, sourceShard.GetStoreResource().GetAddress(), err)
+				if err := s.doFollow(oneTimeFollowCtx,
+					fmt.Sprintf("%s one-time follow %d.%d", s.String(), shard.ServerId, shard.ShardId),
+					shard.ServerId, shard.ShardId, bootstrapOption.ToClusterSize); err != nil {
+					log.Printf("shard %s stop following %v : %v", s, sourceShard.ShardInfo.IdentifierOnThisServer(), err)
 				}
 			}
 		}(shard)
@@ -137,9 +143,9 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 
 }
 
-func (s *shard) doFollow(ctx context.Context, serverId int, sourceShardId int, targetClusterSize int) error {
+func (s *shard) doFollow(ctx context.Context, name string, serverId int, sourceShardId int, targetClusterSize int) error {
 
-	return s.cluster.WithConnection(fmt.Sprintf("%s follow", s.String()), serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+	return s.cluster.WithConnection(name, serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 		return s.followChanges(ctx, node, grpcConnection, sourceShardId, targetClusterSize)
 	})
 

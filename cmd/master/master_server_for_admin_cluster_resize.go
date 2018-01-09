@@ -177,7 +177,6 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 
 	// wait a little bit for shards created and update back shard status to master
 	time.Sleep(time.Second)
-	// TODO wait until all updated shards are reported back
 
 	candidateCluster := cluster.GetNextCluster()
 
