@@ -4,4 +4,4 @@ all: gen
 
 gen:
     # https://github.com/andyleap/gencode
-	gencode go -schema log_entry.schema -package change_log
+	gencode go -schema log_entry.schema -package binlog
