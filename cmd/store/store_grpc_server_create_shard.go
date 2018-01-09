@@ -109,6 +109,9 @@ func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.L
 
 			for fileId, meta := range shard.db.GetLiveFilesMetaData() {
 				log.Printf("%d name:%s, level:%d size:%d SmallestKey:%s LargestKey:%s", fileId, meta.Name, meta.Level, meta.Size, string(meta.SmallestKey), string(meta.LargestKey))
+				if meta.Level >= 6 {
+					shard.hasBackfilled = true
+				}
 			}
 
 			if err := shard.startWithBootstrapPlan(&topology.BootstrapPlan{

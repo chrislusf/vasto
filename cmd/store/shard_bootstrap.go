@@ -88,14 +88,6 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 		sourceRowChans = append(sourceRowChans, make(chan *pb.KeyValue, BOOTSTRAP_COPY_BATCH_SIZE))
 	}
 
-	alreadyHasIngestedSst := false
-	for fileId, meta := range s.db.GetLiveFilesMetaData() {
-		log.Printf("%d name:%s, level:%d size:%d SmallestKey:%s LargestKey:%s", fileId, meta.Name, meta.Level, meta.Size, string(meta.SmallestKey), string(meta.LargestKey))
-		if meta.Level >= 6 {
-			alreadyHasIngestedSst = true
-		}
-	}
-
 	return util.Parallel(
 		func() error {
 			return eachInt(bootstrapSourceServerIds, func(index, serverId int) error {
@@ -111,7 +103,8 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 			})
 		},
 		func() error {
-			if !alreadyHasIngestedSst {
+			if !s.hasBackfilled {
+				s.hasBackfilled = true
 				return s.db.AddSstByWriter(fmt.Sprintf("%s bootstrapCopy write", s.String()),
 					func(w *gorocksdb.SSTFileWriter) (int, error) {
 						var counter int
@@ -157,7 +150,7 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 
 func (s *shard) checkBinlogAvailable(ctx context.Context, grpcConnection *grpc.ClientConn, node *pb.ClusterNode) (latestSegment uint32, canTailBinlog bool, err error) {
 
-	segment, _, hasProgress, err := s.loadProgress(node.StoreResource.GetAdminAddress())
+	segment, _, hasProgress, err := s.loadProgress(node.StoreResource.GetAdminAddress(), s.id)
 
 	// println("shard", s.id, "segment", segment, "hasProgress", hasProgress, "err", err)
 
@@ -193,7 +186,7 @@ func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.Client
 		return fmt.Errorf("writeToSst: %v", err)
 	}
 
-	return s.saveProgress(node.StoreResource.GetAdminAddress(), segment, offset)
+	return s.saveProgress(node.StoreResource.GetAdminAddress(), shard_id(targetShardId), segment, offset)
 
 }
 
@@ -248,7 +241,7 @@ func (s *shard) doBootstrapCopy2(ctx context.Context, grpcConnection *grpc.Clien
 	}
 
 	if err == nil {
-		s.saveProgress(node.StoreResource.GetAdminAddress(), segment, offset)
+		s.saveProgress(node.StoreResource.GetAdminAddress(), shard_id(targetShardId), segment, offset)
 	}
 
 	return

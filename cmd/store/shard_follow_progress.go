@@ -30,18 +30,18 @@ func (s *shard) EverySecond() {
 	// log.Printf("%s every second", s)
 	s.followProgressLock.Lock()
 	for pk, pv := range s.followProgress {
-		if segment, offset, hasProgress, err := s.loadProgress(pk.serverAdminAddress); err == nil {
+		if segment, offset, hasProgress, err := s.loadProgress(pk.serverAdminAddress, pk.shardId); err == nil {
 			if !hasProgress || segment != pv.segment || offset != pv.offset {
-				s.saveProgress(pk.serverAdminAddress, pv.segment, pv.offset)
+				s.saveProgress(pk.serverAdminAddress, pk.shardId, pv.segment, pv.offset)
 			}
 		}
 	}
 	s.followProgressLock.Unlock()
 }
 
-func (s *shard) loadProgress(serverAdminAddress string) (segment uint32, offset uint64, hasProgress bool, err error) {
+func (s *shard) loadProgress(serverAdminAddress string, targetShardId shard_id) (segment uint32, offset uint64, hasProgress bool, err error) {
 
-	segmentKey, offsetKey := genSegmentOffsetKeys(serverAdminAddress, s.id)
+	segmentKey, offsetKey := genSegmentOffsetKeys(serverAdminAddress, targetShardId)
 
 	nextSegment := uint32(0)
 	nextOffset := uint64(0)
@@ -59,11 +59,11 @@ func (s *shard) loadProgress(serverAdminAddress string) (segment uint32, offset 
 	return nextSegment, nextOffset, hasProgress, err
 }
 
-func (s *shard) saveProgress(serverAdminAddress string, segment uint32, offset uint64) (err error) {
+func (s *shard) saveProgress(serverAdminAddress string, targetShardId shard_id, segment uint32, offset uint64) (err error) {
 
-	log.Printf("shard %s follow server %v next segment %d offset %d", s, serverAdminAddress, segment, offset)
+	log.Printf("shard %s follow server %v shard %d next segment %d offset %d", s, serverAdminAddress, targetShardId, segment, offset)
 
-	segmentKey, offsetKey := genSegmentOffsetKeys(serverAdminAddress, s.id)
+	segmentKey, offsetKey := genSegmentOffsetKeys(serverAdminAddress, targetShardId)
 
 	err = s.db.Put(segmentKey, util.Uint32toBytes(segment))
 	if err != nil {
@@ -77,35 +77,35 @@ func (s *shard) saveProgress(serverAdminAddress string, segment uint32, offset u
 	return nil
 }
 
-func (s *shard) clearProgress(serverAdminAddress string) {
+func (s *shard) clearProgress(serverAdminAddress string, targetShardId shard_id) {
 
-	log.Printf("shard %s stops following server %v", s, serverAdminAddress)
+	log.Printf("shard %s stops following server %v.%d", s, serverAdminAddress, targetShardId)
 
-	segmentKey, offsetKey := genSegmentOffsetKeys(serverAdminAddress, s.id)
+	segmentKey, offsetKey := genSegmentOffsetKeys(serverAdminAddress, targetShardId)
 
 	s.db.Delete(segmentKey)
 	s.db.Delete(offsetKey)
 
 }
 
-func (s *shard) insertInMemoryFollowProgress(serverAdminAddress string, segment uint32, offset uint64) {
+func (s *shard) insertInMemoryFollowProgress(serverAdminAddress string, targetShardId shard_id, segment uint32, offset uint64) {
 	s.followProgressLock.Lock()
-	s.followProgress[progressKey{s.id, serverAdminAddress}] = progressValue{segment, offset}
+	s.followProgress[progressKey{targetShardId, serverAdminAddress}] = progressValue{segment, offset}
 	s.followProgressLock.Unlock()
 }
 
-func (s *shard) updateInMemoryFollowProgressIfPresent(serverAdminAddress string, segment uint32, offset uint64) (found bool) {
+func (s *shard) updateInMemoryFollowProgressIfPresent(serverAdminAddress string, targetShardId shard_id, segment uint32, offset uint64) (found bool) {
 	s.followProgressLock.Lock()
-	_, found = s.followProgress[progressKey{s.id, serverAdminAddress}]
+	_, found = s.followProgress[progressKey{targetShardId, serverAdminAddress}]
 	if found {
-		s.followProgress[progressKey{s.id, serverAdminAddress}] = progressValue{segment, offset}
+		s.followProgress[progressKey{targetShardId, serverAdminAddress}] = progressValue{segment, offset}
 	}
 	s.followProgressLock.Unlock()
 	return found
 }
 
-func (s *shard) deleteInMemoryFollowProgress(serverAdminAddress string) {
+func (s *shard) deleteInMemoryFollowProgress(serverAdminAddress string, targetShardId shard_id) {
 	s.followProgressLock.Lock()
-	delete(s.followProgress, progressKey{s.id, serverAdminAddress})
+	delete(s.followProgress, progressKey{targetShardId, serverAdminAddress})
 	s.followProgressLock.Unlock()
 }

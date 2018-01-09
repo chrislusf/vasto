@@ -19,15 +19,15 @@ func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcCon
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
-	nextSegment, nextOffset, _, err := s.loadProgress(node.StoreResource.GetAdminAddress())
+	nextSegment, nextOffset, _, err := s.loadProgress(node.StoreResource.GetAdminAddress(), shard_id(sourceShardId))
 	if err != nil {
 		log.Printf("read shard %d follow progress: %v", s.id, err)
 	}
 
 	// set in memory progress
-	s.insertInMemoryFollowProgress(node.StoreResource.GetAdminAddress(), nextSegment, nextOffset)
+	s.insertInMemoryFollowProgress(node.StoreResource.GetAdminAddress(), shard_id(sourceShardId), nextSegment, nextOffset)
 
-	log.Printf("shard %v follows server %d from segment %d offset %d", s.String(), node.ShardInfo.ServerId, nextSegment, nextOffset)
+	log.Printf("shard %v follows %v from segment %d offset %d", s.String(), node.ShardInfo.IdentifierOnThisServer(), nextSegment, nextOffset)
 
 	request := &pb.PullUpdateRequest{
 		Keyspace:          s.keyspace,
@@ -117,7 +117,7 @@ func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcCon
 
 		// set the nextSegment and nextOffset
 		nextSegment, nextOffset = changes.NextSegment, changes.NextOffset
-		if !s.updateInMemoryFollowProgressIfPresent(node.StoreResource.GetAdminAddress(), nextSegment, nextOffset) {
+		if !s.updateInMemoryFollowProgressIfPresent(node.StoreResource.GetAdminAddress(), shard_id(sourceShardId), nextSegment, nextOffset) {
 			// if not found in memory,
 			break
 		}
