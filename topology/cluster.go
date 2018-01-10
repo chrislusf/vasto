@@ -254,4 +254,9 @@ func (cluster *Cluster) Debug(prefix string) {
 			fmt.Printf("%s* %+v on %v usage:%d/%d\n", prefix, shard.ShardInfo.IdentifierOnThisServer(), shard.StoreResource.Address, shard.StoreResource.AllocatedSizeGb, shard.StoreResource.DiskSizeGb)
 		}
 	}
+
+	if cluster.nextCluster != nil {
+		cluster.nextCluster.Debug(prefix+"  >")
+	}
+
 }
