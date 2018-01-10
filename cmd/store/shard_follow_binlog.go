@@ -27,7 +27,7 @@ func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcCon
 	// set in memory progress
 	s.insertInMemoryFollowProgress(node.StoreResource.GetAdminAddress(), shard_id(sourceShardId), nextSegment, nextOffset)
 
-	log.Printf("shard %v follows %v from segment %d offset %d", s.String(), node.ShardInfo.IdentifierOnThisServer(), nextSegment, nextOffset)
+	log.Printf("shard %v follows %d.%d from segment %d offset %d", s.String(), node.ShardInfo.ServerId, sourceShardId, nextSegment, nextOffset)
 
 	request := &pb.PullUpdateRequest{
 		Keyspace:          s.keyspace,

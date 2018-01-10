@@ -9,13 +9,12 @@ import (
 	"fmt"
 )
 
-func (s *shard) isBootstrapNeeded(ctx context.Context, bootstrapOption *topology.BootstrapPlan) (bestPeerToCopy int, isNeeded bool) {
+func (s *shard) isBootstrapNeeded(ctx context.Context, bootstrapOption *topology.BootstrapPlan) (bestPeerToCopy topology.ClusterShard, isNeeded bool) {
 
 	peerShards := bootstrapOption.BootstrapSource
 
 	isBootstrapNeededChan := make(chan bool, len(peerShards))
 	maxSegment := uint32(0)
-	bestPeerToCopy = -1
 	checkedServerCount := 0
 	for _, peer := range peerShards {
 		_, _, ok := s.cluster.GetNode(peer.ServerId)
@@ -23,20 +22,23 @@ func (s *shard) isBootstrapNeeded(ctx context.Context, bootstrapOption *topology
 			continue
 		}
 		checkedServerCount++
-		go s.cluster.WithConnection(fmt.Sprintf("%s bootstrap_check peer %d.%d", s.String(), peer.ServerId, peer.ShardId), peer.ServerId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+		go func(peer topology.ClusterShard) {
+			s.cluster.WithConnection(fmt.Sprintf("%s bootstrap_check peer %d.%d", s.String(), peer.ServerId, peer.ShardId), peer.ServerId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 
-			latestSegment, canTailBinlog, err := s.checkBinlogAvailable(ctx, grpcConnection, node)
-			if err != nil {
-				isBootstrapNeededChan <- false
-				return err
-			}
-			if latestSegment >= maxSegment {
-				maxSegment = latestSegment
-				bestPeerToCopy = peer.ServerId
-			}
-			isBootstrapNeededChan <- !canTailBinlog
-			return nil
-		})
+				latestSegment, canTailBinlog, err := s.checkBinlogAvailable(ctx, grpcConnection, node)
+				if err != nil {
+					isBootstrapNeededChan <- false
+					return err
+				}
+				if latestSegment >= maxSegment {
+					maxSegment = latestSegment
+					bestPeerToCopy = peer
+				}
+				isBootstrapNeededChan <- !canTailBinlog
+				return nil
+			})
+
+		}(peer)
 	}
 
 	for i := 0; i < checkedServerCount; i++ {
@@ -45,7 +47,7 @@ func (s *shard) isBootstrapNeeded(ctx context.Context, bootstrapOption *topology
 	}
 
 	if isNeeded {
-		log.Printf("shard %v found peer %v to bootstrap from", s.id, bestPeerToCopy)
+		log.Printf("shard %v found peer server %v to bootstrap from", s.String(), bestPeerToCopy)
 	} else {
 		log.Printf("shard %v found bootstrapping is not needed", s.id)
 	}

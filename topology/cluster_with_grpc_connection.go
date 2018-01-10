@@ -25,7 +25,7 @@ type PrimaryShards []*pb.ClusterNode
 func (nodes PrimaryShards) WithConnection(name string, serverId int, fn func(*pb.ClusterNode, *grpc.ClientConn) error) error {
 
 	if serverId < 0 || serverId >= len(nodes) {
-		return fmt.Errorf("server %d not found", serverId)
+		return fmt.Errorf("server %d not found in %d servers: %+v", serverId, nodes)
 	}
 
 	node := nodes[serverId]

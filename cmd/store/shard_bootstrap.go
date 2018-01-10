@@ -37,9 +37,9 @@ func (s *shard) maybeBootstrapAfterRestart(ctx context.Context) error {
 		return nil
 	}
 
-	log.Printf("bootstrap from server %d ...", bestPeerToCopy)
+	log.Printf("bootstrap from server %+v ...", bestPeerToCopy)
 
-	return s.cluster.WithConnection(fmt.Sprintf("%s bootstrap after restart", s.String()), bestPeerToCopy, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+	return s.cluster.WithConnection(fmt.Sprintf("%s bootstrap after restart", s.String()), bestPeerToCopy.ServerId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 		_, canTailBinlog, err := s.checkBinlogAvailable(ctx, grpcConnection, node)
 		if err != nil {
 			return err
@@ -74,9 +74,10 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 			return nil
 		}
 
-		log.Printf("bootstrap from one server %d ...", bestPeerToCopy)
+		log.Printf("bootstrap from %d.%d ...", bestPeerToCopy.ServerId, bestPeerToCopy.ShardId)
 
-		return topology.PrimaryShards(existingPrimaryShards).WithConnection(fmt.Sprintf("%s bootstrap from one exisitng server %d", s.String(), bestPeerToCopy), bestPeerToCopy, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+		return topology.PrimaryShards(existingPrimaryShards).WithConnection(fmt.Sprintf("%s bootstrap from one exisitng %d.%d", s.String(), bestPeerToCopy.ServerId, bestPeerToCopy.ShardId),
+			bestPeerToCopy.ServerId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 			return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapPlan.FromClusterSize, bootstrapPlan.ToClusterSize, int(s.id))
 		})
 	}
@@ -262,7 +263,7 @@ func (s *shard) writeToSst(ctx context.Context, grpcConnection *grpc.ClientConn,
 
 	stream, err := client.BootstrapCopy(ctx, request)
 	if err != nil {
-		return 0, 0, fmt.Errorf("client.TailBinlog: %v", err)
+		return 0, 0, fmt.Errorf("client.BootstrapCopy: %v", err)
 	}
 
 	err = s.db.AddSstByWriter(fmt.Sprintf("bootstrap %s from %s %d/%d", s.String(), sourceShardInfo.IdentifierOnThisServer(), targetShardId, targetClusterSize),
