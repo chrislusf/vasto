@@ -65,4 +65,5 @@ func (ss *storeServer) shutdownShard(shard *shard) {
 	shard.shutdownNode()
 	shard.db.Close()
 	shard.db.Destroy()
+	ss.keyspaceShards.removeShard(shard)
 }

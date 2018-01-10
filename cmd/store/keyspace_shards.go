@@ -30,6 +30,7 @@ func (ks *keyspaceShards) getShard(keyspaceName string, shardId shard_id) (shard
 	if !hasShards {
 		return
 	}
+
 	for _, shard := range shards {
 		if shard.id == shardId {
 			return shard, true
@@ -65,5 +66,20 @@ func (ks *keyspaceShards) addShards(keyspaceName string, nodes ...*shard) {
 func (ks *keyspaceShards) deleteKeyspace(keyspaceName string) {
 	ks.Lock()
 	delete(ks.keyspaceToShards, keyspace_name(keyspaceName))
+	ks.Unlock()
+}
+
+func (ks *keyspaceShards) removeShard(node *shard) {
+	ks.Lock()
+
+	shards := ks.keyspaceToShards[keyspace_name(node.keyspace)]
+	var t []*shard
+	for _, shard := range shards {
+		if shard.id != node.id {
+			t = append(t, shard)
+		}
+	}
+
+	ks.keyspaceToShards[keyspace_name(node.keyspace)] = t
 	ks.Unlock()
 }
