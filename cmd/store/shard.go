@@ -46,6 +46,8 @@ func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
+	log.Printf("open %s.%d.%d in %s", keyspaceName, serverId, nodeId, dir)
+
 	s := &shard{
 		keyspace:        keyspaceName,
 		id:              shard_id(nodeId),
@@ -54,7 +56,10 @@ func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.
 		cluster:         cluster,
 		clusterListener: clusterListener,
 		nodeFinishChan:  make(chan bool),
-		cancelFunc:      cancelFunc,
+		cancelFunc:      func() {
+			log.Printf("cancelling shard %d.%d", serverId, nodeId)
+			cancelFunc()
+		},
 		followProgress:  make(map[progressKey]progressValue),
 		ctx:             ctx,
 	}
@@ -99,13 +104,11 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 				return fmt.Errorf("normal bootstrap %s: %v", s.String(), err)
 			}
 		}
-
 	} else {
 		if err := s.topoChangeBootstrap(s.ctx, bootstrapOption, existingPrimaryShards); err != nil {
 			log.Printf("topo bootstrap %s: %v", s.String(), err)
 			return fmt.Errorf("topo bootstrap %s: %v", s.String(), err)
 		}
-
 	}
 
 	// add normal follow
@@ -135,7 +138,10 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 			}
 		}(shard)
 	}
-	s.oneTimeFollowCancel = oneTimeFollowCancelFunc
+	s.oneTimeFollowCancel = func() {
+		log.Printf("cancelling shard %v one time followings", s.String())
+		oneTimeFollowCancelFunc()
+	}
 
 	s.clusterListener.RegisterShardEventProcessor(s)
 

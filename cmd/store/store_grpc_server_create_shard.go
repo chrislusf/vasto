@@ -76,10 +76,14 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 
 		shard, foundShard := ss.keyspaceShards.getShard(keyspace, shard_id(clusterShard.ShardId))
 		if !foundShard {
+			log.Printf("creating new shard %s", shardInfo.IdentifierOnThisServer())
 			var shardCreationError error
 			if shard, shardCreationError = ss.openShard(shardInfo); shardCreationError != nil {
 				return fmt.Errorf("creating %s: %v", shardInfo.IdentifierOnThisServer(), shardCreationError)
 			}
+			log.Printf("created new shard %s", shard.String())
+		}else{
+			log.Printf("found existing shard %s", shard.String())
 		}
 
 		plan := planGen(clusterShard.ShardId)

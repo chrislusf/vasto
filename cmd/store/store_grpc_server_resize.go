@@ -138,7 +138,10 @@ func (ss *storeServer) deleteOldShardsInNewCluster(ctx context.Context, request 
 	}
 
 	for _, shard := range shards {
-		shard.oneTimeFollowCancel()
+		if shard.oneTimeFollowCancel != nil {
+			log.Printf("shard %v cancels one-time following", shard)
+			shard.oneTimeFollowCancel()
+		}
 		if !topology.IsShardInLocal(int(shard.id), int(shard.serverId), int(request.TargetClusterSize), shard.cluster.ReplicationFactor()) {
 			ss.shutdownShard(shard)
 		}
