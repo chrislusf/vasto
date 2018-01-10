@@ -9,6 +9,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc"
 	"log"
+	"sync/atomic"
 )
 
 func init() {
@@ -44,6 +45,8 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 	}
 
 	chans := make([]chan *pb.KeyValue, cluster.ExpectedSize())
+
+	var counter int64
 
 	for i := 0; i < cluster.ExpectedSize(); i++ {
 
@@ -91,6 +94,7 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 					// fmt.Fprintf(writer, "%v,%v\n", string(keyValue.Key), string(keyValue.Value))
 
 					ch <- keyValue
+					atomic.AddInt64(&counter, 1)
 
 				}
 			}
@@ -99,7 +103,7 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 
 	}
 
-	return pb.MergeSorted(chans, func(t *pb.KeyValue) error {
+	err := pb.MergeSorted(chans, func(t *pb.KeyValue) error {
 		if isKeysOnly {
 			fmt.Fprintf(writer, "%v\n", string(t.Key))
 		} else {
@@ -107,5 +111,13 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 		}
 		return nil
 	})
+
+	if err != nil {
+		return fmt.Errorf("merge sorted: %v", err)
+	}
+
+	fmt.Fprintf(writer, "\n(%v rows)\n", counter)
+
+	return
 
 }
