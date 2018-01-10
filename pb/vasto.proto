@@ -30,6 +30,9 @@ service VastoMaster {
     rpc ReplaceNode (ReplaceNodeRequest) returns (ReplaceNodeResponse) {
     }
 
+    rpc DebugMaster (Empty) returns (Empty) {
+    }
+
 }
 
 service VastoStore {
@@ -71,6 +74,9 @@ service VastoStore {
     rpc ResizeCommit (ResizeCommitRequest) returns (ResizeCommitResponse) {
     }
     rpc ResizeCleanup (ResizeCleanupRequest) returns (ResizeCleanupResponse) {
+    }
+
+    rpc DebugStore (Empty) returns (Empty) {
     }
 
 }

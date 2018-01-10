@@ -3,7 +3,7 @@ package pb
 import "fmt"
 
 func (s *ShardInfo) IdentifierOnThisServer() string {
-	return fmt.Sprintf("%s:%d:%d", s.KeyspaceName, s.ServerId, s.ShardId)
+	return fmt.Sprintf("%s.%d.%d", s.KeyspaceName, s.ServerId, s.ShardId)
 }
 
 func (s *ShardInfo) Clone() *ShardInfo {

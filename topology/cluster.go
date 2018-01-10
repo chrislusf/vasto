@@ -247,3 +247,11 @@ func (cluster *Cluster) String() string {
 
 	return output.String()
 }
+
+func (cluster *Cluster) Debug(prefix string) {
+	for _, shardGroup := range cluster.logicalShards {
+		for _, shard := range shardGroup {
+			fmt.Printf("%s* %+v on %v usage:%d/%d\n", prefix, shard.ShardInfo.IdentifierOnThisServer(), shard.StoreResource.Address, shard.StoreResource.AllocatedSizeGb, shard.StoreResource.DiskSizeGb)
+		}
+	}
+}
