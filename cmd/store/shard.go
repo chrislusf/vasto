@@ -105,13 +105,17 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 			}
 		}
 	} else {
+		log.Printf("start topo bootstrap %s ...", s.String())
 		if err := s.topoChangeBootstrap(s.ctx, bootstrapOption, existingPrimaryShards); err != nil {
 			log.Printf("topo bootstrap %s: %v", s.String(), err)
 			return fmt.Errorf("topo bootstrap %s: %v", s.String(), err)
 		}
+		log.Printf("finished topo bootstrap %s", s.String())
 	}
 
 	// add normal follow
+	// TODO: if 3x2 shards resized to one, 0.0 should not follow 1.0 to follow peer shards again
+	log.Printf("%s normal follow %+v", s.String(), s.peerShards())
 	for _, peer := range s.peerShards() {
 		serverId, shardId := peer.ServerId, peer.ShardId
 		go util.RetryUntil(s.ctx, fmt.Sprintf("shard %s follow %d.%d", s.String(), serverId, shardId), func() bool {
@@ -126,21 +130,23 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 	oneTimeFollowCtx, oneTimeFollowCancelFunc := context.WithCancel(context.Background())
 
 	// add one time follow during transitional period, there are no retries, assuming the source shards are already up
+	log.Printf("%s one-time follow %+v, cluster %v", s.String(), bootstrapOption.TransitionalFollowSource, s.cluster.String())
 	for _, shard := range bootstrapOption.TransitionalFollowSource {
 		go func(shard topology.ClusterShard) {
-			sourceShard, _, found := s.cluster.GetNode(int(shard.ServerId))
-			if found && sourceShard.GetStoreResource().GetAdminAddress() != selfAdminAddress {
-				if err := s.doFollow(oneTimeFollowCtx,
-					fmt.Sprintf("%s one-time follow %d.%d", s.String(), shard.ServerId, shard.ShardId),
-					shard.ServerId, shard.ShardId, bootstrapOption.ToClusterSize); err != nil {
-					log.Printf("shard %s stop following %v : %v", s, sourceShard.ShardInfo.IdentifierOnThisServer(), err)
-				}
-			}
+			topology.PrimaryShards(existingPrimaryShards).WithConnection(
+				fmt.Sprintf("%s one-time follow %d.%d", s.String(), shard.ServerId, shard.ShardId),
+				shard.ServerId,
+				func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+					return s.followChanges(oneTimeFollowCtx, node, grpcConnection, shard.ShardId, bootstrapOption.ToClusterSize)
+				},
+			)
 		}(shard)
 	}
 	s.oneTimeFollowCancel = func() {
 		log.Printf("cancelling shard %v one time followings", s.String())
-		oneTimeFollowCancelFunc()
+		if false {
+			oneTimeFollowCancelFunc()
+		}
 	}
 
 	s.clusterListener.RegisterShardEventProcessor(s)

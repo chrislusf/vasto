@@ -78,8 +78,8 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 
 		return topology.PrimaryShards(existingPrimaryShards).WithConnection(fmt.Sprintf("%s bootstrap from one exisitng %d.%d", s.String(), bestPeerToCopy.ServerId, bestPeerToCopy.ShardId),
 			bestPeerToCopy.ServerId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
-			return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapPlan.FromClusterSize, bootstrapPlan.ToClusterSize, int(s.id))
-		})
+				return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapPlan.FromClusterSize, bootstrapPlan.ToClusterSize, int(s.id))
+			})
 	}
 
 	var bootstrapSourceServerIds []int
@@ -106,6 +106,7 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 		func() error {
 			if !s.hasBackfilled {
 				s.hasBackfilled = true
+				log.Printf("bootstrap %v via sst ...", s.String())
 				return s.db.AddSstByWriter(fmt.Sprintf("%s bootstrapCopy write", s.String()),
 					func(w *gorocksdb.SSTFileWriter) (int, error) {
 						var counter int
@@ -123,6 +124,7 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 			}
 
 			// slow way to backfill
+			log.Printf("bootstrap %v via sorted insert ...", s.String())
 			return pb.MergeSorted(sourceRowChans, func(keyValue *pb.KeyValue) error {
 
 				b, err := s.db.Get(keyValue.Key)
@@ -193,7 +195,7 @@ func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.Client
 
 func (s *shard) doBootstrapCopy2(ctx context.Context, grpcConnection *grpc.ClientConn, node *pb.ClusterNode, clusterSize, targetClusterSize int, targetShardId int, rowChan chan *pb.KeyValue) (err error) {
 
-	log.Printf("bootstrap %s from %s %s filter by %d/%d", s.String(), node.StoreResource.Address, node.ShardInfo.IdentifierOnThisServer(), targetShardId, targetClusterSize)
+	log.Printf("bootstrap2 %s from %s %s filter by %d/%d", s.String(), node.StoreResource.Address, node.ShardInfo.IdentifierOnThisServer(), targetShardId, targetClusterSize)
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
@@ -216,11 +218,9 @@ func (s *shard) doBootstrapCopy2(ctx context.Context, grpcConnection *grpc.Clien
 
 	for {
 
-		// println("TailBinlog receive from", s.id)
-
 		response, err := stream.Recv()
 		if err == io.EOF {
-			return nil
+			break
 		}
 		if err != nil {
 			return fmt.Errorf("bootstrap copy: %v", err)
@@ -241,9 +241,8 @@ func (s *shard) doBootstrapCopy2(ctx context.Context, grpcConnection *grpc.Clien
 
 	}
 
-	if err == nil {
-		s.saveProgress(node.StoreResource.GetAdminAddress(), shard_id(targetShardId), segment, offset)
-	}
+	log.Printf("bootstrap2 %s from %s segment:offset=%d:%d : %v", s.String(), node.ShardInfo.IdentifierOnThisServer(), segment, offset, err)
+	s.saveProgress(node.StoreResource.GetAdminAddress(), shard_id(targetShardId), segment, offset)
 
 	return
 }

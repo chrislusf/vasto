@@ -218,7 +218,7 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 	ms.clientChans.notifyClusterResize(keyspace_name(req.Keyspace), data_center_name(req.DataCenter), uint32(oldClusterSize), req.TargetClusterSize)
 
 	// wait a bit for the slow-to-change clients
-	time.Sleep(time.Second)
+	time.Sleep(10 * time.Second)
 
 	// remove retiring shards
 	for _, node := range toBeRemoved {
