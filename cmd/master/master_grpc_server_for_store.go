@@ -112,7 +112,7 @@ func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.S
 		cluster.RemoveShard(storeResource, shardInfo)
 		ms.notifyDeletion(shardInfo, storeResource)
 		delete(seenShardsOnThisServer, shardInfo.IdentifierOnThisServer())
-		log.Printf("- dc %s %s on %s cluster %s", storeResource.DataCenter,
+		log.Printf("- dc %s %s on %s master cluster %s", storeResource.DataCenter,
 			shardInfo.IdentifierOnThisServer(), storeResource.Address, cluster)
 	} else {
 		// println("updated shard info:", shardInfo.String(), "store", storeResource.GetAddress())
@@ -121,14 +121,14 @@ func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.S
 		seenShardsOnThisServer[shardInfo.IdentifierOnThisServer()] = shardInfo
 		if oldShardInfo == nil {
 			if shardInfo.IsCandidate {
-				log.Printf("=> dc %s %s on %s cluster %s", storeResource.DataCenter,
+				log.Printf("=> dc %s %s on %s master cluster %s", storeResource.DataCenter,
 					shardInfo.IdentifierOnThisServer(), storeResource.Address, cluster)
 			} else {
-				log.Printf("+ dc %s %s on %s cluster %s", storeResource.DataCenter,
+				log.Printf("+ dc %s %s on %s master cluster %s", storeResource.DataCenter,
 					shardInfo.IdentifierOnThisServer(), storeResource.Address, cluster)
 			}
 		} else if oldShardInfo.Status != shardInfo.Status {
-			log.Printf("* dc %s %s on %s cluster %s status:%s=>%s", storeResource.DataCenter,
+			log.Printf("* dc %s %s on %s master cluster %s status:%s=>%s", storeResource.DataCenter,
 				shardInfo.IdentifierOnThisServer(), storeResource.Address, cluster,
 				oldShardInfo.Status, shardInfo.Status)
 		}

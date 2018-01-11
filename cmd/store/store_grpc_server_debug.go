@@ -10,6 +10,14 @@ func (ss *storeServer) DebugStore(ctx context.Context, request *pb.Empty) (*pb.E
 
 	resp := &pb.Empty{}
 
+	ss.debug()
+
+	return resp, nil
+
+}
+
+func (ss *storeServer) debug() () {
+
 	ss.statusInClusterLock.RLock()
 	fmt.Printf("\nlocal shards:\n")
 	for keyspace, localShards := range ss.statusInCluster {
@@ -37,7 +45,5 @@ func (ss *storeServer) DebugStore(ctx context.Context, request *pb.Empty) (*pb.E
 	ss.clusterListener.Debug("  ")
 
 	fmt.Println()
-
-	return resp, nil
 
 }

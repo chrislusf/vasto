@@ -56,12 +56,12 @@ func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.
 		cluster:         cluster,
 		clusterListener: clusterListener,
 		nodeFinishChan:  make(chan bool),
-		cancelFunc:      func() {
+		cancelFunc: func() {
 			log.Printf("cancelling shard %d.%d", serverId, nodeId)
 			cancelFunc()
 		},
-		followProgress:  make(map[progressKey]progressValue),
-		ctx:             ctx,
+		followProgress: make(map[progressKey]progressValue),
+		ctx:            ctx,
 	}
 	if logFileSizeMb > 0 {
 		s.lm = binlog.NewLogManager(dir, nodeId, int64(logFileSizeMb*1024*1024), logFileCount)

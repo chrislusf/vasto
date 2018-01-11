@@ -37,6 +37,8 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 		for i := 0; i < cluster.ExpectedSize(); i++ {
 			if n, _, ok := cluster.GetNode(i); ok {
 				existingPrimaryShards = append(existingPrimaryShards, n)
+			} else {
+				log.Printf("missing server %d", i)
 			}
 		}
 		log.Printf("existing shards: %+v", existingPrimaryShards)
@@ -82,7 +84,7 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 				return fmt.Errorf("creating %s: %v", shardInfo.IdentifierOnThisServer(), shardCreationError)
 			}
 			log.Printf("created new shard %s", shard.String())
-		}else{
+		} else {
 			log.Printf("found existing shard %s", shard.String())
 		}
 
