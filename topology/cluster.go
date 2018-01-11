@@ -256,7 +256,7 @@ func (cluster *Cluster) Debug(prefix string) {
 	}
 
 	if cluster.nextCluster != nil {
-		cluster.nextCluster.Debug(prefix+"  >")
+		cluster.nextCluster.Debug(prefix + "  >")
 	}
 
 }
