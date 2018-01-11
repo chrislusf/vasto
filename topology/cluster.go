@@ -88,6 +88,13 @@ func (cluster *Cluster) RemoveShard(store *pb.StoreResource, shard *pb.ShardInfo
 			}
 		}
 	}
+
+	// if no shards and no clients, set the cluster size to be 0
+	if cluster.CurrentSize() == 0 {
+		cluster.expectedSize = 0
+		cluster.logicalShards = nil
+	}
+
 	return !cluster.isStoreInUse(store) && !cluster.GetNextCluster().isStoreInUse(store)
 }
 
