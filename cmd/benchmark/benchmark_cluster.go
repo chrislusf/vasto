@@ -61,13 +61,12 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 			b.startThreadsWithClient(ctx, *option.Tests, func(hist *Histogram, c *client.VastoClient, start, stop, batchSize int) {
 				b.execute(hist, c, start, stop, batchSize, func(c *client.VastoClient, i int) error {
 
-					for t := 0; t < batchSize; t++ {
-						key := []byte(fmt.Sprintf("k%d", i+t))
-						value := []byte(fmt.Sprintf("v%d", i+t))
+					if batchSize == 1 {
+
+						key := []byte(fmt.Sprintf("k%d", i))
+						value := []byte(fmt.Sprintf("v%d", i))
 
 						data, err := c.Get(*b.option.Keyspace, key)
-
-						bar.Incr()
 
 						if err != nil {
 							log.Printf("read %s: %v", string(key), err)
@@ -78,6 +77,29 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 							return nil
 						}
 
+						bar.Incr()
+
+						return nil
+
+					}
+
+					var keys [][]byte
+					for t := 0; t < batchSize; t++ {
+						key := []byte(fmt.Sprintf("k%d", i+t))
+						keys = append(keys, key)
+					}
+
+					data, err := c.BatchGet(*b.option.Keyspace, keys)
+
+					if err != nil {
+						log.Printf("batch read %d keys: %v", len(keys), err)
+						return err
+					}
+					for _, kv := range data{
+						if bytes.Compare(kv.Key[1:], kv.Value[1:]) != 0 {
+							log.Printf("read unexpected %s:%s", string(kv.Key), string(kv.Value))
+							return nil
+						}
 						bar.Incr()
 					}
 
