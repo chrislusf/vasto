@@ -189,7 +189,7 @@ func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.Client
 		return fmt.Errorf("writeToSst: %v", err)
 	}
 
-	return s.saveProgress(node.StoreResource.GetAdminAddress(), shard_id(targetShardId), segment, offset)
+	return s.saveProgress(node.StoreResource.GetAdminAddress(), shard_id(node.ShardInfo.ShardId), segment, offset)
 
 }
 
@@ -242,7 +242,7 @@ func (s *shard) doBootstrapCopy2(ctx context.Context, grpcConnection *grpc.Clien
 	}
 
 	log.Printf("bootstrap2 %s from %s segment:offset=%d:%d : %v", s.String(), node.ShardInfo.IdentifierOnThisServer(), segment, offset, err)
-	s.saveProgress(node.StoreResource.GetAdminAddress(), shard_id(targetShardId), segment, offset)
+	s.saveProgress(node.StoreResource.GetAdminAddress(), shard_id(node.ShardInfo.ShardId), segment, offset)
 
 	return
 }
