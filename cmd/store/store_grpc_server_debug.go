@@ -19,7 +19,8 @@ func (ss *storeServer) DebugStore(ctx context.Context, request *pb.Empty) (*pb.E
 func (ss *storeServer) debug() () {
 
 	ss.statusInClusterLock.RLock()
-	fmt.Printf("\nlocal shards:\n")
+	fmt.Println("\n========================================================")
+	fmt.Printf("local shards:\n")
 	for keyspace, localShards := range ss.statusInCluster {
 		fmt.Printf("  * %s\n", keyspace)
 		fmt.Printf("    %+v\n", localShards)
@@ -37,6 +38,11 @@ func (ss *storeServer) debug() () {
 		fmt.Printf("  * %v\n", keyspaceName)
 		for _, shard := range shards {
 			fmt.Printf("    * %v\n", shard.String())
+			shard.followProgressLock.Lock()
+			for k, v := range shard.followProgress {
+				fmt.Printf("      ~ %v.%d @ %d:%d\n", k.serverAdminAddress, k.shardId, v.segment, v.offset)
+			}
+			shard.followProgressLock.Unlock()
 		}
 	}
 	ss.keyspaceShards.RUnlock()

@@ -88,6 +88,13 @@ func (s *shard) clearProgress(serverAdminAddress string, targetShardId shard_id)
 
 }
 
+func (s *shard) isFollowing(serverAdminAddress string, targetShardId shard_id) bool{
+	s.followProgressLock.Lock()
+	_, found := s.followProgress[progressKey{targetShardId, serverAdminAddress}]
+	s.followProgressLock.Unlock()
+	return found
+}
+
 func (s *shard) insertInMemoryFollowProgress(serverAdminAddress string, targetShardId shard_id, segment uint32, offset uint64) {
 	s.followProgressLock.Lock()
 	s.followProgress[progressKey{targetShardId, serverAdminAddress}] = progressValue{segment, offset}

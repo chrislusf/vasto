@@ -80,19 +80,19 @@ func (cluster *Cluster) RemoveShard(store *pb.StoreResource, shard *pb.ShardInfo
 		}
 	}
 
-	// check other shards that may be using the store
-	for _, shardGroup := range cluster.logicalShards {
-		for i := 0; i < len(shardGroup); i++ {
-			if shardGroup[i].StoreResource.Address == store.Address {
-				return false
-			}
-		}
-	}
-
 	// if no shards and no clients, set the cluster size to be 0
 	if cluster.CurrentSize() == 0 {
 		cluster.expectedSize = 0
 		cluster.logicalShards = nil
+	}
+
+	// check other shards that may be using the store
+	for _, shardGroup := range cluster.logicalShards {
+		for i := 0; i < len(shardGroup); i++ {
+			if shardGroup[i] != nil && shardGroup[i].StoreResource.Address == store.Address {
+				return false
+			}
+		}
 	}
 
 	return !cluster.isStoreInUse(store) && !cluster.GetNextCluster().isStoreInUse(store)

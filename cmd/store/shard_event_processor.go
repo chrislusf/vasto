@@ -74,7 +74,7 @@ func (s *shard) OnShardRemoveEvent(cluster *topology.Cluster, resource *pb.Store
 		log.Printf("- removed shard %v from cluster %s", shardInfo.IdentifierOnThisServer(), cluster)
 
 		if shardInfo.IsPermanentDelete {
-			// delete from in memory progress and on disk progress
+			// delete from in memory progress and on disk progress, if exists
 			s.deleteInMemoryFollowProgress(resource.GetAdminAddress(), shard_id(shardInfo.ShardId))
 
 			if server_id(shardInfo.ServerId) != s.serverId {
