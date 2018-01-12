@@ -36,6 +36,15 @@ func TestPeerShards(t *testing.T) {
 	assert.Equal(t, 2, len(peers))
 	assert.Equal(t, 5, peers[0].ServerId)
 	assert.Equal(t, 0, peers[1].ServerId)
+
+	// second server, in 2 servers 1 replica
+	peers = PeerShards(1, 1, 2, 1)
+	assert.Equal(t, 0, len(peers))
+
+	// second server, in existing 1 servers 1 replica
+	peers = PeerShards(1, 1, 1, 1)
+	assert.Equal(t, 0, len(peers))
+
 }
 
 func TestLocalShards(t *testing.T) {

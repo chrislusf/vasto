@@ -8,7 +8,7 @@ type ClusterShard struct {
 // PeerShards list peer shards that are on other cluster nodes
 func PeerShards(selfServerId int, selfShardId int, clusterSize int, replicationFactor int) (peers []ClusterShard) {
 
-	if selfShardId > clusterSize {
+	if selfShardId >= clusterSize {
 		return
 	}
 
@@ -32,7 +32,7 @@ func PeerShards(selfServerId int, selfShardId int, clusterSize int, replicationF
 // PartitionShards list shards that belongs to the same partition
 func PartitionShards(selfServerId int, selfShardId int, clusterSize int, replicationFactor int) (shards []ClusterShard) {
 
-	if selfShardId > clusterSize {
+	if selfShardId >= clusterSize {
 		return
 	}
 

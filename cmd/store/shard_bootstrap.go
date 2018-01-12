@@ -58,14 +58,6 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 		return nil
 	}
 
-	if len(existingPrimaryShards) == 0 {
-		for i := 0; i < s.cluster.ExpectedSize(); i++ {
-			if n, _, ok := s.cluster.GetNode(i); ok {
-				existingPrimaryShards = append(existingPrimaryShards, n)
-			}
-		}
-	}
-
 	if bootstrapPlan.PickBestBootstrapSource {
 
 		bestPeerToCopy, isNeeded := s.isBootstrapNeeded(ctx, bootstrapPlan)

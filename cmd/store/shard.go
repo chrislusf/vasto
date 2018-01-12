@@ -95,6 +95,14 @@ func (s *shard) setCompactionFilterClusterSize(clusterSize int) {
 
 func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, selfAdminAddress string, existingPrimaryShards []*pb.ClusterNode) error {
 
+	if len(existingPrimaryShards) == 0 {
+		for i := 0; i < s.cluster.ExpectedSize(); i++ {
+			if n, _, ok := s.cluster.GetNode(i); ok {
+				existingPrimaryShards = append(existingPrimaryShards, n)
+			}
+		}
+	}
+
 	// bootstrap the data
 	if bootstrapOption.IsNormalStart {
 		if s.cluster != nil && bootstrapOption.IsNormalStartBootstrapNeeded {
@@ -105,7 +113,7 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 			}
 		}
 	} else {
-		log.Printf("start topo bootstrap %s ...", s.String())
+		log.Printf("start topo bootstrap %s, existing servers: %v", s.String(), existingPrimaryShards)
 		if err := s.topoChangeBootstrap(s.ctx, bootstrapOption, existingPrimaryShards); err != nil {
 			log.Printf("topo bootstrap %s: %v", s.String(), err)
 			return fmt.Errorf("topo bootstrap %s: %v", s.String(), err)
@@ -114,16 +122,21 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 	}
 
 	// add normal follow
-	// TODO: if 3x2 shards resized to one, 0.0 should not follow 1.0 to follow peer shards again
-	log.Printf("%s normal follow %+v", s.String(), s.peerShards())
+	// TODO if changed cluster size multiple times, for example, keep increasing cluster size, the same follow may happen again!
+	log.Printf("%s normal follow %+v, cluster %d replica %d", s.String(), s.peerShards(), s.cluster.ExpectedSize(), s.cluster.ReplicationFactor())
 	for _, peer := range s.peerShards() {
 		serverId, shardId := peer.ServerId, peer.ShardId
 		go util.RetryUntil(s.ctx, fmt.Sprintf("shard %s follow %d.%d", s.String(), serverId, shardId), func() bool {
 			clusterSize, replicationFactor := s.cluster.ExpectedSize(), s.cluster.ReplicationFactor()
 			return topology.IsShardInLocal(shardId, serverId, clusterSize, replicationFactor)
 		}, func() error {
-			return s.doFollow(s.ctx, fmt.Sprintf("%s follow %d.%d", s.String(), serverId, shardId),
-				serverId, shardId, 0)
+			return s.cluster.WithConnection(
+				fmt.Sprintf("%s follow %d.%d", s.String(), serverId, shardId),
+				serverId,
+				func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+					return s.followChanges(s.ctx, node, grpcConnection, shardId, bootstrapOption.ToClusterSize)
+				},
+			)
 		}, 2*time.Second)
 	}
 
@@ -132,7 +145,8 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 	// add one time follow during transitional period, there are no retries, assuming the source shards are already up
 	log.Printf("%s one-time follow %+v, cluster %v", s.String(), bootstrapOption.TransitionalFollowSource, s.cluster.String())
 	for _, shard := range bootstrapOption.TransitionalFollowSource {
-		go func(shard topology.ClusterShard) {
+		go func(shard topology.ClusterShard, existingPrimaryShards []*pb.ClusterNode) {
+			log.Printf("%s one-time follow2 %+v, existing servers: %v", s.String(), shard, existingPrimaryShards)
 			topology.PrimaryShards(existingPrimaryShards).WithConnection(
 				fmt.Sprintf("%s one-time follow %d.%d", s.String(), shard.ServerId, shard.ShardId),
 				shard.ServerId,
@@ -140,25 +154,15 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 					return s.followChanges(oneTimeFollowCtx, node, grpcConnection, shard.ShardId, bootstrapOption.ToClusterSize)
 				},
 			)
-		}(shard)
+		}(shard, existingPrimaryShards)
 	}
 	s.oneTimeFollowCancel = func() {
 		log.Printf("cancelling shard %v one time followings", s.String())
-		if false {
-			oneTimeFollowCancelFunc()
-		}
+		oneTimeFollowCancelFunc()
 	}
 
 	s.clusterListener.RegisterShardEventProcessor(s)
 
 	return nil
-
-}
-
-func (s *shard) doFollow(ctx context.Context, name string, serverId int, sourceShardId int, targetClusterSize int) error {
-
-	return s.cluster.WithConnection(name, serverId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
-		return s.followChanges(ctx, node, grpcConnection, sourceShardId, targetClusterSize)
-	})
 
 }
