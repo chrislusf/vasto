@@ -28,7 +28,7 @@ func (ms *masterServer) ReplaceNode(ctx context.Context, req *pb.ReplaceNodeRequ
 		return
 	}
 
-	if cluster.GetNextCluster() != nil {
+	if cluster.GetNextCluster() != nil && cluster.GetNextCluster().CurrentSize() > 0 {
 		resp.Error = fmt.Sprintf("cluster %s %s is changing %d => %d in progress ...",
 			req.Keyspace, req.DataCenter, cluster.ExpectedSize(), cluster.GetNextCluster().ExpectedSize())
 		return

@@ -32,7 +32,7 @@ func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest
 		return
 	}
 
-	if cluster.GetNextCluster() != nil {
+	if cluster.GetNextCluster() != nil && cluster.GetNextCluster().CurrentSize() > 0 {
 		resp.Error = fmt.Sprintf("cluster %s %s is resizing %d => %d in progress ...",
 			req.Keyspace, req.DataCenter, cluster.CurrentSize(), cluster.GetNextCluster().ExpectedSize())
 		return
