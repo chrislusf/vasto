@@ -15,7 +15,9 @@ func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardR
 
 	log.Printf("create shard %v", request)
 	err := ss.createShards(request.Keyspace, int(request.ServerId), int(request.ClusterSize), int(request.ReplicationFactor), false, func(shardId int) *topology.BootstrapPlan {
-		return &topology.BootstrapPlan{}
+		return &topology.BootstrapPlan{
+			ToClusterSize: int(request.ClusterSize),
+		}
 	})
 	if err != nil {
 		log.Printf("create keyspace %s: %v", request.Keyspace, err)
@@ -123,6 +125,7 @@ func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.L
 			if err := shard.startWithBootstrapPlan(&topology.BootstrapPlan{
 				IsNormalStart:                true,
 				IsNormalStartBootstrapNeeded: *ss.option.Bootstrap,
+				ToClusterSize:                int(shardInfo.ClusterSize),
 			}, ss.selfAdminAddress(), nil); err != nil {
 				return fmt.Errorf("bootstrap shard %v : %v", shardInfo.IdentifierOnThisServer(), err)
 			}

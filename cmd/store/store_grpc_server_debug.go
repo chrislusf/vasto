@@ -37,12 +37,12 @@ func (ss *storeServer) debug() () {
 	for keyspaceName, shards := range ss.keyspaceShards.keyspaceToShards {
 		fmt.Printf("  * %v\n", keyspaceName)
 		for _, shard := range shards {
-			fmt.Printf("    * %v\n", shard.String())
-			shard.followProgressLock.Lock()
-			for k, v := range shard.followProgress {
-				fmt.Printf("      ~ %v.%d @ %d:%d\n", k.serverAdminAddress, k.shardId, v.segment, v.offset)
+			shard.followProcessesLock.Lock()
+			fmt.Printf("    * %v with %d followings\n", shard.String(), len(shard.followProcesses))
+			for k, _ := range shard.followProcesses {
+				fmt.Printf("        ~ %d.%d\n", k.ServerId, k.ShardId)
 			}
-			shard.followProgressLock.Unlock()
+			shard.followProcessesLock.Unlock()
 		}
 	}
 	ss.keyspaceShards.RUnlock()

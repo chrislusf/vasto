@@ -31,6 +31,8 @@ type shard struct {
 	isShutdown          bool
 	followProgress      map[progressKey]progressValue
 	followProgressLock  sync.Mutex
+	followProcesses     map[topology.ClusterShard]*followProcess
+	followProcessesLock sync.Mutex
 	ctx                 context.Context
 	oneTimeFollowCancel context.CancelFunc
 	hasBackfilled       bool // whether addSst() has been called on this db
@@ -60,8 +62,9 @@ func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.
 			log.Printf("cancelling shard %d.%d", serverId, nodeId)
 			cancelFunc()
 		},
-		followProgress: make(map[progressKey]progressValue),
-		ctx:            ctx,
+		followProgress:  make(map[progressKey]progressValue),
+		followProcesses: make(map[topology.ClusterShard]*followProcess),
+		ctx:             ctx,
 	}
 	if logFileSizeMb > 0 {
 		s.lm = binlog.NewLogManager(dir, nodeId, int64(logFileSizeMb*1024*1024), logFileCount)
@@ -122,23 +125,7 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 	}
 
 	// add normal follow
-	// TODO if changed cluster size multiple times, for example, keep increasing cluster size, the same follow may happen again!
-	log.Printf("%s normal follow %+v, cluster %d replica %d", s.String(), s.peerShards(), s.cluster.ExpectedSize(), s.cluster.ReplicationFactor())
-	for _, peer := range s.peerShards() {
-		serverId, shardId := peer.ServerId, peer.ShardId
-		go util.RetryUntil(s.ctx, fmt.Sprintf("shard %s follow %d.%d", s.String(), serverId, shardId), func() bool {
-			clusterSize, replicationFactor := s.cluster.ExpectedSize(), s.cluster.ReplicationFactor()
-			return topology.IsShardInLocal(shardId, serverId, clusterSize, replicationFactor)
-		}, func() error {
-			return s.cluster.WithConnection(
-				fmt.Sprintf("%s follow %d.%d", s.String(), serverId, shardId),
-				serverId,
-				func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
-					return s.followChanges(s.ctx, node, grpcConnection, shardId, bootstrapOption.ToClusterSize)
-				},
-			)
-		}, 2*time.Second)
-	}
+	s.adjustNormalFollowings(bootstrapOption.ToClusterSize, s.cluster.ReplicationFactor())
 
 	oneTimeFollowCtx, oneTimeFollowCancelFunc := context.WithCancel(context.Background())
 
@@ -151,7 +138,7 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 				fmt.Sprintf("%s one-time follow %d.%d", s.String(), shard.ServerId, shard.ShardId),
 				shard.ServerId,
 				func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
-					return s.followChanges(oneTimeFollowCtx, node, grpcConnection, shard.ShardId, bootstrapOption.ToClusterSize)
+					return s.followChanges(oneTimeFollowCtx, node, grpcConnection, shard.ShardId, bootstrapOption.ToClusterSize, true)
 				},
 			)
 		}(shard, existingPrimaryShards)
@@ -164,5 +151,50 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 	s.clusterListener.RegisterShardEventProcessor(s)
 
 	return nil
+
+}
+
+func (s *shard) adjustNormalFollowings(clusterSize, replicationFactor int) {
+
+	followTargetPeers := topology.PeerShards(int(s.serverId), int(s.id), clusterSize, replicationFactor)
+
+	log.Printf("%s follow peers %+v cluster %d replication %d", s.String(), followTargetPeers, clusterSize, replicationFactor)
+
+	// add new followings
+	for _, peer := range followTargetPeers {
+
+		if s.isFollowing(peer) {
+			continue
+		}
+
+		serverId, shardId := peer.ServerId, peer.ShardId
+		log.Printf("%s normal follow %d.%d", s.String(), serverId, shardId)
+		ctx, cancelFunc := context.WithCancel(s.ctx)
+		s.startFollowProcess(peer, cancelFunc)
+
+		go util.RetryForever(ctx, fmt.Sprintf("shard %s normal follow %d.%d", s.String(), serverId, shardId),
+			func() error {
+				return s.cluster.WithConnection(
+					fmt.Sprintf("%s follow %d.%d", s.String(), serverId, shardId),
+					serverId,
+					func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+						return s.followChanges(ctx, node, grpcConnection, shardId, clusterSize, false)
+					},
+				)
+			},
+			2*time.Second,
+		)
+
+	}
+
+	// cancel out-dated followings
+	s.followProcessesLock.Lock()
+	for peer, followProcess := range s.followProcesses {
+		if !topology.ShardListContains(followTargetPeers, peer) {
+			delete(s.followProcesses, peer)
+			followProcess.cancelFunc()
+		}
+	}
+	s.followProcessesLock.Unlock()
 
 }

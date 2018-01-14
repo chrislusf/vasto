@@ -79,3 +79,15 @@ func IsShardInLocal(shardId int, selfServerId int, clusterSize int, replicationF
 	}
 	return false
 }
+
+// ShardListContains check whether shards contains one target shard
+func ShardListContains(shards []ClusterShard, targetShard ClusterShard) bool {
+
+	for _, shard := range shards {
+		if shard.ShardId == targetShard.ShardId && shard.ServerId == targetShard.ServerId {
+			return true
+		}
+	}
+
+	return false
+}

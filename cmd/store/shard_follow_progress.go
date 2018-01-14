@@ -4,15 +4,22 @@ import (
 	"fmt"
 	"github.com/chrislusf/vasto/util"
 	"log"
+	"github.com/chrislusf/vasto/topology"
+	"context"
 )
 
 type progressKey struct {
 	shardId            shard_id
 	serverAdminAddress string
 }
+
 type progressValue struct {
 	segment uint32
 	offset  uint64
+}
+
+type followProcess struct {
+	cancelFunc context.CancelFunc
 }
 
 var (
@@ -28,7 +35,7 @@ func genSegmentOffsetKeys(serverAdminAddress string, shardId shard_id) (segmentK
 // implementing PeriodicTask
 func (s *shard) EverySecond() {
 	// log.Printf("%s every second", s)
-	s.followProgressLock.Lock()
+	s.followProcessesLock.Lock()
 	for pk, pv := range s.followProgress {
 		if segment, offset, hasProgress, err := s.loadProgress(pk.serverAdminAddress, pk.shardId); err == nil {
 			if !hasProgress || segment != pv.segment || offset != pv.offset {
@@ -36,7 +43,7 @@ func (s *shard) EverySecond() {
 			}
 		}
 	}
-	s.followProgressLock.Unlock()
+	s.followProcessesLock.Unlock()
 }
 
 func (s *shard) loadProgress(serverAdminAddress string, targetShardId shard_id) (segment uint32, offset uint64, hasProgress bool, err error) {
@@ -88,11 +95,17 @@ func (s *shard) clearProgress(serverAdminAddress string, targetShardId shard_id)
 
 }
 
-func (s *shard) isFollowing(serverAdminAddress string, targetShardId shard_id) bool{
-	s.followProgressLock.Lock()
-	_, found := s.followProgress[progressKey{targetShardId, serverAdminAddress}]
-	s.followProgressLock.Unlock()
+func (s *shard) isFollowing(peer topology.ClusterShard) bool {
+	s.followProcessesLock.Lock()
+	_, found := s.followProcesses[peer]
+	s.followProcessesLock.Unlock()
 	return found
+}
+
+func (s *shard) startFollowProcess(peer topology.ClusterShard, cancelFunc context.CancelFunc) {
+	s.followProcessesLock.Lock()
+	s.followProcesses[peer] = &followProcess{cancelFunc: cancelFunc}
+	s.followProcessesLock.Unlock()
 }
 
 func (s *shard) insertInMemoryFollowProgress(serverAdminAddress string, targetShardId shard_id, segment uint32, offset uint64) {

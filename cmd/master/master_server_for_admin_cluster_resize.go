@@ -228,6 +228,18 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 		log.Printf("delete shard %v on %s for cluster size %d", node.ShardInfo.IdentifierOnThisServer(), node.StoreResource.GetAddress(), newClusterSize)
 	}
 
+	// notify clients of shards on to-be-cleanup servers, if shrinking
+	for i := newClusterSize; i < oldClusterSize; i++ {
+		if node, _, found := cluster.GetNode(i); found {
+			store := node.StoreResource
+			for _, shardInfo := range cluster.RemoveStore(store) {
+				shardInfo.IsPermanentDelete = true
+				ms.notifyDeletion(shardInfo, store)
+				log.Printf("remove shard %v on %s for cluster size %d", shardInfo.IdentifierOnThisServer(), store.GetAddress(), newClusterSize)
+			}
+		}
+	}
+
 	return nil
 }
 
