@@ -123,7 +123,7 @@ func (cluster *Cluster) isStoreInUse(store *pb.StoreResource) bool {
 	// check other shards that may be using the store
 	for _, shardGroup := range cluster.logicalShards {
 		for i := 0; i < len(shardGroup); i++ {
-			if shardGroup[i].StoreResource.Address == store.Address {
+			if shardGroup[i] != nil && shardGroup[i].StoreResource.Address == store.Address {
 				return true
 			}
 		}
