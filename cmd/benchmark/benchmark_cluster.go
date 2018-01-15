@@ -45,7 +45,11 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 						bar.Incr()
 					}
 
-					return c.Put(*b.option.Keyspace, rows)
+					err := c.Put(*b.option.Keyspace, rows)
+					if err !=nil{
+						log.Printf("write %d rows, started with %v:  %v", len(rows), string(rows[0].Key), err)
+					}
+					return err
 				})
 			})
 		case "get":
