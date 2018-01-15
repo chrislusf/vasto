@@ -7,6 +7,7 @@ import (
 	"github.com/dgryski/go-jump"
 	"github.com/chrislusf/vasto/pb"
 	"sort"
+	"log"
 )
 
 // --------------------
@@ -60,6 +61,21 @@ func (cluster *Cluster) SetShard(store *pb.StoreResource, shard *pb.ShardInfo) (
 		ShardInfo:     shard,
 	})
 	cluster.logicalShards[shardId] = sortedShards(shardGroup, len(cluster.logicalShards))
+	return
+}
+
+func (cluster *Cluster) ReplaceShard(oldStore, newStore *pb.StoreResource, shard *pb.ShardInfo) (oldShardInfo *pb.ShardInfo) {
+	shardId := int(shard.ShardId)
+	shardGroup := cluster.logicalShards[shardId]
+	for i := 0; i < len(shardGroup); i++ {
+		if shardGroup[i].StoreResource.Address == oldStore.Address && shardGroup[i].ShardInfo.ShardId == shard.ShardId {
+			oldShardInfo = shardGroup[i].ShardInfo
+			shardGroup[i].ShardInfo = shard
+			shardGroup[i].StoreResource = newStore
+			return
+		}
+	}
+	log.Printf("replace shard error: old store %s not found", oldStore.Address)
 	return
 }
 

@@ -28,16 +28,6 @@ func (clusterListener *ClusterListener) GetConnectionByShardId(keyspace string, 
 		return nil, 0, fmt.Errorf("shardId %d not found", shardId)
 	}
 
-	if r.GetNextCluster() != nil {
-		candidate, _, found := r.GetNextCluster().GetNode(shardId, options...)
-		if found {
-			if clusterListener.verbose {
-				log.Printf("connecting to candidate %s", candidate.StoreResource.Address)
-			}
-			n = candidate
-		}
-	}
-
 	clusterListener.connPoolLock.RLock()
 	connPool, foundPool := clusterListener.connPools[n.StoreResource.Address]
 	clusterListener.connPoolLock.RUnlock()

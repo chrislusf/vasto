@@ -54,6 +54,12 @@ func PromoteNode(cluster *topology.Cluster, n *pb.ClusterNode) {
 		if candidateCluster.CurrentSize() == 0 {
 			cluster.RemoveNextCluster()
 		}
-		cluster.SetShard(n.StoreResource, n.ShardInfo)
+		oldPrimaryNode, _, found := cluster.GetNode(int(n.ShardInfo.ShardId))
+		if !found {
+			cluster.SetShard(n.StoreResource, n.ShardInfo)
+		} else {
+			oldStore := oldPrimaryNode.StoreResource
+			cluster.ReplaceShard(oldStore, n.StoreResource, n.ShardInfo)
+		}
 	}
 }

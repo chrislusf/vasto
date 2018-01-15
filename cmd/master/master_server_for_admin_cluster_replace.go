@@ -157,14 +157,6 @@ func (ms *masterServer) adjustAndBroadcastShardStatus(ctx context.Context, req *
 			return fmt.Errorf("candidate server for keyspace %s server %s does not exist", req.Keyspace, n.StoreResource.GetAddress())
 		}
 
-		removedShards := cluster.RemoveStore(n.GetStoreResource())
-		// remove the old shard
-		for _, shardInfo := range removedShards {
-			shardInfo.IsPermanentDelete = true
-			ms.notifyDeletion(shardInfo, n.GetStoreResource())
-			log.Printf("removing old shard %v on %s", shardInfo.IdentifierOnThisServer(), n.StoreResource.GetAddress())
-		}
-
 		// promote the new shard
 		promotedShards := candidateCluster.RemoveStore(candidate.GetStoreResource())
 		if candidateCluster.CurrentSize() == 0 {
@@ -172,10 +164,13 @@ func (ms *masterServer) adjustAndBroadcastShardStatus(ctx context.Context, req *
 		}
 		for _, shardInfo := range promotedShards {
 			shardInfo.IsCandidate = false
-			cluster.SetShard(candidate.StoreResource, shardInfo)
+			cluster.ReplaceShard(n.GetStoreResource(), candidate.StoreResource, shardInfo)
 			ms.notifyPromotion(shardInfo, candidate.GetStoreResource())
 			log.Printf("promoting new shard %v on %s", shardInfo.IdentifierOnThisServer(), candidate.StoreResource.GetAddress())
 		}
+
+		// wait a bit for the slow-to-change clients
+		time.Sleep(5 * time.Second)
 
 	}
 
