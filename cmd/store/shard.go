@@ -134,13 +134,16 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 	for _, shard := range bootstrapOption.TransitionalFollowSource {
 		go func(shard topology.ClusterShard, existingPrimaryShards []*pb.ClusterNode) {
 			log.Printf("%s one-time follow2 %+v, existing servers: %v", s.String(), shard, existingPrimaryShards)
-			topology.PrimaryShards(existingPrimaryShards).WithConnection(
+			err := topology.PrimaryShards(existingPrimaryShards).WithConnection(
 				fmt.Sprintf("%s one-time follow %d.%d", s.String(), shard.ServerId, shard.ShardId),
 				shard.ServerId,
 				func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 					return s.followChanges(oneTimeFollowCtx, node, grpcConnection, shard.ShardId, bootstrapOption.ToClusterSize, true)
 				},
 			)
+			if err !=nil {
+				log.Printf("%s one-time follow3 %+v: %v", s.String(), shard, err)
+			}
 		}(shard, existingPrimaryShards)
 	}
 	s.oneTimeFollowCancel = func() {

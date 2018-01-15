@@ -77,5 +77,7 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 		return err
 	}
 
+	log.Printf("BootstrapCopy %v completed at %d:%d", request, segment, offset)
+
 	return err
 }

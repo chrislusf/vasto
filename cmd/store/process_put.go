@@ -24,7 +24,7 @@ func (ss *storeServer) processPut(shard *shard, putRequest *pb.PutRequest) *pb.P
 		Ok: true,
 	}
 
-	// fmt.Printf("shard %d put keyValue: %v\n", shard.id, putRequest.KeyValue.String())
+	// log.Printf("shard %d put key: %v\n", shard.id, string(putRequest.KeyValue.Key))
 
 	err := shard.db.Put(key, entry.ToBytes())
 	if err != nil {

@@ -16,8 +16,8 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 
 	log.Printf("TailBinlog %v", request)
 
-	node, found := ss.keyspaceShards.getShard(request.Keyspace, shard_id(request.ShardId))
-	if !found || node.isShutdown {
+	shard, found := ss.keyspaceShards.getShard(request.Keyspace, shard_id(request.ShardId))
+	if !found || shard.isShutdown {
 		return fmt.Errorf("shard: %s.%d not found", request.Keyspace, request.ShardId)
 	}
 	segment := uint32(request.Segment)
@@ -26,7 +26,7 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 
 	// println("TailBinlog server, segment", segment, "offset", offset, "limit", limit)
 
-	if !node.lm.HasSegment(segment) {
+	if !shard.lm.HasSegment(segment) {
 
 		t := &pb.PullUpdateResponse{
 			OutOfSync: true,
@@ -36,7 +36,7 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 			return err
 		}
 
-		start, stop := node.lm.GetSegmentRange()
+		start, stop := shard.lm.GetSegmentRange()
 
 		return fmt.Errorf("out of sync client reads segment %d offset %d, only has segment [%d,%d]",
 			segment, offset, start, stop)
@@ -49,27 +49,31 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 		limit *= targetClusterSize
 	}
 
+	defer func() {
+		log.Printf("TailBinlog completed shard %v for %v", shard.String(), request.Origin)
+	}()
+
 	for {
 
 		// println("TailBinlog server reading entries, segment", segment, "offset", offset, "limit", limit)
+		// log.Printf("TailBinlog shard %v %v read entries %d:%d", shard.String(), request.Origin, segment, offset)
 
-		entries, nextOffset, err := node.lm.ReadEntries(segment, offset, limit)
+		entries, nextOffset, err := shard.lm.ReadEntries(segment, offset, limit)
 		if err == io.EOF {
 			segment += 1
 		} else if err != nil {
 			return fmt.Errorf("failed to read segment %d offset %d: %v", segment, offset, err)
 		} else if len(entries) <= 100 {
 			time.Sleep(100 * time.Millisecond)
-			entries, nextOffset, err = node.lm.ReadEntries(segment, offset, limit)
+			entries, nextOffset, err = shard.lm.ReadEntries(segment, offset, limit)
 			if err == io.EOF {
 				segment += 1
 			} else if err != nil {
 				return fmt.Errorf("failed to read segment %d offset %d: %v", segment, offset, err)
 			}
 		}
-		// println("len(entries) =", len(entries), "offset", offset, "next offset", nextOffset)
 
-		offset = nextOffset
+		// log.Printf("shard %v read for %v: %d, @ %d:%d, next %d", shard.String(), request.Origin, len(entries), segment, offset, nextOffset)
 
 		t := &pb.PullUpdateResponse{
 			NextSegment: segment,
@@ -77,13 +81,20 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 		}
 
 		for _, entry := range entries {
+
+			// log.Printf("shard %v send0 %v: %v offset:%d", shard.String(), request.Origin, string(entry.Key), offset)
+
 			if !entry.IsValid() {
 				log.Printf("read an invalid entry: %+v", entry)
 				continue
 			}
 			if targetClusterSize > 0 && jump.Hash(entry.PartitionHash, targetClusterSize) != targetShardId {
+				// log.Printf("shard %v send %v skipped: %v, hash:%v, targetClusterSize:%d, targetShardId:%d ", shard.String(), request.Origin, string(entry.Key), entry.PartitionHash, targetClusterSize, targetShardId)
 				continue
 			}
+
+			// log.Printf("shard %v send %v: %v", shard.String(), request.Origin, string(entry.Key))
+
 			t.Entries = append(t.Entries, &pb.UpdateEntry{
 				PartitionHash: entry.PartitionHash,
 				UpdatedAtNs:   entry.UpdatedNanoSeconds,
@@ -95,8 +106,11 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 		}
 
 		if err := stream.Send(t); err != nil {
+			log.Printf("TailBinlog shard %v send %v: %v", shard.String(), request.Origin, err)
 			return err
 		}
+
+		offset = nextOffset
 
 	}
 

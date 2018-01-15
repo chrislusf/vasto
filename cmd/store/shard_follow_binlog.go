@@ -59,10 +59,11 @@ func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcCon
 
 		for _, entry := range changes.Entries {
 
-			// log.Printf("%s follow 1 entry: %v", s, string(entry.Key))
+			// log.Printf("%s follow %d.%d got entry: %v", s, node.ShardInfo.ServerId, sourceShardId, string(entry.Key))
 
 			b, err := s.db.Get(entry.Key)
 			if err != nil {
+				log.Printf("%s get %v: %v", s, string(entry.Key), err)
 				continue
 			}
 
@@ -92,6 +93,7 @@ func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcCon
 			}
 			if len(b) == 0 {
 				// no existing data found
+				// log.Printf("%v follow %d.%d new data %v", s, node.ShardInfo.ServerId, sourceShardId, string(entry.Key))
 				s.db.Put(entry.Key, t.ToBytes())
 				continue
 			}
@@ -100,12 +102,12 @@ func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcCon
 			// log.Printf("%s follow 3 entry: %v, expired %v, %v", s, string(entry.Key), row.IsExpired(), t.IsExpired())
 			if row.IsExpired() {
 				if !t.IsExpired() {
-					// log.Printf("%s follow 3 entry: %v", s, string(entry.Key))
+					log.Printf("%s follow 3 entry: %v", s, string(entry.Key))
 					s.db.Put(entry.Key, t.ToBytes())
 					continue
 				}
 			} else {
-				// log.Printf("data time %d, existing time %d, delta %d", row.UpdatedAtNs, entry.UpdatedAtNs, row.UpdatedAtNs-entry.UpdatedAtNs)
+				// log.Printf("%v follow %d.%d: data time %d, existing time %d, delta %d", s, node.ShardInfo.ServerId, sourceShardId, row.UpdatedAtNs, entry.UpdatedAtNs, row.UpdatedAtNs-entry.UpdatedAtNs)
 				if row.UpdatedAtNs > entry.UpdatedAtNs {
 					continue
 				}

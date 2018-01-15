@@ -22,8 +22,12 @@ func (ss *storeServer) debug() () {
 	fmt.Println("\n========================================================")
 	fmt.Printf("local shards:\n")
 	for keyspace, localShards := range ss.statusInCluster {
-		fmt.Printf("  * %s\n", keyspace)
-		fmt.Printf("    %+v\n", localShards)
+		fmt.Printf("  * %s server:%d, clusterSize:%d replicationFactor:%d\n",
+			keyspace, localShards.Id, localShards.ClusterSize, localShards.ReplicationFactor)
+		for _, shardInfo := range localShards.ShardMap {
+			fmt.Printf("      * %+v clusterSize:%d replicationFactor:%d isCandidate:%v\n",
+				shardInfo.IdentifierOnThisServer(), shardInfo.ClusterSize, shardInfo.ReplicationFactor, shardInfo.IsCandidate)
+		}
 	}
 	ss.statusInClusterLock.RUnlock()
 
