@@ -35,29 +35,23 @@ func newLogSegmentFile(fillName string, segment uint32, logFileMaxSize int64) *l
 
 func (f *logSegmentFile) appendEntry(entry *LogEntry) (err error) {
 
-	f.accessLock.Lock()
-
-	// println("append entry1", string(entry.ToBytesForWrite()))
-
-	f.followerCond.L.Lock()
-
-	// println("append entry2", string(entry.ToBytesForWrite()))
-
 	data := entry.ToBytesForWrite()
 	binary.LittleEndian.PutUint32(data, uint32(len(data)-4))
+	f.accessLock.Lock()
 	writtenDataLen, err := f.file.WriteAt(data, f.offset)
+	f.accessLock.Unlock()
 
 	if err == nil && writtenDataLen == len(data) {
 		// println("broadcast file condition change")
-		f.followerCond.Broadcast()
+		f.followerCond.L.Lock()
 		f.offset += int64(len(data))
+		f.followerCond.Broadcast()
+		f.followerCond.L.Unlock()
 	} else {
 		log.Printf("append entry size %d, but %d: %v", len(data), writtenDataLen, err)
 	}
 
-	f.followerCond.L.Unlock()
 
-	f.accessLock.Unlock()
 
 	return err
 }
