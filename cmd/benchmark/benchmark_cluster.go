@@ -46,7 +46,7 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 					}
 
 					err := c.Put(*b.option.Keyspace, rows)
-					if err !=nil{
+					if err != nil {
 						log.Printf("write %d rows, started with %v:  %v", len(rows), string(rows[0].Key), err)
 					}
 					return err
@@ -99,7 +99,14 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 						log.Printf("batch read %d keys: %v", len(keys), err)
 						return err
 					}
-					for _, kv := range data{
+					for _, kv := range data {
+						if kv == nil {
+							continue
+						}
+						if len(kv.Key) <= 1 || len(kv.Value) <= 1 {
+							log.Printf("read strange kv %s:%s", string(kv.Key), string(kv.Value))
+							continue
+						}
 						if bytes.Compare(kv.Key[1:], kv.Value[1:]) != 0 {
 							log.Printf("read unexpected %s:%s", string(kv.Key), string(kv.Value))
 							return nil
