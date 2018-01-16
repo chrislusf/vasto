@@ -64,19 +64,24 @@ func (cluster *Cluster) SetShard(store *pb.StoreResource, shard *pb.ShardInfo) (
 	return
 }
 
-func (cluster *Cluster) ReplaceShard(oldStore, newStore *pb.StoreResource, shard *pb.ShardInfo) (oldShardInfo *pb.ShardInfo) {
+func (cluster *Cluster) ReplaceShard(newStore *pb.StoreResource, shard *pb.ShardInfo) (isReplaced bool) {
 	shardId := int(shard.ShardId)
+	if len(cluster.logicalShards) < shardId+1 {
+		capacity := shardId + 1
+		nodes := make([]LogicalShardGroup, capacity)
+		copy(nodes, cluster.logicalShards)
+		cluster.logicalShards = nodes
+	}
 	shardGroup := cluster.logicalShards[shardId]
 	for i := 0; i < len(shardGroup); i++ {
-		if shardGroup[i].StoreResource.Address == oldStore.Address && shardGroup[i].ShardInfo.ShardId == shard.ShardId {
-			oldShardInfo = shardGroup[i].ShardInfo
+		if shardGroup[i].ShardInfo.IdentifierOnThisServer() == shard.IdentifierOnThisServer() {
 			shardGroup[i].ShardInfo = shard
 			shardGroup[i].StoreResource = newStore
-			return
+			return true
 		}
 	}
-	log.Printf("replace shard error: old store %s not found", oldStore.Address)
-	return
+	log.Printf("replace shard error: shard %s not found", shard.IdentifierOnThisServer())
+	return false
 }
 
 // RemoveShard returns true if no other shards is on this store

@@ -164,9 +164,10 @@ func (ms *masterServer) adjustAndBroadcastShardStatus(ctx context.Context, req *
 		}
 		for _, shardInfo := range promotedShards {
 			shardInfo.IsCandidate = false
-			cluster.ReplaceShard(n.GetStoreResource(), candidate.StoreResource, shardInfo)
-			ms.notifyPromotion(shardInfo, candidate.GetStoreResource())
-			log.Printf("promoting new shard %v on %s", shardInfo.IdentifierOnThisServer(), candidate.StoreResource.GetAddress())
+			if cluster.ReplaceShard(candidate.StoreResource, shardInfo){
+				ms.notifyPromotion(shardInfo, candidate.GetStoreResource())
+				log.Printf("promoting new shard %v on %s", shardInfo.IdentifierOnThisServer(), candidate.StoreResource.GetAddress())
+			}
 		}
 
 		// wait a bit for the slow-to-change clients
