@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/tecbot/gorocksdb"
+	"github.com/chrislusf/gorocksdb"
 	"math"
 )
 

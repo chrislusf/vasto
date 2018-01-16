@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/tecbot/gorocksdb"
+	"github.com/chrislusf/gorocksdb"
 	"sync/atomic"
 	"time"
 	"errors"

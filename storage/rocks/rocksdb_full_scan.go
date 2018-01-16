@@ -2,7 +2,7 @@ package rocks
 
 import (
 	"github.com/chrislusf/vasto/pb"
-	"github.com/tecbot/gorocksdb"
+	"github.com/chrislusf/gorocksdb"
 	"sync/atomic"
 )
 

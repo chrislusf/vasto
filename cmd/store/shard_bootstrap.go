@@ -7,7 +7,7 @@ import (
 
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
-	"github.com/tecbot/gorocksdb"
+	"github.com/chrislusf/gorocksdb"
 	"google.golang.org/grpc"
 	"context"
 	"sync"

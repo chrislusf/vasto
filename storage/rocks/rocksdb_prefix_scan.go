@@ -3,7 +3,7 @@ package rocks
 import (
 	"bytes"
 
-	"github.com/tecbot/gorocksdb"
+	"github.com/chrislusf/gorocksdb"
 	"sync/atomic"
 )
 

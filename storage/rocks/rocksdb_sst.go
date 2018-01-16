@@ -2,7 +2,7 @@ package rocks
 
 import (
 	"fmt"
-	"github.com/tecbot/gorocksdb"
+	"github.com/chrislusf/gorocksdb"
 	"io/ioutil"
 	"os"
 	"log"
