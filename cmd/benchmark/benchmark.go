@@ -40,7 +40,7 @@ func RunBenchmarker(option *BenchmarkOption) {
 	b.runBenchmarkerOnCluster(context.Background(), option)
 }
 
-func (b *benchmarker) startThreads(name string, requestCount int, requestNumberStart int, fn func(hist *Histogram, start, stop, batchSize int)) {
+func (b *benchmarker) startThreads(name string, requestCountEachClient int, requestNumberStart int, fn func(hist *Histogram, start, stop, batchSize int)) {
 	start := time.Now()
 	clientCount := int(*b.option.ClientCount)
 
@@ -50,13 +50,13 @@ func (b *benchmarker) startThreads(name string, requestCount int, requestNumberS
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			fn(&hists[i], i*requestCount+requestNumberStart, (i+1)*requestCount+requestNumberStart, int(*b.option.BatchSize))
+			fn(&hists[i], i*requestCountEachClient+requestNumberStart, (i+1)*requestCountEachClient+requestNumberStart, int(*b.option.BatchSize))
 		}(i)
 	}
 	wg.Wait()
 
 	elapsed := time.Since(start)
-	speed := float64(*b.option.RequestCount * *b.option.BatchSize) / float64(elapsed.Seconds())
+	speed := float64(*b.option.RequestCount) / float64(elapsed.Seconds())
 	fmt.Printf("%-10s : %9.1f op/s\n", name, speed)
 
 	var hist = hists[0]
@@ -68,9 +68,9 @@ func (b *benchmarker) startThreads(name string, requestCount int, requestNumberS
 
 func (b *benchmarker) startThreadsWithClient(ctx context.Context, name string, fn func(hist *Histogram, c *client.VastoClient, start, stop, batchSize int)) {
 
-	requestCount := int(*b.option.RequestCount / *b.option.ClientCount)
+	requestCountEachClient := int(*b.option.RequestCount / *b.option.ClientCount)
 
-	b.startThreads(name, requestCount, int(*b.option.RequestCountStart), func(hist *Histogram, start, stop, batchSize int) {
+	b.startThreads(name, requestCountEachClient, int(*b.option.RequestCountStart), func(hist *Histogram, start, stop, batchSize int) {
 		c := client.NewClient(&client.ClientOption{
 			FixedCluster: b.option.FixedCluster,
 			Master:       b.option.Master,
