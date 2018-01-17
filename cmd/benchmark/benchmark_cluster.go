@@ -131,7 +131,7 @@ func (b *benchmarker) execute(hist *Histogram, c *client.VastoClient, start, sto
 		start := time.Now()
 		err := fn(c, i)
 		if err != nil {
-			log.Printf("benchmark put error: %v", err)
+			log.Printf("benchmark error: %v", err)
 			return err
 		}
 		taken := float64(time.Since(start) / 1000)
