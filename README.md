@@ -2,7 +2,7 @@
 
 A distributed high-performance key-value store. On Disk. Eventual consistent. HA. Able to grow or shrink without service interruption.
 
-Vasto scales embedded [RocksDB](https://github.com/facebook/rocksdb) key-value store into a distributed key-value store,
+Vasto scales embedded [RocksDB](https://github.com/facebook/rocksdb) into a distributed key-value store,
 adding sharding, replication, and support operations to
 1. create a new keyspace
 1. delele an existing keyspace
@@ -38,9 +38,12 @@ So even if it ever crashes, a simple restart will recover everything.
 The Vasto stores simply pass get/put/delete/scan requests to RocksDB. 
 One Vasto store can host multiple db instances.
 
-The Vasto gateway uses the client library and talk to the stores directly. It is a reverse proxy, and can be installed
-on any application machine to reduce one network hop. Or can be on its dedicated machine to reduce number of connections
-to the Vasto stores if both the number of stores and the number of clients are very high.
+Go applications can use the client library directly.
+
+Applications in other languages can talk to the Vasto gateway, which uses the client library and reverse proxy the requests
+to the Vasto stores. The number of Vasto gateways are unlimited. 
+They can be installed on any application machines to reduce one network hop. 
+Or can be on its dedicated machine to reduce number of connections to the Vasto stores if both the number of stores and the number of clients are very high.
 
 
 # Life cycle
