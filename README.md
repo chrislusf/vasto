@@ -15,11 +15,12 @@ A key-value store is often re-invented. Why there is another one?
 
 Vasto enables developers to setup a distributed key-value store as simple as creating a map object.
 
-The operations, such as creating/deleting the store, connection configurations, partitioning, replications, 
-seamlessly adding/removing servers, are all managed automatically.
+The operations, such as creating/deleting the store, partitioning, replications, seamlessly adding/removing servers, etc,
+are managed by a few commands.
+Client connection configurations are managed automatically.
 
 In a sense, Vasto is an in-house cloud providing distributed key-value stores as a service, 
-minus the need to balance performance and cloud service costs.
+minus the need to balance performance and cloud service costs, plus consistent and low latency.
 
 # Architecture
 
@@ -60,7 +61,7 @@ When the master receives a request to resize the keyspace from m shards to n sha
 
 # Hashing algorithm
 
-To achive minimum data movement and avoid overloading a few particular existing stores, 
+To achive minimum data movement and avoid overloading a few particular existing stores when resizing, 
 Vasto used jumping hash to allocate data.
 
 # APIs
