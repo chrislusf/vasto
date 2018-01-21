@@ -10,10 +10,6 @@ import (
 	"log"
 )
 
-// --------------------
-//      Hash FixedCluster
-// --------------------
-
 type Cluster struct {
 	keyspace          string
 	dataCenter        string
