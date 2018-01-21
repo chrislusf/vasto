@@ -26,17 +26,7 @@ func NewClient(option *ClientOption) *VastoClient {
 	return c
 }
 
-func (c *VastoClient) startWithFixedCluster() {
-	c.ClusterListener.SetNodes(*c.Option.Keyspace, *c.Option.FixedCluster)
-}
-
 func (c *VastoClient) StartClient(ctx context.Context) {
-
-	if *c.Option.FixedCluster != "" {
-		c.startWithFixedCluster()
-		return
-	}
-
 	c.ClusterListener.AddExistingKeyspace(*c.Option.Keyspace, 0, 0)
 	c.ClusterListener.StartListener(ctx, *c.Option.Master, *c.Option.DataCenter, true)
 }

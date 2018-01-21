@@ -6,9 +6,6 @@ import (
 )
 
 type ShellOption struct {
-	// fixed cluster mode options
-	FixedCluster *string
-	// dynamic cluster mode options
 	Master     *string
 	DataCenter *string
 	Keyspace   *string
@@ -26,11 +23,10 @@ func RunShell(option *ShellOption) {
 		option: option,
 		vastoClient: client.NewClient(
 			&client.ClientOption{
-				FixedCluster: option.FixedCluster,
-				Master:       option.Master,
-				DataCenter:   option.DataCenter,
-				Keyspace:     option.Keyspace,
-				ClientName:   "shell",
+				Master:     option.Master,
+				DataCenter: option.DataCenter,
+				Keyspace:   option.Keyspace,
+				ClientName: "shell",
 			},
 		),
 	}

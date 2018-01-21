@@ -13,12 +13,9 @@ type BenchmarkOption struct {
 	// store mode options
 	StoreAddress      *string
 	DisableUnixSocket *bool
-	// fixed cluster mode options
-	FixedCluster *string
-	// dynamic cluster mode options
-	Master     *string
-	DataCenter *string
-	Keyspace   *string
+	Master            *string
+	DataCenter        *string
+	Keyspace          *string
 	// detail options
 	ClientCount       *int32
 	RequestCount      *int32
@@ -72,11 +69,10 @@ func (b *benchmarker) startThreadsWithClient(ctx context.Context, name string, f
 
 	b.startThreads(name, requestCountEachClient, int(*b.option.RequestCountStart), func(hist *Histogram, start, stop, batchSize int) {
 		c := client.NewClient(&client.ClientOption{
-			FixedCluster: b.option.FixedCluster,
-			Master:       b.option.Master,
-			DataCenter:   b.option.DataCenter,
-			Keyspace:     b.option.Keyspace,
-			ClientName:   "benchmarker",
+			Master:     b.option.Master,
+			DataCenter: b.option.DataCenter,
+			Keyspace:   b.option.Keyspace,
+			ClientName: "benchmarker",
 		})
 		c.StartClient(ctx)
 		fn(hist, c, start, stop, batchSize)

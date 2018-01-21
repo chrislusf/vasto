@@ -14,9 +14,6 @@ import (
 type GatewayOption struct {
 	TcpAddress *string
 	UnixSocket *string
-	// either cluster
-	FixedCluster *string
-	// or Master with DataCenter
 	Master     *string
 	DataCenter *string
 	Keyspace   *string
@@ -34,7 +31,6 @@ func RunGateway(option *GatewayOption) {
 		option: option,
 		vastoClient: client.NewClient(
 			&client.ClientOption{
-				FixedCluster: option.FixedCluster,
 				Master:       option.Master,
 				DataCenter:   option.DataCenter,
 				Keyspace:     option.Keyspace,

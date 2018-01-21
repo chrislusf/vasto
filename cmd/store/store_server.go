@@ -24,9 +24,7 @@ type StoreOption struct {
 	Bootstrap         *bool
 	DisableUnixSocket *bool
 	Master            *string
-	FixedCluster      *string
 	DataCenter        *string
-	Keyspace          *string
 	LogFileSizeMb     *int
 	LogFileCount      *int
 	DiskSizeGb        *int
@@ -70,15 +68,12 @@ func RunStore(option *StoreOption) {
 		log.Fatalf("load existing cluster files: %v", err)
 	}
 
-	if *option.FixedCluster != "" {
-		clusterListener.SetNodes(*option.Keyspace, *ss.option.FixedCluster)
-	} else if *option.Master != "" {
-		go ss.keepConnectedToMasterServer(ctx)
-		for keyspaceName, ShardInfo := range ss.statusInCluster {
-			clusterListener.AddExistingKeyspace(keyspaceName, int(ShardInfo.ClusterSize), int(ShardInfo.ReplicationFactor))
-		}
-		clusterListener.StartListener(ctx, *ss.option.Master, *ss.option.DataCenter, false)
+	// connect to the master
+	go ss.keepConnectedToMasterServer(ctx)
+	for keyspaceName, ShardInfo := range ss.statusInCluster {
+		clusterListener.AddExistingKeyspace(keyspaceName, int(ShardInfo.ClusterSize), int(ShardInfo.ReplicationFactor))
 	}
+	clusterListener.StartListener(ctx, *ss.option.Master, *ss.option.DataCenter, false)
 
 	for keyspaceName, storeStatus := range ss.statusInCluster {
 		if err := ss.startExistingNodes(keyspaceName, storeStatus); err != nil {

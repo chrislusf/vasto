@@ -55,8 +55,6 @@ var (
 		DiskSizeGb:        store.Flag("diskSizeGb", "disk size in GB").Default("10").Int(),
 		Tags:              store.Flag("tags", "comma separated tags").Default("").String(),
 		DisableUseEventIo: store.Flag("disableUseEventIo", "use event loop for network").Default("false").Bool(),
-		FixedCluster:      store.Flag("fixed.cluster", "overwrite --master, format network:host:port[,network:host:port]*").Default("").String(),
-		Keyspace:          store.Flag("fixed.keyspace", "keyspace name").Default("keyspace1").String(),
 	}
 	storeProfile = store.Flag("cpuprofile", "cpu profile output file").Default("").String()
 
@@ -78,8 +76,6 @@ var (
 		DiskSizeGb:        server.Flag("store.diskSizeGb", "disk size in GB").Default("10").Int(),
 		Tags:              server.Flag("store.tags", "comma separated tags").Default("").String(),
 		DisableUseEventIo: server.Flag("store.disableUseEventIo", "use event loop for network").Default("false").Bool(),
-		FixedCluster:      server.Flag("store.fixed.cluster", "overwrite --master, format network:host:port[,network:host:port]*").Default("").String(),
-		Keyspace:          server.Flag("store.fixed.keyspace", "keyspace name").Default("keyspace1").String(),
 	}
 	serverProfile = server.Flag("cpuprofile", "cpu profile output file").Default("").String()
 
@@ -87,8 +83,6 @@ var (
 	gatewayOption = &g.GatewayOption{
 		TcpAddress: gateway.Flag("address", "gateway tcp host address").Default(":8281").String(),
 		UnixSocket: gateway.Flag("unixSocket", "gateway listening unix socket").Default("").Short('s').String(),
-		FixedCluster: gateway.Flag("cluster.fixed",
-			"overwrite --master, format network:host:port[,network:host:port]*").Default("").String(),
 		Master:     gateway.Flag("master", "master address").Default("localhost:8278").String(),
 		DataCenter: gateway.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
 		Keyspace:   gateway.Flag("keyspace", "keyspace name").Default("").String(),
@@ -102,22 +96,18 @@ var (
 		RequestCount:      bench.Flag("requestCount", "total request count").Default("1024000").Short('n').Int32(),
 		RequestCountStart: bench.Flag("requestNumberStart", "starting request index").Default("0").Int32(),
 		BatchSize:         bench.Flag("batchSize", "put requests in batch").Default("1").Short('b').Int32(),
-		FixedCluster: bench.Flag("fixed.cluster",
-			"overwrite --cluster.master, format network:host:port[,network:host:port]*").Default("").String(),
-		Master:     bench.Flag("cluster.master", "master address").Default("localhost:8278").String(),
-		DataCenter: bench.Flag("cluster.dataCenter", "data center name").Default("defaultDataCenter").String(),
-		Keyspace:   bench.Flag("cluster.keyspace", "keyspace name").Default("benchmark").String(),
-		Tests:      bench.Flag("tests", "[put|get]").Default("put,get").Short('t').String(),
+		Master:            bench.Flag("master", "master address").Default("localhost:8278").String(),
+		DataCenter:        bench.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
+		Keyspace:          bench.Flag("keyspace", "keyspace name").Default("benchmark").String(),
+		Tests:             bench.Flag("tests", "[put|get]").Default("put,get").Short('t').String(),
 	}
 	benchProfile = bench.Flag("cpuprofile", "cpu profile output file").Default("").String()
 
 	shell       = app.Command("shell", "Start a vasto shell")
 	shellOption = &sh.ShellOption{
-		FixedCluster: shell.Flag("cluster.fixed",
-			"overwrite --cluster.master, format network:host:port[,network:host:port]*").Default("").String(),
-		Master:     shell.Flag("cluster.master", "master address").Default("localhost:8278").String(),
-		DataCenter: shell.Flag("cluster.dataCenter", "data center name").Default("defaultDataCenter").String(),
-		Keyspace:   shell.Flag("cluster.keyspace", "keyspace name").Default("").String(),
+		Master:     shell.Flag("master", "master address").Default("localhost:8278").String(),
+		DataCenter: shell.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
+		Keyspace:   shell.Flag("keyspace", "keyspace name").Default("").String(),
 		Verbose:    shell.Flag("verbose", "verbose log of cluster topology changes").Default("false").Bool(),
 	}
 

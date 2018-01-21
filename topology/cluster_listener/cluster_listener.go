@@ -6,7 +6,6 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
-	"strings"
 	"sync"
 	"context"
 	"log"
@@ -83,39 +82,9 @@ func (clusterListener *ClusterListener) GetOrSetCluster(keyspace string, cluster
 	return t
 }
 
-// SetNodes initialize the cluster to a comma-separated node list,
-// where each node has the format of network:host:port
-// The network is either tcp or socket
-func (clusterListener *ClusterListener) SetNodes(keyspace string, fixedCluster string) {
-	servers := strings.Split(fixedCluster, ",")
-	var nodes []*pb.ClusterNode
-	for id, networkHostPort := range servers {
-		parts := strings.SplitN(networkHostPort, ":", 2)
-		node := &pb.ClusterNode{
-			StoreResource: &pb.StoreResource{
-				Network: parts[0],
-				Address: parts[1],
-			},
-			ShardInfo: &pb.ShardInfo{
-				ServerId: uint32(id),
-				ShardId:  uint32(id),
-			},
-		}
-		nodes = append(nodes, node)
-	}
-	cluster := clusterListener.GetOrSetCluster(keyspace, len(servers), 1)
-	for _, node := range nodes {
-		AddNode(cluster, node)
-	}
-}
-
-// if master is not empty, return when client is connected to the master and
-// fetched the initial cluster information.
+// StartListener keeps the listener connected to the master.
+// if blockUntilConnected, return when client is connected to the master and has fetched the initial cluster information.
 func (clusterListener *ClusterListener) StartListener(ctx context.Context, master, dataCenter string, blockUntilConnected bool) {
-
-	if master == "" {
-		return
-	}
 
 	var clientConnected bool
 	var clientConnectedChan chan bool
