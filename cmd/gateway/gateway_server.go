@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/chrislusf/vasto/cmd/client"
+	"github.com/chrislusf/vasto/client"
 	"github.com/chrislusf/vasto/util/on_interrupt"
 	"os"
 	"context"

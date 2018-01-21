@@ -2,7 +2,7 @@ package shell
 
 import (
 	"errors"
-	"github.com/chrislusf/vasto/cmd/client"
+	"github.com/chrislusf/vasto/client"
 	"io"
 )
 

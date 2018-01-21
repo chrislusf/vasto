@@ -6,7 +6,7 @@ import (
 	"time"
 	"context"
 
-	"github.com/chrislusf/vasto/cmd/client"
+	"github.com/chrislusf/vasto/client"
 )
 
 type BenchmarkOption struct {

@@ -10,7 +10,7 @@ import (
 	"log"
 	"net"
 	"time"
-	"github.com/chrislusf/vasto/cmd/client"
+	"github.com/chrislusf/vasto/client"
 )
 
 // Run starts the heartbeating to master and starts accepting requests.

@@ -1,7 +1,7 @@
 package shell
 
 import (
-	"github.com/chrislusf/vasto/cmd/client"
+	"github.com/chrislusf/vasto/client"
 	"context"
 )
 

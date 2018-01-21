@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"context"
-	"github.com/chrislusf/vasto/cmd/client"
+	"github.com/chrislusf/vasto/client"
 	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc"
 	"log"

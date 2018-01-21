@@ -3,7 +3,7 @@ package shell
 import (
 	"io"
 
-	"github.com/chrislusf/vasto/cmd/client"
+	"github.com/chrislusf/vasto/client"
 )
 
 func init() {

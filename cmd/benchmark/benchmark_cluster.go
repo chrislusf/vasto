@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"bytes"
-	"github.com/chrislusf/vasto/cmd/client"
+	"github.com/chrislusf/vasto/client"
 	"strings"
 	"context"
 	"github.com/gosuri/uiprogress"

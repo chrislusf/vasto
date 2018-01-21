@@ -5,7 +5,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/chrislusf/vasto/cmd/client"
+	"github.com/chrislusf/vasto/client"
 )
 
 func init() {
