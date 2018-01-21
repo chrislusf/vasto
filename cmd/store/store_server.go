@@ -23,24 +23,19 @@ type StoreOption struct {
 	TcpPort           *int32
 	Bootstrap         *bool
 	DisableUnixSocket *bool
-	AdminPort         *int32
 	Master            *string
 	FixedCluster      *string
 	DataCenter        *string
 	Keyspace          *string
 	LogFileSizeMb     *int
 	LogFileCount      *int
-	ReplicationFactor *int
 	DiskSizeGb        *int
 	Tags              *string
 	DisableUseEventIo *bool
 }
 
 func (o *StoreOption) GetAdminPort() int32 {
-	if *o.AdminPort == 0 {
-		return *o.TcpPort + 10000
-	}
-	return *o.AdminPort
+	return *o.TcpPort + 10000
 }
 
 type storeServer struct {
@@ -86,7 +81,7 @@ func RunStore(option *StoreOption) {
 	}
 
 	for keyspaceName, storeStatus := range ss.statusInCluster {
-		if err := ss.startExistingNodes(keyspaceName, storeStatus); err!=nil{
+		if err := ss.startExistingNodes(keyspaceName, storeStatus); err != nil {
 			log.Fatalf("load existing keyspace: %v", keyspaceName, err)
 		}
 	}

@@ -46,14 +46,12 @@ var (
 		Host:              store.Flag("host", "store host address").Default(util.GetLocalIP()).String(),
 		ListenHost:        store.Flag("listenHost", "store listening host address").Default("").String(),
 		TcpPort:           store.Flag("port", "store listening tcp port").Default("8279").Int32(),
-		AdminPort:         store.Flag("adminPort", "store listening grpc port, default to tcp port + 10000").Default("0").Int32(),
 		Bootstrap:         store.Flag("clearAndBootstrap", "clear local data and copy snapshot from other peers").Default("false").Bool(),
 		DisableUnixSocket: store.Flag("disableUnixSocket", "store listening unix socket").Default("false").Bool(),
 		Master:            store.Flag("master", "master address").Default("localhost:8278").String(),
 		DataCenter:        store.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
 		LogFileSizeMb:     store.Flag("logFileSizeMb", "log file size limit in MB").Default("128").Int(),
 		LogFileCount:      store.Flag("logFileCount", "log file count limit").Default("3").Int(),
-		ReplicationFactor: store.Flag("replicationFactor", "number of physical copies").Default("3").Int(),
 		DiskSizeGb:        store.Flag("diskSizeGb", "disk size in GB").Default("10").Int(),
 		Tags:              store.Flag("tags", "comma separated tags").Default("").String(),
 		DisableUseEventIo: store.Flag("disableUseEventIo", "use event loop for network").Default("false").Bool(),
@@ -61,6 +59,29 @@ var (
 		Keyspace:          store.Flag("fixed.keyspace", "keyspace name").Default("keyspace1").String(),
 	}
 	storeProfile = store.Flag("cpuprofile", "cpu profile output file").Default("").String()
+
+	server             = app.Command("server", "Start a vasto master and a vasto store")
+	serverMasterOption = &m.MasterOption{
+		Address: server.Flag("master.address", "listening address host:port").Default(":8278").String(),
+	}
+	serverStoreOption = &s.StoreOption{
+		Dir:               server.Flag("store.dir", "folder to server data").Default(os.TempDir()).String(),
+		Host:              server.Flag("store.host", "server host address").Default(util.GetLocalIP()).String(),
+		ListenHost:        server.Flag("store.listenHost", "server listening host address").Default("").String(),
+		TcpPort:           server.Flag("store.port", "server listening tcp port").Default("8279").Int32(),
+		Bootstrap:         server.Flag("store.clearAndBootstrap", "clear local data and copy snapshot from other peers").Default("false").Bool(),
+		DisableUnixSocket: server.Flag("store.disableUnixSocket", "server listening unix socket").Default("false").Bool(),
+		Master:            server.Flag("store.master", "master address").Default("localhost:8278").String(),
+		DataCenter:        server.Flag("store.dataCenter", "data center name").Default("defaultDataCenter").String(),
+		LogFileSizeMb:     server.Flag("store.logFileSizeMb", "log file size limit in MB").Default("128").Int(),
+		LogFileCount:      server.Flag("store.logFileCount", "log file count limit").Default("3").Int(),
+		DiskSizeGb:        server.Flag("store.diskSizeGb", "disk size in GB").Default("10").Int(),
+		Tags:              server.Flag("store.tags", "comma separated tags").Default("").String(),
+		DisableUseEventIo: server.Flag("store.disableUseEventIo", "use event loop for network").Default("false").Bool(),
+		FixedCluster:      server.Flag("store.fixed.cluster", "overwrite --master, format network:host:port[,network:host:port]*").Default("").String(),
+		Keyspace:          server.Flag("store.fixed.keyspace", "keyspace name").Default("keyspace1").String(),
+	}
+	serverProfile = server.Flag("cpuprofile", "cpu profile output file").Default("").String()
 
 	gateway       = app.Command("gateway", "Start a vasto gateway")
 	gatewayOption = &g.GatewayOption{
@@ -128,22 +149,20 @@ func main() {
 		})
 	}
 
+	*storeOption.Dir = fixHomeDir(*storeOption.Dir)
+	*serverStoreOption.Dir = fixHomeDir(*serverStoreOption.Dir)
+
 	switch cmd {
 
 	case master.FullCommand():
 		m.RunMaster(masterOption)
 
 	case store.FullCommand():
-		dir := *storeOption.Dir
-		if strings.HasPrefix(dir, "~") {
-			usr, err := user.Current()
-			if err != nil {
-				log.Fatal(err)
-			}
-			dir = usr.HomeDir + dir[1:]
-		}
-		*storeOption.Dir = dir
 		s.RunStore(storeOption)
+
+	case server.FullCommand():
+		go m.RunMaster(serverMasterOption)
+		s.RunStore(serverStoreOption)
 
 	case gateway.FullCommand():
 		g.RunGateway(gatewayOption)
@@ -158,4 +177,15 @@ func main() {
 		a.RunAdmin(adminOption)
 
 	}
+}
+
+func fixHomeDir(dir string) string {
+	if strings.HasPrefix(dir, "~") {
+		usr, err := user.Current()
+		if err != nil {
+			log.Fatal(err)
+		}
+		dir = usr.HomeDir + dir[1:]
+	}
+	return dir
 }
