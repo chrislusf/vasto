@@ -14,13 +14,9 @@ import (
 )
 
 type BenchmarkOption struct {
-	// store mode options
-	StoreAddress      *string
-	DisableUnixSocket *bool
 	Master            *string
 	DataCenter        *string
 	Keyspace          *string
-	// detail options
 	ClientCount       *int32
 	RequestCount      *int32
 	RequestCountStart *int32
