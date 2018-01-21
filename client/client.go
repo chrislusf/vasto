@@ -6,11 +6,10 @@ import (
 )
 
 type ClientOption struct {
-	FixedCluster *string
-	Master       *string
-	DataCenter   *string
-	Keyspace     *string
-	ClientName   string
+	Master     *string
+	DataCenter *string
+	Keyspace   *string
+	ClientName string
 }
 
 type VastoClient struct {
