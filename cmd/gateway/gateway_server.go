@@ -29,7 +29,7 @@ func RunGateway(option *GatewayOption) {
 
 	var gs = &gatewayServer{
 		option: option,
-		vastoClient: client.NewClient(
+		vastoClient: client.NewClient2(
 			&client.ClientOption{
 				Master:       option.Master,
 				DataCenter:   option.DataCenter,

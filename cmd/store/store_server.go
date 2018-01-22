@@ -73,7 +73,7 @@ func RunStore(option *StoreOption) {
 	for keyspaceName, ShardInfo := range ss.statusInCluster {
 		clusterListener.AddExistingKeyspace(keyspaceName, int(ShardInfo.ClusterSize), int(ShardInfo.ReplicationFactor))
 	}
-	clusterListener.StartListener(ctx, *ss.option.Master, *ss.option.DataCenter, false)
+	clusterListener.StartListener(ctx, *ss.option.Master, *ss.option.DataCenter)
 
 	for keyspaceName, storeStatus := range ss.statusInCluster {
 		if err := ss.startExistingNodes(keyspaceName, storeStatus); err != nil {

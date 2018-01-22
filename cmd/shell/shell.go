@@ -21,7 +21,7 @@ type shell struct {
 func RunShell(option *ShellOption) {
 	var b = &shell{
 		option: option,
-		vastoClient: client.NewClient(
+		vastoClient: client.NewClient2(
 			&client.ClientOption{
 				Master:     option.Master,
 				DataCenter: option.DataCenter,

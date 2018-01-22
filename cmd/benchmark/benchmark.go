@@ -155,7 +155,7 @@ func (b *benchmarker) startThreadsWithClient(ctx context.Context, name string, f
 	requestCountEachClient := int(*b.option.RequestCount / *b.option.ClientCount)
 
 	b.startThreads(name, requestCountEachClient, int(*b.option.RequestCountStart), func(hist *Histogram, start, stop, batchSize int) {
-		c := client.NewClient(&client.ClientOption{
+		c := client.NewClient2(&client.ClientOption{
 			Master:     b.option.Master,
 			DataCenter: b.option.DataCenter,
 			Keyspace:   b.option.Keyspace,

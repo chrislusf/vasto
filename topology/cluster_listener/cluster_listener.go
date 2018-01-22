@@ -83,14 +83,7 @@ func (clusterListener *ClusterListener) GetOrSetCluster(keyspace string, cluster
 }
 
 // StartListener keeps the listener connected to the master.
-// if blockUntilConnected, return when client is connected to the master and has fetched the initial cluster information.
-func (clusterListener *ClusterListener) StartListener(ctx context.Context, master, dataCenter string, blockUntilConnected bool) {
-
-	var clientConnected bool
-	var clientConnectedChan chan bool
-	if blockUntilConnected {
-		clientConnectedChan = make(chan bool, 1)
-	}
+func (clusterListener *ClusterListener) StartListener(ctx context.Context, master, dataCenter string) {
 
 	clientMessageChan := make(chan *pb.ClientMessage)
 
@@ -109,12 +102,6 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 						AddNode(cluster, node)
 						for _, shardEventProcess := range clusterListener.shardEventProcessors {
 							shardEventProcess.OnShardCreateEvent(cluster, node.StoreResource, node.ShardInfo)
-						}
-					}
-					if !clientConnected {
-						clientConnected = true
-						if blockUntilConnected {
-							clientConnectedChan <- true
 						}
 					}
 				} else if msg.GetUpdates() != nil {
@@ -163,11 +150,6 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 		}
 	}()
 
-	if blockUntilConnected {
-		<-clientConnectedChan
-		close(clientConnectedChan)
-	}
-
 	// println("client is connected to master", master, "data center", dataCenter)
 
 	return
@@ -176,4 +158,18 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 
 func (clusterListener *ClusterListener) SetVerboseLog(verbose bool) {
 	clusterListener.verbose = verbose
+}
+
+func (clusterListener *ClusterListener) HasConnectedKeyspace(keyspace string) bool {
+	cluster, found := clusterListener.GetCluster(keyspace)
+	if !found {
+		return false
+	}
+	if cluster.CurrentSize() <= 0 {
+		return false
+	}
+	if cluster.CurrentSize() != cluster.ExpectedSize() {
+		return false
+	}
+	return true
 }
