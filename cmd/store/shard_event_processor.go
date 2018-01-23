@@ -1,8 +1,8 @@
 package store
 
 import (
-	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/topology"
 	"log"
 )
 

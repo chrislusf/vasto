@@ -5,14 +5,14 @@ import (
 	"io"
 	"log"
 
-	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/topology"
-	"github.com/chrislusf/gorocksdb"
-	"google.golang.org/grpc"
 	"context"
-	"sync"
-	"github.com/chrislusf/vasto/util"
+	"github.com/chrislusf/gorocksdb"
+	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
+	"github.com/chrislusf/vasto/topology"
+	"github.com/chrislusf/vasto/util"
+	"google.golang.org/grpc"
+	"sync"
 )
 
 func (s *shard) peerShards() []topology.ClusterShard {

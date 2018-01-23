@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/chrislusf/gorocksdb"
 	"io/ioutil"
-	"os"
 	"log"
+	"os"
 )
 
 func (d *Rocks) addSst(name string, next func() (bool, []byte, []byte)) error {

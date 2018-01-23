@@ -1,10 +1,10 @@
 package util
 
 import (
+	"context"
 	"log"
 	"math/rand"
 	"time"
-	"context"
 )
 
 func Retry(fn func() error) error {

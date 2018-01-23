@@ -1,18 +1,18 @@
 package store
 
 import (
+	"context"
 	"fmt"
+	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/binlog"
 	"github.com/chrislusf/vasto/storage/rocks"
 	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/topology/cluster_listener"
-	"log"
-	"context"
-	"sync"
 	"github.com/chrislusf/vasto/util"
-	"time"
 	"google.golang.org/grpc"
-	"github.com/chrislusf/vasto/pb"
+	"log"
+	"sync"
+	"time"
 )
 
 type shard_id int
@@ -44,7 +44,7 @@ func (s *shard) String() string {
 
 func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.Cluster,
 	clusterListener *cluster_listener.ClusterListener,
-	replicationFactor int, logFileSizeMb int, logFileCount int) (*shard) {
+	replicationFactor int, logFileSizeMb int, logFileCount int) *shard {
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
@@ -141,7 +141,7 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 					return s.followChanges(oneTimeFollowCtx, node, grpcConnection, shard.ShardId, bootstrapOption.ToClusterSize, true)
 				},
 			)
-			if err !=nil {
+			if err != nil {
 				log.Printf("%s one-time follow3 %+v: %v", s.String(), shard, err)
 			}
 		}(shard, existingPrimaryShards)

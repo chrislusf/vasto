@@ -91,7 +91,7 @@ func (ss *storeServer) deleteServerStatusInCluster(keyspace string) {
 
 }
 
-func (ss *storeServer) getOrCreateServerStatusInCluster(keyspace string, serverId, clusterSize, replicationFactor int) (*pb.LocalShardsInCluster) {
+func (ss *storeServer) getOrCreateServerStatusInCluster(keyspace string, serverId, clusterSize, replicationFactor int) *pb.LocalShardsInCluster {
 
 	ss.statusInClusterLock.Lock()
 	defer ss.statusInClusterLock.Unlock()

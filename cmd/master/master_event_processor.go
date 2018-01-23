@@ -1,9 +1,9 @@
 package master
 
 import (
+	"fmt"
 	"log"
 	"sync"
-	"fmt"
 )
 
 type clientsStat struct {

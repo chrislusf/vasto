@@ -1,9 +1,9 @@
 package master
 
 import (
+	"context"
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
-	"context"
 	"github.com/chrislusf/vasto/topology"
 	"google.golang.org/grpc"
 	"log"
@@ -118,7 +118,7 @@ func allocateServers(cluster *topology.Cluster, dc *dataCenter, serverCount int,
 	return servers, err
 }
 
-func resizeCreateShards(ctx context.Context, keyspace string, clusterSize, targetClusterSize, replicationFactor uint32, stores []*pb.StoreResource) (error) {
+func resizeCreateShards(ctx context.Context, keyspace string, clusterSize, targetClusterSize, replicationFactor uint32, stores []*pb.StoreResource) error {
 
 	return eachStore(stores, func(serverId int, store *pb.StoreResource) error {
 		// log.Printf("connecting to server %d at %s", serverId, store.GetAdminAddress())
@@ -146,7 +146,7 @@ func resizeCreateShards(ctx context.Context, keyspace string, clusterSize, targe
 	})
 }
 
-func resizeCommit(ctx context.Context, keyspace string, clusterSize uint32, stores []*pb.StoreResource) (error) {
+func resizeCommit(ctx context.Context, keyspace string, clusterSize uint32, stores []*pb.StoreResource) error {
 
 	return eachStore(stores, func(serverId int, store *pb.StoreResource) error {
 		// log.Printf("connecting to server %d at %s", serverId, store.GetAdminAddress())
@@ -243,7 +243,7 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 	return nil
 }
 
-func resizeCleanup(ctx context.Context, keyspace string, clusterSize uint32, stores []*pb.StoreResource) (error) {
+func resizeCleanup(ctx context.Context, keyspace string, clusterSize uint32, stores []*pb.StoreResource) error {
 
 	return eachStore(stores, func(serverId int, store *pb.StoreResource) error {
 		// log.Printf("connecting to server %d at %s", serverId, store.GetAdminAddress())

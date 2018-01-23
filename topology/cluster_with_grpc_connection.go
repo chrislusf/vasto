@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"google.golang.org/grpc"
 	"github.com/chrislusf/vasto/pb"
+	"google.golang.org/grpc"
 )
 
 func (cluster *Cluster) WithConnection(name string, serverId int, fn func(*pb.ClusterNode, *grpc.ClientConn) error) error {

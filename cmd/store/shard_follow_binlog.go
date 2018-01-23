@@ -5,17 +5,17 @@ import (
 	"log"
 	"time"
 
+	"context"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
 	"google.golang.org/grpc"
-	"context"
 )
 
 const (
 	syncProgressFlushInterval = time.Minute
 )
 
-func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcConnection *grpc.ClientConn, sourceShardId int, targetClusterSize int, saveFollowProgress bool) (error) {
+func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcConnection *grpc.ClientConn, sourceShardId int, targetClusterSize int, saveFollowProgress bool) error {
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 

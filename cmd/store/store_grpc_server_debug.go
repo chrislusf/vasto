@@ -1,9 +1,9 @@
 package store
 
 import (
+	"fmt"
 	"github.com/chrislusf/vasto/pb"
 	"golang.org/x/net/context"
-	"fmt"
 )
 
 func (ss *storeServer) DebugStore(ctx context.Context, request *pb.Empty) (*pb.Empty, error) {
@@ -16,7 +16,7 @@ func (ss *storeServer) DebugStore(ctx context.Context, request *pb.Empty) (*pb.E
 
 }
 
-func (ss *storeServer) debug() () {
+func (ss *storeServer) debug() {
 
 	ss.statusInClusterLock.RLock()
 	fmt.Println("\n========================================================")

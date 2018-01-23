@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
-	"net"
-	"log"
-	"time"
 	"gopkg.in/fatih/pool.v2"
+	"log"
+	"net"
+	"time"
 )
 
 /*

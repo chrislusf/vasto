@@ -2,9 +2,9 @@ package rocks
 
 import (
 	"fmt"
+	"log"
 	"testing"
 	"time"
-	"log"
 )
 
 func TestAddNormal(t *testing.T) {

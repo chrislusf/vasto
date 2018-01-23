@@ -1,9 +1,9 @@
 package shell
 
 import (
+	"fmt"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
-	"fmt"
 )
 
 func (s *shell) OnShardCreateEvent(cluster *topology.Cluster, resource *pb.StoreResource, shardInfo *pb.ShardInfo) {

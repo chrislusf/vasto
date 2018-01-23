@@ -1,14 +1,14 @@
 package master
 
 import (
+	"context"
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
-	"context"
-	"strings"
-	"strconv"
+	"github.com/chrislusf/vasto/topology"
 	"google.golang.org/grpc"
 	"log"
-	"github.com/chrislusf/vasto/topology"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -164,7 +164,7 @@ func (ms *masterServer) adjustAndBroadcastShardStatus(ctx context.Context, req *
 		}
 		for _, shardInfo := range promotedShards {
 			shardInfo.IsCandidate = false
-			if cluster.ReplaceShard(candidate.StoreResource, shardInfo){
+			if cluster.ReplaceShard(candidate.StoreResource, shardInfo) {
 				ms.notifyPromotion(shardInfo, candidate.GetStoreResource())
 				log.Printf("promoting new shard %v on %s", shardInfo.IdentifierOnThisServer(), candidate.StoreResource.GetAddress())
 			}

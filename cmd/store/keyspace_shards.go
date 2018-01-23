@@ -1,8 +1,8 @@
 package store
 
 import (
-	"sync"
 	"sort"
+	"sync"
 )
 
 type keyspace_name string

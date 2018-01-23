@@ -117,7 +117,7 @@ func (k *keyspace) doGetOrCreateCluster(dataCenterName string, clusterSize int, 
 	return
 }
 
-func (k *keyspace) getOrCreateCluster(dataCenterName string, clusterSize int, replicationFactor int) (*topology.Cluster) {
+func (k *keyspace) getOrCreateCluster(dataCenterName string, clusterSize int, replicationFactor int) *topology.Cluster {
 	cluster, _ := k.doGetOrCreateCluster(dataCenterName, clusterSize, replicationFactor)
 	cluster.SetExpectedSize(clusterSize)
 	cluster.SetReplicationFactor(replicationFactor)

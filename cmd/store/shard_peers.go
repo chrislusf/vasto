@@ -1,12 +1,12 @@
 package store
 
 import (
+	"context"
+	"fmt"
+	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
 	"google.golang.org/grpc"
 	"log"
-	"context"
-	"github.com/chrislusf/vasto/pb"
-	"fmt"
 )
 
 func (s *shard) isBootstrapNeeded(ctx context.Context, bootstrapOption *topology.BootstrapPlan) (bestPeerToCopy topology.ClusterShard, isNeeded bool) {

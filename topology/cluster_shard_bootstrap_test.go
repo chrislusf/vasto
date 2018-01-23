@@ -1,22 +1,22 @@
 package topology
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestBootstrapPeersWhenShrinkingSmall(t *testing.T) {
 	/*
 
-	curr server id  : 0 1 2 3 4 5 6
-	replica shard 0 : 0 1 2 3 4 5 6
-	replica shard 1 : 6 0 1 2 3 4 5
-	replica shard 2 : 5 6 0 1 2 3 4
+		curr server id  : 0 1 2 3 4 5 6
+		replica shard 0 : 0 1 2 3 4 5 6
+		replica shard 1 : 6 0 1 2 3 4 5
+		replica shard 2 : 5 6 0 1 2 3 4
 
-	next server id  : 0 1 2 3 4 5
-	replica shard 0 : 0 1 2 3 4 5
-	replica shard 1 : 5 0 1 2 3 4
-	replica shard 2 : 4 5 0 1 2 3
+		next server id  : 0 1 2 3 4 5
+		replica shard 0 : 0 1 2 3 4 5
+		replica shard 1 : 5 0 1 2 3 4
+		replica shard 2 : 4 5 0 1 2 3
 
 	*/
 
@@ -36,15 +36,15 @@ func TestBootstrapPeersWhenShrinkingSmall(t *testing.T) {
 func TestBootstrapPeersWhenShrinkingBig(t *testing.T) {
 	/*
 
-	curr server id  : 0 1 2 3 4 5 6 7 8 9
-	replica shard 0 : 0 1 2 3 4 5 6 7 8 9
-	replica shard 1 : 9 0 1 2 3 4 5 6 7 8
-	replica shard 2 : 8 9 0 1 2 3 4 5 6 7
+		curr server id  : 0 1 2 3 4 5 6 7 8 9
+		replica shard 0 : 0 1 2 3 4 5 6 7 8 9
+		replica shard 1 : 9 0 1 2 3 4 5 6 7 8
+		replica shard 2 : 8 9 0 1 2 3 4 5 6 7
 
-	next server id  : 0 1 2 3 4 5
-	replica shard 0 : 0 1 2 3 4 5
-	replica shard 1 : 5 0 1 2 3 4
-	replica shard 2 : 4 5 0 1 2 3
+		next server id  : 0 1 2 3 4 5
+		replica shard 0 : 0 1 2 3 4 5
+		replica shard 1 : 5 0 1 2 3 4
+		replica shard 2 : 4 5 0 1 2 3
 
 	*/
 
@@ -66,15 +66,15 @@ func TestBootstrapPeersWhenShrinkingBig(t *testing.T) {
 func TestBootstrapPeersWhenGrowingSmall(t *testing.T) {
 	/*
 
-	curr server id  : 0 1 2 3 4 5
-	replica shard 0 : 0 1 2 3 4 5
-	replica shard 1 : 5 0 1 2 3 4
-	replica shard 2 : 4 5 0 1 2 3
+		curr server id  : 0 1 2 3 4 5
+		replica shard 0 : 0 1 2 3 4 5
+		replica shard 1 : 5 0 1 2 3 4
+		replica shard 2 : 4 5 0 1 2 3
 
-	next server id  : 0 1 2 3 4 5 6
-	replica shard 0 : 0 1 2 3 4 5 6
-	replica shard 1 : 6 0 1 2 3 4 5
-	replica shard 2 : 5 6 0 1 2 3 4
+		next server id  : 0 1 2 3 4 5 6
+		replica shard 0 : 0 1 2 3 4 5 6
+		replica shard 1 : 6 0 1 2 3 4 5
+		replica shard 2 : 5 6 0 1 2 3 4
 
 	*/
 
@@ -111,15 +111,15 @@ func TestBootstrapPeersWhenGrowingSmall(t *testing.T) {
 func TestBootstrapPeersWhenGrowingBig(t *testing.T) {
 	/*
 
-	curr server id  : 0 1 2 3 4 5
-	replica shard 0 : 0 1 2 3 4 5
-	replica shard 1 : 5 0 1 2 3 4
-	replica shard 2 : 4 5 0 1 2 3
+		curr server id  : 0 1 2 3 4 5
+		replica shard 0 : 0 1 2 3 4 5
+		replica shard 1 : 5 0 1 2 3 4
+		replica shard 2 : 4 5 0 1 2 3
 
-	next server id  : 0 1 2 3 4 5 6 7 8 9
-	replica shard 0 : 0 1 2 3 4 5 6 7 8 9
-	replica shard 1 : 9 0 1 2 3 4 5 6 7 8
-	replica shard 2 : 8 9 0 1 2 3 4 5 6 7
+		next server id  : 0 1 2 3 4 5 6 7 8 9
+		replica shard 0 : 0 1 2 3 4 5 6 7 8 9
+		replica shard 1 : 9 0 1 2 3 4 5 6 7 8
+		replica shard 2 : 8 9 0 1 2 3 4 5 6 7
 	*/
 
 	plan := BootstrapPlanWithTopoChange(&BootstrapRequest{6, 6, 6, 10, 3})

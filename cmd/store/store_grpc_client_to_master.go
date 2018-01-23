@@ -9,8 +9,8 @@ import (
 	"github.com/chrislusf/vasto/util"
 	"google.golang.org/grpc"
 	"io"
-	"time"
 	"strings"
+	"time"
 )
 
 func (ss *storeServer) keepConnectedToMasterServer(ctx context.Context) {

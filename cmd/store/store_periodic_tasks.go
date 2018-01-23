@@ -1,8 +1,8 @@
 package store
 
 import (
-	"time"
 	"log"
+	"time"
 )
 
 type PeriodicTask interface {

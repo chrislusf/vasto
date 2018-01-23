@@ -51,8 +51,6 @@ func (f *logSegmentFile) appendEntry(entry *LogEntry) (err error) {
 		log.Printf("append entry size %d, but %d: %v", len(data), writtenDataLen, err)
 	}
 
-
-
 	return err
 }
 

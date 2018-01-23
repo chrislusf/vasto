@@ -1,10 +1,10 @@
 package store
 
 import (
+	"fmt"
 	"github.com/chrislusf/vasto/pb"
 	"golang.org/x/net/context"
 	"log"
-	"fmt"
 	"os"
 )
 

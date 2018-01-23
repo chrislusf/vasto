@@ -11,8 +11,5 @@ func (ms *masterServer) DebugMaster(ctx context.Context, req *pb.Empty) (*pb.Emp
 
 	ms.topo.Debug()
 
-
-
 	return resp, nil
 }
-

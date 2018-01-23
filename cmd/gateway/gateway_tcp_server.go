@@ -3,6 +3,7 @@ package gateway
 import (
 	"bufio"
 	"fmt"
+	"github.com/chrislusf/vasto/client"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/util"
 	"github.com/golang/protobuf/proto"
@@ -10,7 +11,6 @@ import (
 	"log"
 	"net"
 	"time"
-	"github.com/chrislusf/vasto/client"
 )
 
 // Run starts the heartbeating to master and starts accepting requests.

@@ -35,8 +35,7 @@ func FromBytes(b []byte) *Entry {
 	return e
 }
 
-
-func GetPartitionHashFromBytes(b []byte) uint64{
+func GetPartitionHashFromBytes(b []byte) uint64 {
 	return binary.LittleEndian.Uint64(b[0:8])
 }
 

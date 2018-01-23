@@ -3,13 +3,13 @@ package cluster_listener
 import (
 	"time"
 
+	"context"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
-	"sync"
-	"context"
-	"log"
 	"gopkg.in/fatih/pool.v2"
+	"log"
+	"sync"
 )
 
 type keyspace_name string
@@ -69,7 +69,7 @@ func (clusterListener *ClusterListener) GetCluster(keyspace string) (r *topology
 	return
 }
 
-func (clusterListener *ClusterListener) GetOrSetCluster(keyspace string, clusterSize int, replicationFactor int) (*topology.Cluster) {
+func (clusterListener *ClusterListener) GetOrSetCluster(keyspace string, clusterSize int, replicationFactor int) *topology.Cluster {
 	clusterListener.RLock()
 	t, ok := clusterListener.clusters[keyspace_name(keyspace)]
 	if !ok {

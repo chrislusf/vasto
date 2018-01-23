@@ -1,12 +1,12 @@
 package store
 
 import (
+	"fmt"
 	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/topology"
 	"golang.org/x/net/context"
 	"log"
-	"fmt"
 	"os"
-	"github.com/chrislusf/vasto/topology"
 )
 
 // CreateShard
@@ -32,7 +32,7 @@ func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardR
 
 }
 
-func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, replicationFactor int, isCandidate bool, planGen func(shardId int) *topology.BootstrapPlan) (error) {
+func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, replicationFactor int, isCandidate bool, planGen func(shardId int) *topology.BootstrapPlan) error {
 
 	var existingPrimaryShards []*pb.ClusterNode
 	if cluster, found := ss.clusterListener.GetCluster(keyspace); found {

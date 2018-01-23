@@ -1,10 +1,10 @@
 package master
 
 import (
+	"context"
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc"
-	"context"
 )
 
 func (k *keyspace) debug(prefix string) {

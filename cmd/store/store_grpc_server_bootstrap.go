@@ -1,12 +1,12 @@
 package store
 
 import (
-	"github.com/chrislusf/vasto/pb"
+	"bytes"
 	"fmt"
-	"log"
+	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
 	"github.com/dgryski/go-jump"
-	"bytes"
+	"log"
 )
 
 const (

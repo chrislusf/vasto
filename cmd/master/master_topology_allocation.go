@@ -1,14 +1,14 @@
 package master
 
 import (
-	"github.com/chrislusf/vasto/pb"
-	"sort"
-	"math"
-	"fmt"
 	"context"
-	"sync"
+	"fmt"
+	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc"
 	"log"
+	"math"
+	"sort"
+	"sync"
 )
 
 // allocateServers
@@ -59,7 +59,7 @@ func meetRequirement(existingTags, requiredTags []string) bool {
 	return true
 }
 
-func createShards(ctx context.Context, keyspace string, clusterSize, replicationFactor, eachShardSizeGb uint32, stores []*pb.StoreResource) (error) {
+func createShards(ctx context.Context, keyspace string, clusterSize, replicationFactor, eachShardSizeGb uint32, stores []*pb.StoreResource) error {
 
 	return eachStore(stores, func(serverId int, store *pb.StoreResource) error {
 		// log.Printf("connecting to server %d at %s", serverId, store.GetAdminAddress())
@@ -87,7 +87,7 @@ func createShards(ctx context.Context, keyspace string, clusterSize, replication
 	})
 }
 
-func deleteShards(ctx context.Context, req *pb.DeleteClusterRequest, stores []*pb.StoreResource) (error) {
+func deleteShards(ctx context.Context, req *pb.DeleteClusterRequest, stores []*pb.StoreResource) error {
 
 	return eachStore(stores, func(serverId int, store *pb.StoreResource) error {
 		// log.Printf("connecting to server %d at %s", serverId, store.GetAdminAddress())

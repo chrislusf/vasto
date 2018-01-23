@@ -1,8 +1,8 @@
 package rocks
 
 import (
-	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/gorocksdb"
+	"github.com/chrislusf/vasto/pb"
 	"sync/atomic"
 )
 

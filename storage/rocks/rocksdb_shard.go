@@ -1,8 +1,8 @@
 package rocks
 
 import (
-	"github.com/dgryski/go-jump"
 	"github.com/chrislusf/vasto/util"
+	"github.com/dgryski/go-jump"
 )
 
 type shardingCompactionFilter struct {

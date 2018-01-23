@@ -1,9 +1,9 @@
 package cluster_listener
 
 import (
-	"log"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
+	"log"
 )
 
 type ClusterEventLogger struct {

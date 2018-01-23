@@ -1,11 +1,11 @@
 package store
 
 import (
+	"context"
 	"fmt"
+	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
 	"log"
-	"github.com/chrislusf/vasto/topology"
-	"context"
 )
 
 type progressKey struct {

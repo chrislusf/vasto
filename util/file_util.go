@@ -1,13 +1,13 @@
 package util
 
 import (
+	"fmt"
 	"os"
 	"strings"
-	"fmt"
 )
 
 func FileExists(filepath string) bool {
-	_, err := os.Stat(filepath);
+	_, err := os.Stat(filepath)
 	return !os.IsNotExist(err)
 }
 

@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/dgryski/go-jump"
 	"github.com/chrislusf/vasto/pb"
-	"sort"
+	"github.com/dgryski/go-jump"
 	"log"
+	"sort"
 )
 
 type Cluster struct {

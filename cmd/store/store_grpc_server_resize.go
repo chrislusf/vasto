@@ -1,11 +1,11 @@
 package store
 
 import (
+	"fmt"
 	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/topology"
 	"golang.org/x/net/context"
 	"log"
-	"github.com/chrislusf/vasto/topology"
-	"fmt"
 	"os"
 )
 

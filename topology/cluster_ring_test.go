@@ -2,10 +2,10 @@ package topology
 
 import (
 	"fmt"
+	"github.com/chrislusf/vasto/pb"
 	"github.com/stretchr/testify/assert"
 	"math"
 	"testing"
-	"github.com/chrislusf/vasto/pb"
 )
 
 // closure function for benchmarking multiple clusters
@@ -71,7 +71,7 @@ func createRing(hosts int) *Cluster {
 	ring := NewCluster("ks1", "dc1", hosts, replicationFactor)
 	for i := 0; i < hosts; i++ {
 		for r := 0; r < replicationFactor; r++ {
-			shardId := i - r;
+			shardId := i - r
 			if shardId < 0 {
 				shardId += hosts
 			}
