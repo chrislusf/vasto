@@ -28,6 +28,10 @@ func (s *shell) runShell() {
 
 	reg, _ := regexp.Compile(`'.*?'|".*?"|\S+`)
 
+	commandEnv := &CommandEnv{
+		keyspace: *s.option.Keyspace,
+	}
+
 	for {
 		cmd, err := line.Prompt("> ")
 		if err != nil {
@@ -46,11 +50,12 @@ func (s *shell) runShell() {
 			for envIndex = range cmds {
 				if strings.Contains(cmds[envIndex], "=") {
 					kv := strings.SplitN(cmds[envIndex], "=", 2)
-					env[kv[0]] = kv[1]
+					commandEnv.env[kv[0]] = kv[1]
 				} else {
 					break
 				}
 			}
+			commandEnv.env = env
 			cmds = cmds[envIndex:]
 
 			args := make([]string, len(cmds[1:]))
@@ -67,8 +72,7 @@ func (s *shell) runShell() {
 			} else {
 				for _, c := range commands {
 					if c.Name() == cmd {
-						c.SetCilent(s.vastoClient)
-						if err := c.Do(args, env, os.Stderr); err != nil {
+						if err := c.Do(s.vastoClient, args, commandEnv, os.Stderr); err != nil {
 							fmt.Fprintf(os.Stderr, "error: %v\n", err)
 							if err == InvalidArguments {
 								fmt.Println()

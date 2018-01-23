@@ -1,13 +1,13 @@
 package benchmark
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"log"
+	"strings"
 	"sync"
 	"time"
-	"context"
-	"log"
-	"bytes"
-	"strings"
 
 	"github.com/chrislusf/vasto/client"
 	"github.com/gosuri/uiprogress"
@@ -155,13 +155,8 @@ func (b *benchmarker) startThreadsWithClient(ctx context.Context, name string, f
 	requestCountEachClient := int(*b.option.RequestCount / *b.option.ClientCount)
 
 	b.startThreads(name, requestCountEachClient, int(*b.option.RequestCountStart), func(hist *Histogram, start, stop, batchSize int) {
-		c := client.NewClient2(&client.ClientOption{
-			Master:     b.option.Master,
-			DataCenter: b.option.DataCenter,
-			Keyspace:   b.option.Keyspace,
-			ClientName: "benchmarker",
-		})
-		c.StartClient(ctx)
+		c := client.NewClient(ctx, "benchmarker", *b.option.Master, *b.option.DataCenter)
+		c.RegisterForKeyspace(*b.option.Keyspace)
 		fn(hist, c, start, stop, batchSize)
 	})
 

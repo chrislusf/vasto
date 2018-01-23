@@ -1,8 +1,8 @@
 package shell
 
 import (
-	"github.com/chrislusf/vasto/client"
 	"context"
+	"github.com/chrislusf/vasto/client"
 )
 
 type ShellOption struct {
@@ -20,18 +20,11 @@ type shell struct {
 
 func RunShell(option *ShellOption) {
 	var b = &shell{
-		option: option,
-		vastoClient: client.NewClient2(
-			&client.ClientOption{
-				Master:     option.Master,
-				DataCenter: option.DataCenter,
-				Keyspace:   option.Keyspace,
-				ClientName: "shell",
-			},
-		),
+		option:      option,
+		vastoClient: client.NewClient(context.Background(), "shell", *option.Master, *option.DataCenter),
 	}
 
-	b.vastoClient.StartClient(context.Background())
+	b.vastoClient.RegisterForKeyspace(*option.Keyspace)
 
 	if *option.Verbose {
 		b.vastoClient.ClusterListener.RegisterShardEventProcessor(b)

@@ -5,10 +5,10 @@ import (
 	"log"
 	"net"
 
+	"context"
 	"github.com/chrislusf/vasto/client"
 	"github.com/chrislusf/vasto/util/on_interrupt"
 	"os"
-	"context"
 )
 
 type GatewayOption struct {
@@ -28,15 +28,8 @@ type gatewayServer struct {
 func RunGateway(option *GatewayOption) {
 
 	var gs = &gatewayServer{
-		option: option,
-		vastoClient: client.NewClient2(
-			&client.ClientOption{
-				Master:       option.Master,
-				DataCenter:   option.DataCenter,
-				Keyspace:     option.Keyspace,
-				ClientName:   "gateway",
-			},
-		),
+		option:      option,
+		vastoClient: client.NewClient(context.Background(), "gateway", *option.Master, *option.DataCenter),
 	}
 
 	if *option.TcpAddress != "" {
@@ -61,7 +54,7 @@ func RunGateway(option *GatewayOption) {
 		go gs.serveTcp(unixSocketListener)
 	}
 
-	gs.vastoClient.StartClient(context.Background())
+	gs.vastoClient.RegisterForKeyspace(*option.Keyspace)
 
 	fmt.Printf("Vasto gateway ready\n")
 	select {}

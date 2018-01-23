@@ -13,7 +13,6 @@ func init() {
 }
 
 type CommandPrefix struct {
-	client *client.VastoClient
 }
 
 func (c *CommandPrefix) Name() string {
@@ -24,12 +23,8 @@ func (c *CommandPrefix) Help() string {
 	return "prefix [limit lastSeenKey], prefix should also be the partition key"
 }
 
-func (c *CommandPrefix) SetCilent(client *client.VastoClient) {
-	c.client = client
-}
-
-func (c *CommandPrefix) Do(args []string, env map[string]string, writer io.Writer) error {
-	options, err := parseEnv(env)
+func (c *CommandPrefix) Do(vastoClient *client.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {
+	options, err := parseEnv(commandEnv.env)
 	if err != nil {
 		return err
 	}
@@ -48,7 +43,7 @@ func (c *CommandPrefix) Do(args []string, env map[string]string, writer io.Write
 		lastSeenKey = []byte(args[2])
 	}
 
-	keyValues, err := c.client.GetByPrefix(*c.client.Option.Keyspace, nil, prefix, limit, lastSeenKey, options...)
+	keyValues, err := vastoClient.GetByPrefix(commandEnv.keyspace, nil, prefix, limit, lastSeenKey, options...)
 
 	if err != nil {
 		return err

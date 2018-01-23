@@ -11,7 +11,6 @@ func init() {
 }
 
 type CommandDelete struct {
-	client *client.VastoClient
 }
 
 func (c *CommandDelete) Name() string {
@@ -22,19 +21,15 @@ func (c *CommandDelete) Help() string {
 	return "key"
 }
 
-func (c *CommandDelete) SetCilent(client *client.VastoClient) {
-	c.client = client
-}
-
-func (c *CommandDelete) Do(args []string, env map[string]string, writer io.Writer) error {
-	options, err := parseEnv(env)
+func (c *CommandDelete) Do(vastoClient *client.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {
+	options, err := parseEnv(commandEnv.env)
 	if err != nil {
 		return err
 	}
 
 	key := []byte(args[0])
 
-	err = c.client.Delete(*c.client.Option.Keyspace, key, options...)
+	err = vastoClient.Delete(commandEnv.keyspace, key, options...)
 
 	return err
 }

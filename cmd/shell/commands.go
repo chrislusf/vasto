@@ -6,11 +6,15 @@ import (
 	"io"
 )
 
+type CommandEnv struct {
+	env      map[string]string
+	keyspace string
+}
+
 type Command interface {
 	Name() string
 	Help() string
-	Do([]string, map[string]string, io.Writer) error
-	SetCilent(client *client.VastoClient)
+	Do(*client.VastoClient, []string, *CommandEnv, io.Writer) error
 }
 
 var commands = []Command{}

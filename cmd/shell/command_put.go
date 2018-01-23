@@ -12,7 +12,6 @@ func init() {
 }
 
 type CommandPut struct {
-	client *client.VastoClient
 }
 
 func (c *CommandPut) Name() string {
@@ -23,12 +22,8 @@ func (c *CommandPut) Help() string {
 	return "key value"
 }
 
-func (c *CommandPut) SetCilent(client *client.VastoClient) {
-	c.client = client
-}
-
-func (c *CommandPut) Do(args []string, env map[string]string, writer io.Writer) error {
-	options, err := parseEnv(env)
+func (c *CommandPut) Do(vastoClient *client.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {
+	options, err := parseEnv(commandEnv.env)
 	if err != nil {
 		return err
 	}
@@ -41,7 +36,7 @@ func (c *CommandPut) Do(args []string, env map[string]string, writer io.Writer) 
 
 	row := client.NewRow(key, value)
 
-	err = c.client.Put(*c.client.Option.Keyspace, []*client.Row{row}, options...)
+	err = vastoClient.Put(commandEnv.keyspace, []*client.Row{row}, options...)
 
 	fmt.Fprintln(writer)
 

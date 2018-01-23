@@ -17,7 +17,6 @@ func init() {
 }
 
 type CommandDump struct {
-	client *client.VastoClient
 }
 
 func (c *CommandDump) Name() string {
@@ -28,20 +27,16 @@ func (c *CommandDump) Help() string {
 	return "keys|key_value"
 }
 
-func (c *CommandDump) SetCilent(client *client.VastoClient) {
-	c.client = client
-}
-
-func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer) (doError error) {
+func (c *CommandDump) Do(vastoClient *client.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) (doError error) {
 
 	isKeysOnly := true
 	if len(args) > 0 && args[0] == "key_value" {
 		isKeysOnly = false
 	}
 
-	cluster, found := c.client.ClusterListener.GetCluster(*c.client.Option.Keyspace)
+	cluster, found := vastoClient.ClusterListener.GetCluster(commandEnv.keyspace)
 	if !found {
-		return fmt.Errorf("no keyspace %s", *c.client.Option.Keyspace)
+		return fmt.Errorf("no keyspace %s", commandEnv.keyspace)
 	}
 
 	chans := make([]chan *pb.KeyValue, cluster.ExpectedSize())
@@ -60,10 +55,10 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 
 		go cluster.WithConnection("dump", i, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 
-			client := pb.NewVastoStoreClient(grpcConnection)
+			storeClient := pb.NewVastoStoreClient(grpcConnection)
 
 			request := &pb.BootstrapCopyRequest{
-				Keyspace:          *c.client.Option.Keyspace,
+				Keyspace:          commandEnv.keyspace,
 				ShardId:           uint32(node.ShardInfo.ShardId),
 				ClusterSize:       uint32(cluster.ExpectedSize()),
 				TargetClusterSize: uint32(cluster.ExpectedSize()),
@@ -73,7 +68,7 @@ func (c *CommandDump) Do(args []string, env map[string]string, writer io.Writer)
 
 			defer close(ch)
 
-			stream, err := client.BootstrapCopy(context.Background(), request)
+			stream, err := storeClient.BootstrapCopy(context.Background(), request)
 			if err != nil {
 				return fmt.Errorf("client.dump: %v", err)
 			}

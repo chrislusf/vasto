@@ -12,7 +12,6 @@ func init() {
 }
 
 type CommandGet struct {
-	client *client.VastoClient
 }
 
 func (c *CommandGet) Name() string {
@@ -23,12 +22,8 @@ func (c *CommandGet) Help() string {
 	return "key"
 }
 
-func (c *CommandGet) SetCilent(client *client.VastoClient) {
-	c.client = client
-}
-
-func (c *CommandGet) Do(args []string, env map[string]string, writer io.Writer) error {
-	options, err := parseEnv(env)
+func (c *CommandGet) Do(vastoClient *client.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {
+	options, err := parseEnv(commandEnv.env)
 	if err != nil {
 		return err
 	}
@@ -37,7 +32,7 @@ func (c *CommandGet) Do(args []string, env map[string]string, writer io.Writer) 
 	if len(args) == 1 {
 		key := []byte(args[0])
 
-		value, err := c.client.Get(*c.client.Option.Keyspace, key, options...)
+		value, err := vastoClient.Get(commandEnv.keyspace, key, options...)
 
 		if err == nil {
 			fmt.Fprintf(writer, "%s\n", string(value))
@@ -49,7 +44,7 @@ func (c *CommandGet) Do(args []string, env map[string]string, writer io.Writer) 
 		for _, arg := range args {
 			keys = append(keys, []byte(arg))
 		}
-		keyValues, err := c.client.BatchGet(*c.client.Option.Keyspace, keys, options...)
+		keyValues, err := vastoClient.BatchGet(commandEnv.keyspace, keys, options...)
 		if err != nil {
 			return err
 		}
