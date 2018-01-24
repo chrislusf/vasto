@@ -79,7 +79,7 @@ func RunStore(option *StoreOption) {
 
 	for keyspaceName, storeStatus := range ss.statusInCluster {
 		if err := ss.startExistingNodes(keyspaceName, storeStatus); err != nil {
-			log.Fatalf("%s load existing keyspace: %v", ss.storeName, keyspaceName, err)
+			log.Fatalf("%s load existing keyspace %v: %v", ss.storeName, keyspaceName, err)
 		}
 	}
 
