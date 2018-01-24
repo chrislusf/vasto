@@ -70,7 +70,6 @@ func (d *Rocks) AddSstByWriter(name string, writerFunc func(*gorocksdb.SSTFileWr
 	ingestOpts := gorocksdb.NewDefaultIngestExternalFileOptions()
 	defer ingestOpts.Destroy()
 	ingestOpts.SetMoveFiles(true)
-	// TODO Required but not avaiable for now
 	ingestOpts.SetIngestionBehind(true)
 	ingestOpts.SetAllowGlobalSeqNo(true)
 	err = d.db.IngestExternalFile([]string{filePath.Name()}, ingestOpts)

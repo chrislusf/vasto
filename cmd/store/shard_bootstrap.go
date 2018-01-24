@@ -68,7 +68,7 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 
 		log.Printf("bootstrap from %d.%d ...", bestPeerToCopy.ServerId, bestPeerToCopy.ShardId)
 
-		return topology.PrimaryShards(existingPrimaryShards).WithConnection(fmt.Sprintf("%s bootstrap from one exisitng %d.%d", s.String(), bestPeerToCopy.ServerId, bestPeerToCopy.ShardId),
+		return topology.PrimaryShards(existingPrimaryShards).WithConnection(fmt.Sprintf("%s bootstrap from one exisiting %d.%d", s.String(), bestPeerToCopy.ServerId, bestPeerToCopy.ShardId),
 			bestPeerToCopy.ServerId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 				return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapPlan.FromClusterSize, bootstrapPlan.ToClusterSize, int(s.id))
 			})

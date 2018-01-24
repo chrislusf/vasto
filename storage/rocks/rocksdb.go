@@ -38,7 +38,6 @@ func (d *Rocks) setup(path string) {
 	d.path = path
 	d.dbOptions = gorocksdb.NewDefaultOptions()
 	d.dbOptions.SetCreateIfMissing(true)
-	// TODO Required but not avaiable for now
 	d.dbOptions.SetAllowIngestBehind(true)
 	d.dbOptions.SetCompactionFilter(d.compactionFilter)
 
