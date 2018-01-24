@@ -26,4 +26,7 @@ install:
   - go get -t ./...
 
 script:
-- go test ./...
+  - ./go.test.sh
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
