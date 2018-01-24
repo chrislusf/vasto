@@ -65,7 +65,7 @@ func TestAddBySst(t *testing.T) {
 			t.Errorf("get expecting %v, actual %v", "n12345", string(v))
 		}
 	} else {
-		t.Errorf("get by key %d: %v", "k12345", err)
+		t.Errorf("get by key %v: %v", "k12345", err)
 	}
 
 	var counter = count(db)

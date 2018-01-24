@@ -93,7 +93,7 @@ func getFreePort() (int, error) {
 func getPort() int {
 	port, err := getFreePort()
 	if err != nil {
-		log.Fatal("can not get port: %v", err)
+		log.Fatalf("can not get port: %v", err)
 	}
 	return port
 }
