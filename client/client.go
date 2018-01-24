@@ -27,7 +27,7 @@ func NewClient(ctx context.Context, clientName, master, dataCenter string) *Vast
 		ClientName:      clientName,
 		DataCenter:      dataCenter,
 	}
-	c.ClusterListener.RegisterShardEventProcessor(&cluster_listener.ClusterEventLogger{Prefix: "[" + clientName + "]"})
+	c.ClusterListener.RegisterShardEventProcessor(&cluster_listener.ClusterEventLogger{Prefix: clientName+" "})
 	c.ClusterListener.StartListener(ctx, c.Master, c.DataCenter)
 
 	conn, err := grpc.Dial(c.Master, grpc.WithInsecure())
