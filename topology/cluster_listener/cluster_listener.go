@@ -87,7 +87,7 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 
 	clientMessageChan := make(chan *pb.ClientMessage)
 
-	go util.RetryForever(ctx, "cluster listner to master", func() error {
+	go util.RetryForever(ctx, clusterListener.clientName+" cluster listener", func() error {
 		return clusterListener.registerClientAtMasterServer(master, dataCenter, clientMessageChan)
 	}, 2*time.Second)
 
@@ -96,7 +96,7 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 			select {
 			case msg := <-clientMessageChan:
 				if msg.GetCluster() != nil {
-					// log.Printf("listener get cluster: %v", msg.GetCluster())
+					log.Printf("%s listener get cluster: %v", clusterListener.clientName, msg.GetCluster())
 					cluster := clusterListener.GetOrSetCluster(msg.Cluster.Keyspace, int(msg.Cluster.ExpectedClusterSize), int(msg.Cluster.ReplicationFactor))
 					for _, node := range msg.Cluster.Nodes {
 						AddNode(cluster, node)
@@ -105,10 +105,10 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 						}
 					}
 				} else if msg.GetUpdates() != nil {
-					log.Printf("listener get update: %v", msg.GetUpdates())
+					log.Printf("%s listener get update: %v", clusterListener.clientName, msg.GetUpdates())
 					cluster, found := clusterListener.GetCluster(msg.Updates.Keyspace)
 					if !found {
-						log.Printf("no keyspace %s found to update", msg.Updates.Keyspace)
+						log.Printf("%s no keyspace %s found to update", clusterListener.clientName, msg.Updates.Keyspace)
 						continue
 					}
 					for _, node := range msg.Updates.Nodes {
@@ -136,15 +136,15 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 						}
 					}
 				} else if msg.GetResize() != nil {
-					log.Printf("listener get resize: %v", msg.GetResize())
+					log.Printf("%s listener get resize: %v", clusterListener.clientName, msg.GetResize())
 					r, found := clusterListener.GetCluster(msg.Resize.Keyspace)
 					if !found {
-						log.Printf("no keyspace %s found to resize", msg.Resize.Keyspace)
+						log.Printf("%s no keyspace %s found to resize", clusterListener.clientName, msg.Resize.Keyspace)
 						continue
 					}
 					r.SetExpectedSize(int(msg.Resize.TargetClusterSize))
 				} else {
-					log.Printf("unknown message %v", msg)
+					log.Printf("%s unknown message %v", clusterListener.clientName, msg)
 				}
 			}
 		}
@@ -163,12 +163,15 @@ func (clusterListener *ClusterListener) SetVerboseLog(verbose bool) {
 func (clusterListener *ClusterListener) HasConnectedKeyspace(keyspace string) bool {
 	cluster, found := clusterListener.GetCluster(keyspace)
 	if !found {
+		// println("not found cluster")
 		return false
 	}
 	if cluster.CurrentSize() <= 0 {
+		// println("cluster current size", cluster.CurrentSize())
 		return false
 	}
 	if cluster.CurrentSize() != cluster.ExpectedSize() {
+		// println("cluster current size", cluster.CurrentSize(), "expected", cluster.ExpectedSize())
 		return false
 	}
 	return true

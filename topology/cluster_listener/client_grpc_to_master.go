@@ -14,7 +14,7 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 	msgChan chan *pb.ClientMessage) error {
 	grpcConnection, err := grpc.Dial(master, grpc.WithInsecure())
 	if err != nil {
-		return fmt.Errorf("fail to dial %s: %v", master, err)
+		return fmt.Errorf("%s fail to dial %s: %v", clusterListener.clientName, master, err)
 	}
 	defer grpcConnection.Close()
 
@@ -22,14 +22,15 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 
 	stream, err := masterClient.RegisterClient(context.Background())
 	if err != nil {
-		return fmt.Errorf("register client on master %v: %v", master, err)
+		return fmt.Errorf("%s register client on master %v: %v", clusterListener.clientName, master, err)
 	}
 
+	// TODO possible goroutine leaks if retry happens
 	go func() {
 		for keyspace, _ := range clusterListener.clusters {
-			// log.Printf("register cluster keyspace(%v) datacenter(%v)", keyspace, dataCenter)
+			log.Printf("%s register cluster keyspace(%v) datacenter(%v)", clusterListener.clientName, keyspace, dataCenter)
 			if err := registerForClusterAtMaster(stream, string(keyspace), dataCenter, false, clusterListener.clientName); err != nil {
-				log.Printf("register cluster keyspace(%v) datacenter(%v): %v", keyspace, dataCenter, err)
+				log.Printf("%s register cluster keyspace(%v) datacenter(%v): %v", clusterListener.clientName, keyspace, dataCenter, err)
 				return
 			}
 		}
@@ -37,15 +38,15 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 		for {
 			msg := <-clusterListener.keyspaceFollowMessageChan
 			if msg.isUnfollow {
-				log.Printf("unfollow cluster keyspace(%v) datacenter(%v)", msg.keyspace, dataCenter)
+				log.Printf("%s unfollow cluster keyspace(%v) datacenter(%v)", clusterListener.clientName, msg.keyspace, dataCenter)
 			} else {
-				log.Printf("register cluster new keyspace(%v) datacenter(%v)", msg.keyspace, dataCenter)
+				log.Printf("%s register cluster new keyspace(%v) datacenter(%v)", clusterListener.clientName, msg.keyspace, dataCenter)
 			}
 			if err := registerForClusterAtMaster(stream, string(msg.keyspace), dataCenter, msg.isUnfollow, clusterListener.clientName); err != nil {
 				if msg.isUnfollow {
-					log.Printf("unfollow cluster keyspace(%v) datacenter(%v): %v", msg.keyspace, dataCenter, err)
+					log.Printf("%s unfollow cluster keyspace(%v) datacenter(%v): %v", clusterListener.clientName, msg.keyspace, dataCenter, err)
 				} else {
-					log.Printf("register cluster new keyspace(%v) datacenter(%v): %v", msg.keyspace, dataCenter, err)
+					log.Printf("%s register cluster new keyspace(%v) datacenter(%v): %v", clusterListener.clientName, msg.keyspace, dataCenter, err)
 				}
 				return
 			}
@@ -55,7 +56,7 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 
 	// log.Printf("Reporting allocated %v", as.allocatedResource)
 
-	// log.Printf("register client to master %s", master)
+	log.Printf("%s from %s register client to master %s", clusterListener.clientName, dataCenter, master)
 
 	for {
 		msg, err := stream.Recv()
@@ -67,7 +68,7 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 			return fmt.Errorf("client receive topology : %v", err)
 		}
 		msgChan <- msg
-		// log.Printf("client received message %v", msg)
+		// log.Printf("%s client received message %v", clusterListener.clientName, msg)
 	}
 
 }
@@ -83,7 +84,7 @@ func registerForClusterAtMaster(stream pb.VastoMaster_RegisterClientClient, keys
 	}
 
 	if err := stream.Send(clientHeartbeat); err != nil {
-		return fmt.Errorf("client send heartbeat: %v", err)
+		return fmt.Errorf("%s client send heartbeat: %v", clientName, err)
 	}
 	return nil
 }

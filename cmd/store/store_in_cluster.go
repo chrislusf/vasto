@@ -31,7 +31,7 @@ func (ss *storeServer) listExistingClusters() error {
 			log.Printf("read file %s: %v", fullPath, err)
 			continue
 		}
-		log.Printf("load cluster %s config from %s", keyspaceName, fullPath)
+		log.Printf("%s load cluster %s config from %s", ss.storeName, keyspaceName, fullPath)
 
 		status := &pb.LocalShardsInCluster{}
 
@@ -56,7 +56,7 @@ func (ss *storeServer) saveClusterConfig(status *pb.LocalShardsInCluster, keyspa
 
 	fullPath := fmt.Sprintf("%s/%s/%s", *ss.option.Dir, keyspaceName, ClusterConfigFile)
 
-	log.Printf("save cluster %s to %s", keyspaceName, fullPath)
+	log.Printf("%s save cluster %s to %s", ss.storeName, keyspaceName, fullPath)
 
 	if err := ioutil.WriteFile(fullPath, []byte(txt), 0640); err == nil {
 		ss.statusInCluster[keyspaceName] = status

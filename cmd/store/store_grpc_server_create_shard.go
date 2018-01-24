@@ -13,14 +13,14 @@ import (
 // 1. if the shard is already created, do nothing
 func (ss *storeServer) CreateShard(ctx context.Context, request *pb.CreateShardRequest) (*pb.CreateShardResponse, error) {
 
-	log.Printf("create shard %v", request)
+	log.Printf("%s create shard %v", ss.storeName, request)
 	err := ss.createShards(request.Keyspace, int(request.ServerId), int(request.ClusterSize), int(request.ReplicationFactor), false, func(shardId int) *topology.BootstrapPlan {
 		return &topology.BootstrapPlan{
 			ToClusterSize: int(request.ClusterSize),
 		}
 	})
 	if err != nil {
-		log.Printf("create keyspace %s: %v", request.Keyspace, err)
+		log.Printf("%s create keyspace %s: %v", ss.storeName, request.Keyspace, err)
 		return &pb.CreateShardResponse{
 			Error: err.Error(),
 		}, nil
@@ -43,7 +43,7 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 				log.Printf("missing server %d", i)
 			}
 		}
-		log.Printf("existing shards: %+v", existingPrimaryShards)
+		log.Printf("%s existing shards: %+v", ss.storeName, existingPrimaryShards)
 	}
 
 	ss.clusterListener.AddNewKeyspace(keyspace, clusterSize, replicationFactor)
@@ -51,13 +51,13 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 	if _, found := ss.keyspaceShards.getShards(keyspace); found {
 		localShards, foundLocalShards := ss.getServerStatusInCluster(keyspace)
 		if !foundLocalShards {
-			return fmt.Errorf("missing local shard status for keyspace %s", keyspace)
+			return fmt.Errorf("%s missing local shard status for keyspace %s", ss.storeName, keyspace)
 		}
 		if int(localShards.ClusterSize) == clusterSize && int(localShards.ReplicationFactor) == replicationFactor {
-			return fmt.Errorf("keyspace %s already exists", keyspace)
+			return fmt.Errorf("%s keyspace %s already exists", ss.storeName, keyspace)
 		}
 		if serverId != int(localShards.Id) {
-			return fmt.Errorf("local server id = %d, not matching requested server id %d", localShards.Id, serverId)
+			return fmt.Errorf("%s local server id = %d, not matching requested server id %d", ss.storeName, localShards.Id, serverId)
 		}
 	}
 
@@ -80,21 +80,21 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 
 		shard, foundShard := ss.keyspaceShards.getShard(keyspace, shard_id(clusterShard.ShardId))
 		if !foundShard {
-			log.Printf("creating new shard %s", shardInfo.IdentifierOnThisServer())
+			log.Printf("%s creating new shard %s", ss.storeName, shardInfo.IdentifierOnThisServer())
 			var shardCreationError error
 			if shard, shardCreationError = ss.openShard(shardInfo); shardCreationError != nil {
 				return fmt.Errorf("creating %s: %v", shardInfo.IdentifierOnThisServer(), shardCreationError)
 			}
-			log.Printf("created new shard %s", shard.String())
+			log.Printf("%s created new shard %s", ss.storeName, shard.String())
 		} else {
-			log.Printf("found existing shard %s", shard.String())
+			log.Printf("%s found existing shard %s", ss.storeName, shard.String())
 		}
 
 		plan := planGen(clusterShard.ShardId)
-		log.Printf("shard %s bootstrap plan: %s", shardInfo.IdentifierOnThisServer(), plan.String())
+		log.Printf("%s shard %s bootstrap plan: %s", ss.storeName, shardInfo.IdentifierOnThisServer(), plan.String())
 
 		if err := shard.startWithBootstrapPlan(plan, ss.selfAdminAddress(), existingPrimaryShards); err != nil {
-			return fmt.Errorf("bootstrap shard %v : %v", shardInfo.IdentifierOnThisServer(), err)
+			return fmt.Errorf("%s bootstrap shard %v : %v", ss.storeName, shardInfo.IdentifierOnThisServer(), err)
 		}
 
 		localShards.ShardMap[uint32(clusterShard.ShardId)] = shardInfo
@@ -112,11 +112,11 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.LocalShardsInCluster) error {
 	for _, shardInfo := range storeStatus.ShardMap {
 		if shard, shardOpenError := ss.openShard(shardInfo); shardOpenError != nil {
-			return fmt.Errorf("open %s: %v", shardInfo.IdentifierOnThisServer(), shardOpenError)
+			return fmt.Errorf("%s open %s: %v", ss.storeName, shardInfo.IdentifierOnThisServer(), shardOpenError)
 		} else {
 
 			for fileId, meta := range shard.db.GetLiveFilesMetaData() {
-				log.Printf("%d name:%s, level:%d size:%d SmallestKey:%s LargestKey:%s", fileId, meta.Name, meta.Level, meta.Size, string(meta.SmallestKey), string(meta.LargestKey))
+				log.Printf("%s %d name:%s, level:%d size:%d SmallestKey:%s LargestKey:%s", ss.storeName, fileId, meta.Name, meta.Level, meta.Size, string(meta.SmallestKey), string(meta.LargestKey))
 				if meta.Level >= 6 {
 					shard.hasBackfilled = true
 				}
@@ -127,7 +127,7 @@ func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.L
 				IsNormalStartBootstrapNeeded: *ss.option.Bootstrap,
 				ToClusterSize:                int(shardInfo.ClusterSize),
 			}, ss.selfAdminAddress(), nil); err != nil {
-				return fmt.Errorf("bootstrap shard %v : %v", shardInfo.IdentifierOnThisServer(), err)
+				return fmt.Errorf("%s bootstrap shard %v : %v", ss.storeName, shardInfo.IdentifierOnThisServer(), err)
 			}
 		}
 	}
@@ -141,8 +141,8 @@ func (ss *storeServer) openShard(shardInfo *pb.ShardInfo) (shard *shard, err err
 	dir := fmt.Sprintf("%s/%s/%d", *ss.option.Dir, shardInfo.KeyspaceName, shardInfo.ShardId)
 	err = os.MkdirAll(dir, 0755)
 	if err != nil {
-		log.Printf("mkdir %s: %v", dir, err)
-		return nil, fmt.Errorf("mkdir %s: %v", dir, err)
+		log.Printf("%s mkdir %s: %v", ss.storeName, dir, err)
+		return nil, fmt.Errorf("%s mkdir %s: %v", ss.storeName, dir, err)
 	}
 
 	shard = newShard(shardInfo.KeyspaceName, dir, int(shardInfo.ServerId), int(shardInfo.ShardId), cluster, ss.clusterListener,

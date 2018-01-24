@@ -79,7 +79,7 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 						for {
 							select {
 							case msg := <-ch:
-								// fmt.Printf("master received message %v\n", msg)
+								// fmt.Printf("master sends message %v\n", msg)
 								if msg == nil {
 									return
 								}
@@ -92,6 +92,8 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 							}
 						}
 					}()
+				}else {
+					log.Printf("master add client %s: %v", clientName, err)
 				}
 
 			}

@@ -40,11 +40,11 @@ func (ss *storeServer) registerAtMasterServer() error {
 
 	stream, err := client.RegisterStore(context.Background())
 	if err != nil {
-		log.Printf("SendHeartbeat error: %v", err)
+		log.Printf("%s SendHeartbeat error: %v", ss.storeName, err)
 		return err
 	}
 
-	log.Printf("register store to master %s", *ss.option.Master)
+	log.Printf("%s register store to master %s", ss.storeName, *ss.option.Master)
 
 	storeHeartbeat := &pb.StoreHeartbeat{
 		StoreResource: &pb.StoreResource{
@@ -116,10 +116,10 @@ func (ss *storeServer) registerAtMasterServer() error {
 func (ss *storeServer) sendShardInfoToMaster(ShardInfo *pb.ShardInfo, status pb.ShardInfo_Status) {
 	t := ShardInfo.Clone()
 	t.Status = status
-	log.Printf("Sending master: %v", t)
+	log.Printf("%s sending master: %v", ss.storeName, t)
 	ss.ShardInfoChan <- t
 }
 
 func (ss *storeServer) processStoreMessage(msg *pb.StoreMessage) {
-	log.Printf("Received message %v", msg)
+	log.Printf("%s received message %v", ss.storeName, msg)
 }

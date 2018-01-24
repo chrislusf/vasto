@@ -44,14 +44,15 @@ type storeServer struct {
 	statusInClusterLock sync.RWMutex
 	periodTasks         []PeriodicTask
 	keyspaceShards      *keyspaceShards
+	storeName           string
 }
 
 func RunStore(option *StoreOption) {
 
-	tcpAddress := fmt.Sprintf("%s:%d", *option.ListenHost, *option.TcpPort)
+	storeName := fmt.Sprintf("[store@%s:%d]", *option.ListenHost, *option.TcpPort)
 
 	ctx := context.Background()
-	clusterListener := cluster_listener.NewClusterClient(*option.DataCenter, tcpAddress)
+	clusterListener := cluster_listener.NewClusterClient(*option.DataCenter, storeName)
 
 	var ss = &storeServer{
 		option:          option,
@@ -59,13 +60,14 @@ func RunStore(option *StoreOption) {
 		ShardInfoChan:   make(chan *pb.ShardInfo),
 		statusInCluster: make(map[string]*pb.LocalShardsInCluster),
 		keyspaceShards:  newKeyspaceShards(),
+		storeName:       storeName,
 	}
 	go ss.startPeriodTasks()
 
 	// ss.clusterListener.RegisterShardEventProcessor(&cluster_listener.ClusterEventLogger{})
 
 	if err := ss.listExistingClusters(); err != nil {
-		log.Fatalf("load existing cluster files: %v", err)
+		log.Fatalf("%s load existing cluster files: %v", ss.storeName, err)
 	}
 
 	// connect to the master
@@ -77,7 +79,7 @@ func RunStore(option *StoreOption) {
 
 	for keyspaceName, storeStatus := range ss.statusInCluster {
 		if err := ss.startExistingNodes(keyspaceName, storeStatus); err != nil {
-			log.Fatalf("load existing keyspace: %v", keyspaceName, err)
+			log.Fatalf("%s load existing keyspace: %v", ss.storeName, keyspaceName, err)
 		}
 	}
 
@@ -87,7 +89,7 @@ func RunStore(option *StoreOption) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("store admin %s", grpcAddress)
+		log.Printf("%s store admin %s", ss.storeName, grpcAddress)
 		go ss.serveGrpc(grpcListener)
 	}
 
@@ -119,11 +121,11 @@ func RunStore(option *StoreOption) {
 				c.is.End(data)
 				return
 			}
-			request := data[4 : 4+int(length)]
+			request := data[4: 4+int(length)]
 
 			response, err := ss.handleInputOutput(request)
 			if err != nil {
-				log.Printf("handleInputOutput: %v", err)
+				log.Printf("%s handleInputOutput: %v", ss.storeName, err)
 				c.is.End(data[4+int(length):])
 				return
 			}
@@ -136,7 +138,7 @@ func RunStore(option *StoreOption) {
 			c.is.End(data[4+int(length):])
 			return
 		}
-		log.Printf("Vasto store starts on %s", *option.Dir)
+		log.Printf("%s Vasto store starts on %s", ss.storeName, *option.Dir)
 		if err := evio.Serve(events, fmt.Sprintf("tcp://%s", tcpAddress), fmt.Sprintf("unix://%s", unixSocket)); err != nil {
 			log.Printf("evio.Serve: %v", err)
 		}
@@ -147,7 +149,7 @@ func RunStore(option *StoreOption) {
 			if err != nil {
 				log.Fatal(err)
 			}
-			log.Printf("listens on tcp %v", tcpAddress)
+			log.Printf("%s listens on tcp %v", ss.storeName, tcpAddress)
 			go ss.serveTcp(tcpListener)
 		}
 
@@ -171,7 +173,7 @@ func RunStore(option *StoreOption) {
 		}
 	}
 
-	log.Printf("Vasto store starts on %s", *option.Dir)
+	log.Printf("%s Vasto store starts on %s", ss.storeName, *option.Dir)
 
 	select {}
 
