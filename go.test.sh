@@ -5,8 +5,7 @@ echo "" > coverage.txt
 
 for d in $(go list ./... \
 	| grep -v vendor  \
-	| grep -v "pb" \
-	| grep -v "doc"); do
+	| grep -v "vasto/pb"); do
     go test -coverprofile=profile.out -covermode=atomic $d
     if [ -f profile.out ]; then
         cat profile.out >> coverage.txt
