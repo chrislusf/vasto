@@ -25,8 +25,12 @@ install:
   - popd
   - go get -t ./...
 
+before_script:
+  - go get github.com/go-playground/overalls
+
 script:
-  - ./go.test.sh
+  - overalls -project=github.com/chrislusf/vasto -covermode=count -debug
+  - mv overalls.coverprofile coverage.txt
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
