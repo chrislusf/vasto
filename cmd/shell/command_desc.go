@@ -1,4 +1,4 @@
-package admin
+package shell
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/client"
 )
 
 func init() {
@@ -13,7 +14,6 @@ func init() {
 }
 
 type CommandDesc struct {
-	masterClient pb.VastoMasterClient
 }
 
 func (c *CommandDesc) Name() string {
@@ -21,14 +21,10 @@ func (c *CommandDesc) Name() string {
 }
 
 func (c *CommandDesc) Help() string {
-	return "[keyspaces|datacenters|<keyspace> <data center>]"
+	return "keyspaces|datacenters|<keyspace> <data center>"
 }
 
-func (c *CommandDesc) SetMasterCilent(masterClient pb.VastoMasterClient) {
-	c.masterClient = masterClient
-}
-
-func (c *CommandDesc) Do(args []string, out io.Writer) error {
+func (c *CommandDesc) Do(vastoClient *client.VastoClient, args []string, commandEnv *CommandEnv, out io.Writer) error {
 
 	param := "keyspaces"
 	if len(args) > 0 {
@@ -36,7 +32,7 @@ func (c *CommandDesc) Do(args []string, out io.Writer) error {
 	}
 	if param == "keyspaces" {
 
-		descResponse, err := c.masterClient.Describe(
+		descResponse, err := vastoClient.MasterClient.Describe(
 			context.Background(),
 			&pb.DescribeRequest{
 				DescKeyspaces: &pb.DescribeRequest_DescKeyspaces{},
@@ -62,7 +58,7 @@ func (c *CommandDesc) Do(args []string, out io.Writer) error {
 
 	} else if param == "datacenters" {
 
-		descResponse, err := c.masterClient.Describe(
+		descResponse, err := vastoClient.MasterClient.Describe(
 			context.Background(),
 			&pb.DescribeRequest{
 				DescDataCenters: &pb.DescribeRequest_DescDataCenters{},
@@ -84,7 +80,7 @@ func (c *CommandDesc) Do(args []string, out io.Writer) error {
 
 	} else if len(args) == 2 {
 
-		descResponse, err := c.masterClient.Describe(
+		descResponse, err := vastoClient.MasterClient.Describe(
 			context.Background(),
 			&pb.DescribeRequest{
 				DescCluster: &pb.DescribeRequest_DescCluster{
@@ -121,17 +117,4 @@ func (c *CommandDesc) Do(args []string, out io.Writer) error {
 	}
 
 	return nil
-}
-
-func printCluster(out io.Writer, cluster *pb.Cluster) {
-	if cluster != nil {
-		fmt.Fprintf(out, "Cluster Expected Size: %d\n", cluster.ExpectedClusterSize)
-		fmt.Fprintf(out, "Cluster Current  Size: %d\n", cluster.CurrentClusterSize)
-
-		for _, node := range cluster.Nodes {
-			fmt.Fprintf(out, "        * shard %v server %v %v\n",
-				node.ShardInfo.ShardId, node.ShardInfo.ServerId, node.StoreResource.Address)
-		}
-
-	}
 }

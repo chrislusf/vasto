@@ -21,10 +21,12 @@ type shell struct {
 func RunShell(option *ShellOption) {
 	var b = &shell{
 		option:      option,
-		vastoClient: client.NewClient(context.Background(), "shell", *option.Master, *option.DataCenter),
+		vastoClient: client.NewClient(context.Background(), "", *option.Master, *option.DataCenter),
 	}
 
-	b.vastoClient.RegisterForKeyspace(*option.Keyspace)
+	if *option.Keyspace != ""{
+		b.vastoClient.UseKeyspace(*option.Keyspace)
+	}
 
 	if *option.Verbose {
 		b.vastoClient.ClusterListener.RegisterShardEventProcessor(b)

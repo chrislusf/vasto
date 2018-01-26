@@ -54,7 +54,7 @@ func RunGateway(option *GatewayOption) {
 		go gs.serveTcp(unixSocketListener)
 	}
 
-	gs.vastoClient.RegisterForKeyspace(*option.Keyspace)
+	gs.vastoClient.UseKeyspace(*option.Keyspace)
 
 	fmt.Printf("Vasto gateway ready\n")
 	select {}

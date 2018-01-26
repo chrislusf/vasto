@@ -7,8 +7,9 @@ import (
 )
 
 type CommandEnv struct {
-	env      map[string]string
-	keyspace string
+	env        map[string]string
+	keyspace   string
+	dataCenter string
 }
 
 type Command interface {

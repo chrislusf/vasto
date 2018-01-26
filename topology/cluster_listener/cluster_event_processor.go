@@ -16,7 +16,7 @@ type ShardEventProcessor interface {
 
 func (clusterListener *ClusterListener) RegisterShardEventProcessor(shardEventProcess ShardEventProcessor) {
 
-	log.Printf("RegisterShardEventProcessor: %+v", shardEventProcess)
+	// log.Printf("RegisterShardEventProcessor: %+v", shardEventProcess)
 
 	found := -1
 	for k, p := range clusterListener.shardEventProcessors {

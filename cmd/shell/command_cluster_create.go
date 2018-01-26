@@ -1,11 +1,11 @@
-package admin
+package shell
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"strconv"
 
+	"github.com/chrislusf/vasto/client"
 	"github.com/chrislusf/vasto/pb"
 )
 
@@ -14,7 +14,6 @@ func init() {
 }
 
 type CommandCreateKeyspace struct {
-	masterClient pb.VastoMasterClient
 }
 
 func (c *CommandCreateKeyspace) Name() string {
@@ -25,11 +24,7 @@ func (c *CommandCreateKeyspace) Help() string {
 	return "cluster <keysapce> <datacenter> <server count> <replication factor>"
 }
 
-func (c *CommandCreateKeyspace) SetMasterCilent(masterClient pb.VastoMasterClient) {
-	c.masterClient = masterClient
-}
-
-func (c *CommandCreateKeyspace) Do(args []string, out io.Writer) (err error) {
+func (c *CommandCreateKeyspace) Do(vastoClient *client.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) (err error) {
 
 	if len(args) != 5 {
 		return InvalidArguments
@@ -61,24 +56,26 @@ func (c *CommandCreateKeyspace) Do(args []string, out io.Writer) (err error) {
 		return InvalidArguments
 	}
 
-	resp, err := c.masterClient.CreateCluster(
-		context.Background(),
-		&pb.CreateClusterRequest{
-			DataCenter:        dc,
-			Keyspace:          keyspace,
-			ClusterSize:       uint32(clusterSize),
-			ReplicationFactor: uint32(replicationFactor),
-		},
-	)
+	cluster, err := vastoClient.CreateCluster(keyspace, dc, int(clusterSize), int(replicationFactor))
 
 	if err != nil {
 		return fmt.Errorf("create cluster request: %v", err)
 	}
-	if resp.Error != "" {
-		return fmt.Errorf("create cluster: %v", resp.Error)
-	}
 
-	printCluster(out, resp.Cluster)
+	printCluster(writer, cluster)
 
 	return nil
+}
+
+func printCluster(out io.Writer, cluster *pb.Cluster) {
+	if cluster != nil {
+		fmt.Fprintf(out, "Cluster Expected Size: %d\n", cluster.ExpectedClusterSize)
+		fmt.Fprintf(out, "Cluster Current  Size: %d\n", cluster.CurrentClusterSize)
+
+		for _, node := range cluster.Nodes {
+			fmt.Fprintf(out, "        * shard %v server %v %v\n",
+				node.ShardInfo.ShardId, node.ShardInfo.ServerId, node.StoreResource.Address)
+		}
+
+	}
 }

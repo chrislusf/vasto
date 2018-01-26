@@ -22,13 +22,13 @@ func TestOpen(t *testing.T) {
 
 	c := client.NewClient(context.Background(), "[testing]", fmt.Sprintf("localhost:%d", masterPort), "dc1")
 
-	c.CreateKeyspace("ks1", 1, 1)
+	c.CreateCluster("ks1", "dc1", 1, 1)
 
 	log.Println("created keyspace ks1")
 
-	c.RegisterForKeyspace("ks1")
+	c.UseKeyspace("ks1")
 
-	log.Println("RegisterForKeyspace ks1")
+	log.Println("UseKeyspace ks1")
 
 	c.Put("ks1", []*client.Row{
 		client.NewRow([]byte("x1"), []byte("y2")),
@@ -87,7 +87,7 @@ func getFreePort() (int, error) {
 		return 0, err
 	}
 	defer l.Close()
-	return l.Addr().(*net.TCPAddr).Port-10000, nil
+	return l.Addr().(*net.TCPAddr).Port - 10000, nil
 }
 
 func getPort() int {

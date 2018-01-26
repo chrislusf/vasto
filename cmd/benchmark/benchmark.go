@@ -156,7 +156,7 @@ func (b *benchmarker) startThreadsWithClient(ctx context.Context, name string, f
 
 	b.startThreads(name, requestCountEachClient, int(*b.option.RequestCountStart), func(hist *Histogram, start, stop, batchSize int) {
 		c := client.NewClient(ctx, "benchmarker", *b.option.Master, *b.option.DataCenter)
-		c.RegisterForKeyspace(*b.option.Keyspace)
+		c.UseKeyspace(*b.option.Keyspace)
 		fn(hist, c, start, stop, batchSize)
 	})
 

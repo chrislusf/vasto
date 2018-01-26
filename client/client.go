@@ -16,7 +16,7 @@ type VastoClient struct {
 	DataCenter      string
 	ClientName      string
 	ClusterListener *cluster_listener.ClusterListener
-	masterClient    pb.VastoMasterClient
+	MasterClient    pb.VastoMasterClient
 }
 
 func NewClient(ctx context.Context, clientName, master, dataCenter string) *VastoClient {
@@ -27,32 +27,39 @@ func NewClient(ctx context.Context, clientName, master, dataCenter string) *Vast
 		ClientName:      clientName,
 		DataCenter:      dataCenter,
 	}
-	c.ClusterListener.RegisterShardEventProcessor(&cluster_listener.ClusterEventLogger{Prefix: clientName+" "})
+	c.ClusterListener.RegisterShardEventProcessor(&cluster_listener.ClusterEventLogger{Prefix: clientName + " "})
 	c.ClusterListener.StartListener(ctx, c.Master, c.DataCenter)
 
 	conn, err := grpc.Dial(c.Master, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("%s fail to dial %v: %v", c.ClientName, c.Master, err)
 	}
-	c.masterClient = pb.NewVastoMasterClient(conn)
+	c.MasterClient = pb.NewVastoMasterClient(conn)
 
 	return c
 }
 
-func (c *VastoClient) RegisterForKeyspace(keyspace string) {
+func (c *VastoClient) UseKeyspace(keyspace string) {
 	c.ClusterListener.AddNewKeyspace(keyspace, 0, 0)
 	for !c.ClusterListener.HasConnectedKeyspace(keyspace) {
 		time.Sleep(100 * time.Millisecond)
 	}
 }
 
-func (c *VastoClient) CreateKeyspace(keyspace string, clusterSize, replicationFactor int) error {
+func (c *VastoClient) CreateCluster(keyspace, dataCenter string, clusterSize, replicationFactor int) (*pb.Cluster, error) {
 
-	log.Printf("%s from %s sending request to %v to create keyspace:%v size:%v replicationFactor:%v", c.ClientName, c.DataCenter, c.Master, keyspace, clusterSize, replicationFactor)
-	resp, err := c.masterClient.CreateCluster(
+	if replicationFactor == 0 {
+		return nil, fmt.Errorf("replication factor %d should be greater than 0", replicationFactor)
+	}
+
+	if replicationFactor > clusterSize {
+		return nil, fmt.Errorf("replication factor %d should not be bigger than cluster size %d", replicationFactor, clusterSize)
+	}
+
+	resp, err := c.MasterClient.CreateCluster(
 		c.ctx,
 		&pb.CreateClusterRequest{
-			DataCenter:        c.DataCenter,
+			DataCenter:        dataCenter,
 			Keyspace:          keyspace,
 			ClusterSize:       uint32(clusterSize),
 			ReplicationFactor: uint32(replicationFactor),
@@ -60,10 +67,76 @@ func (c *VastoClient) CreateKeyspace(keyspace string, clusterSize, replicationFa
 	)
 
 	if err != nil {
-		return fmt.Errorf("%s create cluster request: %v", c.ClientName, err)
+		return nil, fmt.Errorf("%s create cluster request: %v", c.ClientName, err)
 	}
 	if resp.Error != "" {
-		return fmt.Errorf("%s create cluster: %v", c.ClientName, resp.Error)
+		return nil, fmt.Errorf("%s create cluster: %v", c.ClientName, resp.Error)
+	}
+
+	return resp.Cluster, nil
+
+}
+
+func (c *VastoClient) DeleteCluster(keyspace, dataCenter string) (error) {
+
+	resp, err := c.MasterClient.DeleteCluster(
+		c.ctx,
+		&pb.DeleteClusterRequest{
+			DataCenter: dataCenter,
+			Keyspace:   keyspace,
+		},
+	)
+
+	if err != nil {
+		return fmt.Errorf("delete cluster request: %v", err)
+	}
+	if resp.Error != "" {
+		return fmt.Errorf("delete cluster: %v", resp.Error)
+	}
+
+	return nil
+
+}
+
+func (c *VastoClient) ResizeCluster(keyspace, dataCenter string, newClusterSize int) (error) {
+
+	resp, err := c.MasterClient.ResizeCluster(
+		c.ctx,
+		&pb.ResizeRequest{
+			DataCenter:        dataCenter,
+			Keyspace:          keyspace,
+			TargetClusterSize: uint32(newClusterSize),
+		},
+	)
+
+	if err != nil {
+		return fmt.Errorf("resize request: %v", err)
+	}
+	if resp.Error != "" {
+		return fmt.Errorf("resize: %v", resp.Error)
+	}
+
+	return nil
+
+}
+
+func (c *VastoClient) ReplaceNode(keyspace, dataCenter string, nodeId uint32, newAddress string) (error) {
+
+	resp, err := c.MasterClient.ReplaceNode(
+		c.ctx,
+		&pb.ReplaceNodeRequest{
+			DataCenter: dataCenter,
+			Keyspace:   keyspace,
+			NodeId:     uint32(nodeId),
+			NewAddress: newAddress,
+		},
+	)
+
+	if err != nil {
+		return fmt.Errorf("replace node request: %v", err)
+	}
+	if resp.Error != "" {
+		return fmt.Errorf("replace node: %v", resp.Error)
 	}
 
 	return nil
