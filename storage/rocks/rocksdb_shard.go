@@ -1,8 +1,9 @@
 package rocks
 
 import (
-	"github.com/chrislusf/vasto/util"
 	"github.com/dgryski/go-jump"
+	"github.com/chrislusf/vasto/storage/codec"
+	"time"
 )
 
 type shardingCompactionFilter struct {
@@ -17,10 +18,14 @@ func (m *shardingCompactionFilter) configure(shardId int32, shardCount int) {
 
 func (m *shardingCompactionFilter) Name() string { return "vasto.sharding" }
 func (m *shardingCompactionFilter) Filter(level int, key, val []byte) (bool, []byte) {
-	jumpHash := jump.Hash(util.Hash(key), m.shardCount)
+	entry := codec.FromBytes(val)
+	jumpHash := jump.Hash(entry.PartitionHash, m.shardCount)
 	if m.shardId == jumpHash {
 		return false, val
 	}
+	if entry.UpdatedAtNs/uint64(1000000)+uint64(entry.TtlSecond) < uint64(time.Now().Unix()) {
+		return false, val
+ 	}
 	return true, val
 }
 
