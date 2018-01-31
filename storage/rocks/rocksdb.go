@@ -40,6 +40,8 @@ func (d *Rocks) setup(path string) {
 	d.dbOptions.SetCreateIfMissing(true)
 	d.dbOptions.SetAllowIngestBehind(true)
 	d.dbOptions.SetCompactionFilter(d.compactionFilter)
+	// d.dbOptions.SetMergeOperator()
+	// d.dbOptions.SetAllowConcurrentMemtableWrites()
 
 	var err error
 	d.db, err = gorocksdb.OpenDb(d.dbOptions, d.path)
