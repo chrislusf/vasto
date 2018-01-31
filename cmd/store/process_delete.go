@@ -6,9 +6,9 @@ import (
 	"time"
 )
 
-func (ss *storeServer) processDelete(shard *shard, deleteRequest *pb.DeleteRequest) *pb.DeleteResponse {
+func (ss *storeServer) processDelete(shard *shard, deleteRequest *pb.DeleteRequest) *pb.WriteResponse {
 
-	resp := &pb.DeleteResponse{
+	resp := &pb.WriteResponse{
 		Ok: true,
 	}
 

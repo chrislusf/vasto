@@ -9,7 +9,7 @@ import (
 	"github.com/chrislusf/vasto/storage/codec"
 )
 
-func (ss *storeServer) processPut(shard *shard, putRequest *pb.PutRequest) *pb.PutResponse {
+func (ss *storeServer) processPut(shard *shard, putRequest *pb.PutRequest) *pb.WriteResponse {
 
 	key := putRequest.KeyValue.Key
 	nowInNano := uint64(time.Now().UnixNano())
@@ -20,7 +20,7 @@ func (ss *storeServer) processPut(shard *shard, putRequest *pb.PutRequest) *pb.P
 		Value:         putRequest.KeyValue.Value,
 	}
 
-	resp := &pb.PutResponse{
+	resp := &pb.WriteResponse{
 		Ok: true,
 	}
 

@@ -119,7 +119,7 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 
 		row := client.NewRow(key, value)
 
-		resp := &pb.PutResponse{
+		resp := &pb.WriteResponse{
 			Ok: true,
 		}
 		err := ms.vastoClient.Put(*ms.option.Keyspace, []*client.Row{row})
@@ -128,12 +128,12 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 			resp.Status = err.Error()
 		}
 		return &pb.Response{
-			Put: resp,
+			Write: resp,
 		}
 	} else if command.GetDelete() != nil {
 		key := command.Delete.Key
 
-		resp := &pb.DeleteResponse{
+		resp := &pb.WriteResponse{
 			Ok: true,
 		}
 		err := ms.vastoClient.Delete(*ms.option.Keyspace, key)
@@ -142,7 +142,7 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 			resp.Status = err.Error()
 		}
 		return &pb.Response{
-			Delete: resp,
+			Write: resp,
 		}
 	} else if command.GetGetByPrefix() != nil {
 		prefix := command.GetByPrefix.Prefix
@@ -162,7 +162,7 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 		}
 	}
 	return &pb.Response{
-		Put: &pb.PutResponse{
+		Write: &pb.WriteResponse{
 			Ok: true,
 		},
 	}

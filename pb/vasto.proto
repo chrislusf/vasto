@@ -210,7 +210,6 @@ message Request {
     GetRequest get = 3;
     GetByPrefixRequest get_by_prefix = 4;
     DeleteRequest delete = 5;
-    MergeRequest merge = 6;
 }
 
 message PutRequest {
@@ -219,7 +218,7 @@ message PutRequest {
     uint32 ttl_second = 3;
 }
 
-message PutResponse {
+message WriteResponse {
     bool ok = 1;
     string status = 2;
 }
@@ -227,11 +226,6 @@ message PutResponse {
 message DeleteRequest {
     bytes key = 1;
     uint64 partition_hash = 2;
-}
-
-message DeleteResponse {
-    bool ok = 1;
-    string status = 2;
 }
 
 message GetRequest {
@@ -256,25 +250,10 @@ message GetByPrefixResponse {
     repeated KeyValue key_values = 3;
 }
 
-message MergeRequest {
-    KeyValue key_value = 1;
-    uint64 partition_hash = 2;
-    int64 intDelta = 3;
-    double doubleDelta = 4;
-    string stringDelta = 5;
-}
-
-message MergeResponse {
-    bool ok = 1;
-    string status = 2;
-}
-
 message Response {
-    PutResponse put = 1;
+    WriteResponse write = 1;
     GetResponse get = 2;
     GetByPrefixResponse get_by_prefix = 3;
-    DeleteResponse delete = 4;
-    MergeResponse merge = 5;
 }
 
 message KeyValue {

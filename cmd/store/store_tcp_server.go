@@ -115,14 +115,14 @@ func (ss *storeServer) processRequest(keyspace string, command *pb.Request) *pb.
 			}
 		} else if command.GetPut() != nil {
 			return &pb.Response{
-				Put: &pb.PutResponse{
+				Write: &pb.WriteResponse{
 					Ok:     false,
 					Status: fmt.Sprintf("keyspace %s not found", keyspace),
 				},
 			}
 		} else if command.GetDelete() != nil {
 			return &pb.Response{
-				Delete: &pb.DeleteResponse{
+				Write: &pb.WriteResponse{
 					Ok:     false,
 					Status: fmt.Sprintf("keyspace %s not found", keyspace),
 				},
@@ -130,13 +130,6 @@ func (ss *storeServer) processRequest(keyspace string, command *pb.Request) *pb.
 		} else if command.GetGetByPrefix() != nil {
 			return &pb.Response{
 				GetByPrefix: &pb.GetByPrefixResponse{
-					Ok:     false,
-					Status: fmt.Sprintf("keyspace %s not found", keyspace),
-				},
-			}
-		} else if command.GetMerge() != nil {
-			return &pb.Response{
-				Merge: &pb.MergeResponse{
 					Ok:     false,
 					Status: fmt.Sprintf("keyspace %s not found", keyspace),
 				},
@@ -150,23 +143,19 @@ func (ss *storeServer) processRequest(keyspace string, command *pb.Request) *pb.
 		}
 	} else if command.GetPut() != nil {
 		return &pb.Response{
-			Put: ss.processPut(shard, command.Put),
+			Write: ss.processPut(shard, command.Put),
 		}
 	} else if command.GetDelete() != nil {
 		return &pb.Response{
-			Delete: ss.processDelete(shard, command.Delete),
+			Write: ss.processDelete(shard, command.Delete),
 		}
 	} else if command.GetGetByPrefix() != nil {
 		return &pb.Response{
 			GetByPrefix: ss.processPrefix(shard, command.GetByPrefix),
 		}
-	} else if command.GetMerge() != nil {
-		return &pb.Response{
-			Merge: ss.processMerge(shard, command.GetMerge),
-		}
 	}
 	return &pb.Response{
-		Put: &pb.PutResponse{
+		Write: &pb.WriteResponse{
 			Ok: true,
 		},
 	}
