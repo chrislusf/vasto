@@ -261,6 +261,12 @@ message KeyValue {
     bytes value = 2;
 }
 
+message LogEntry {
+    uint64 updated_at_ns = 1;
+    PutRequest put = 2;
+    DeleteRequest delete = 3;
+}
+
 //////////////////////////////////////////////////
 //// data copying
 //////////////////////////////////////////////////
