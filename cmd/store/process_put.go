@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/storage/binlog"
 	"github.com/chrislusf/vasto/storage/codec"
 )
 
@@ -47,17 +46,13 @@ func (s *shard) logPut(putRequest *pb.PutRequest, updatedAtNs uint64) {
 
 	// println("logPut2", putRequest.String())
 
-	err := s.lm.AppendEntry(binlog.NewLogEntry(
-		putRequest.PartitionHash,
-		updatedAtNs,
-		putRequest.TtlSecond,
-		false,
-		putRequest.KeyValue.Key,
-		putRequest.KeyValue.Value,
-	))
+	err := s.lm.AppendEntry(&pb.LogEntry{
+		UpdatedAtNs: updatedAtNs,
+		Put:         putRequest,
+	})
 
 	if err != nil {
-		log.Printf("append log entry: %v", err)
+		log.Printf("append put log entry: %v", err)
 	}
 
 	// println("logPut3", putRequest.String())

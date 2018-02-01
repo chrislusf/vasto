@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"github.com/chrislusf/vasto/pb"
 )
 
 func TestLogManager(t *testing.T) {
@@ -13,15 +14,17 @@ func TestLogManager(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 
-		a := &LogEntry{
-			PartitionHash:      uint64(i),
-			UpdatedNanoSeconds: 2342342,
-			TtlSecond:          80908,
-			IsDelete:           false,
-			Key:                []byte(fmt.Sprintf("key %4d", i)),
-			Value:              []byte(fmt.Sprintf("value %4d", i)),
+		a := &pb.LogEntry{
+			UpdatedAtNs: 2342342,
+			Put: &pb.PutRequest{
+				KeyValue: &pb.KeyValue{
+					Key:   []byte(fmt.Sprintf("key %4d", i)),
+					Value: []byte(fmt.Sprintf("value %4d", i)),
+				},
+				PartitionHash: uint64(i),
+				TtlSecond:     80908,
+			},
 		}
-		a.setCrc()
 
 		m.AppendEntry(a)
 

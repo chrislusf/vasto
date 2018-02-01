@@ -1,9 +1,0 @@
-struct LogEntry {
-	PartitionHash      uint64
-	UpdatedNanoSeconds uint64
-	TtlSecond          uint32
-	IsDelete           bool
-	Crc                uint32
-	Key                []byte
-	Value              []byte
-}

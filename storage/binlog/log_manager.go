@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"github.com/chrislusf/vasto/pb"
 )
 
 type LogManager struct {
@@ -71,7 +72,7 @@ func (m *LogManager) Shutdown() {
 	m.filesLock.RUnlock()
 }
 
-func (m *LogManager) AppendEntry(entry *LogEntry) error {
+func (m *LogManager) AppendEntry(entry *pb.LogEntry) error {
 	if m.lastLogFile.offset >= m.logFileMaxSize {
 		m.lastLogFile.close()
 		m.followerCond.L.Lock()
@@ -89,7 +90,7 @@ func (m *LogManager) AppendEntry(entry *LogEntry) error {
 }
 
 func (m *LogManager) ReadEntries(segment uint32, offset int64,
-	limit int) (entries []*LogEntry, nextOffset int64, err error) {
+	limit int) (entries []*pb.LogEntry, nextOffset int64, err error) {
 
 	// wait until the new segment is ready
 	m.followerCond.L.Lock()

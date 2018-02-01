@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 	"sync"
+	"github.com/chrislusf/vasto/pb"
+	"github.com/golang/protobuf/proto"
 )
 
 type logSegmentFile struct {
@@ -20,6 +22,7 @@ type logSegmentFile struct {
 	logFileMaxSize  int64
 	hasShutdown     bool
 	accessLock      sync.Mutex
+	writeBuffer     *proto.Buffer
 }
 
 func newLogSegmentFile(fillName string, segment uint32, logFileMaxSize int64) *logSegmentFile {
@@ -30,25 +33,43 @@ func newLogSegmentFile(fillName string, segment uint32, logFileMaxSize int64) *l
 		sizeBufForRead:  make([]byte, 4),
 		followerCond:    &sync.Cond{L: &sync.Mutex{}},
 		logFileMaxSize:  logFileMaxSize,
+		writeBuffer:     proto.NewBuffer(nil),
 	}
 }
 
-func (f *logSegmentFile) appendEntry(entry *LogEntry) (err error) {
+func (f *logSegmentFile) appendEntry(entry *pb.LogEntry) (err error) {
 
-	data := entry.ToBytesForWrite()
-	binary.LittleEndian.PutUint32(data, uint32(len(data)-4))
+	// lock writeBuffer, sizeBufForWrite, and file writes
 	f.accessLock.Lock()
-	writtenDataLen, err := f.file.WriteAt(data, f.offset)
+
+	// marshal the log entry
+	if err := f.writeBuffer.Marshal(entry); err != nil {
+		f.accessLock.Unlock()
+		return fmt.Errorf("appendEntry marshal log entry: %v", err)
+	}
+
+	// write to disk
+	dataLen := len(f.writeBuffer.Bytes())
+	binary.LittleEndian.PutUint32(f.sizeBufForWrite, uint32(dataLen))
+	if _, err := f.file.WriteAt(f.sizeBufForWrite, f.offset); err != nil {
+		f.accessLock.Unlock()
+		return fmt.Errorf("appendEntry write log entry size: %v", err)
+	}
+	writtenDataLen, err := f.file.WriteAt(f.writeBuffer.Bytes(), f.offset+4)
+	if err != nil {
+		f.accessLock.Unlock()
+		return fmt.Errorf("appendEntry write log entry data: %v", err)
+	}
 	f.accessLock.Unlock()
 
-	if err == nil && writtenDataLen == len(data) {
+	if err == nil && writtenDataLen == dataLen {
 		// println("broadcast file condition change")
 		f.followerCond.L.Lock()
-		f.offset += int64(len(data))
+		f.offset += int64(dataLen)
 		f.followerCond.Broadcast()
 		f.followerCond.L.Unlock()
 	} else {
-		log.Printf("append entry size %d, but %d: %v", len(data), writtenDataLen, err)
+		log.Printf("append entry size %d, but %d: %v", dataLen, writtenDataLen, err)
 	}
 
 	return err
@@ -57,7 +78,7 @@ func (f *logSegmentFile) appendEntry(entry *LogEntry) (err error) {
 /*
  * If offset is larger than latest entry, wait until new entry comes in.
  */
-func (f *logSegmentFile) readEntries(offset int64, limit int) (entries []*LogEntry, nextOffset int64, err error) {
+func (f *logSegmentFile) readEntries(offset int64, limit int) (entries []*pb.LogEntry, nextOffset int64, err error) {
 
 	if offset >= f.logFileMaxSize {
 		return nil, 0, io.EOF
@@ -95,7 +116,7 @@ func (f *logSegmentFile) readEntries(offset int64, limit int) (entries []*LogEnt
 
 }
 
-func (f *logSegmentFile) readOneEntry(offset int64) (entry *LogEntry, nextOffset int64, err error) {
+func (f *logSegmentFile) readOneEntry(offset int64) (entry *pb.LogEntry, nextOffset int64, err error) {
 
 	f.accessLock.Lock()
 	defer f.accessLock.Unlock()
@@ -117,7 +138,12 @@ func (f *logSegmentFile) readOneEntry(offset int64) (entry *LogEntry, nextOffset
 	if n != int(dataLen) {
 		return nil, 0, fmt.Errorf("read wrong data size: %d, expecting %d", n, dataLen)
 	}
-	entry, err = FromBytes(data)
+
+	// unmarshal log entry
+	entry = &pb.LogEntry{}
+	if err := proto.Unmarshal(data, entry); err != nil {
+		return nil, 0, fmt.Errorf("readOneEntry unmarshal: %v", err)
+	}
 	return entry, offset + int64(dataLen+4), nil
 
 }

@@ -309,18 +309,8 @@ message PullUpdateRequest {
 message PullUpdateResponse {
     uint32 next_segment = 1;
     uint64 next_offset = 2;
-    repeated UpdateEntry entries = 3;
+    repeated LogEntry entries = 3;
     bool out_of_sync = 4;
-}
-
-message UpdateEntry {
-    uint64 partition_hash = 3;
-    uint64 updated_at_ns = 4;
-    uint32 ttl_second = 5;
-    uint32 crc = 6;
-    bool isDelete = 7;
-    bytes key = 8;
-    bytes value = 9;
 }
 
 message CheckBinlogRequest {

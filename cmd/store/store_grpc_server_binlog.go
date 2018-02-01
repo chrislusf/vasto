@@ -83,26 +83,14 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 		for _, entry := range entries {
 
 			// log.Printf("shard %v send0 %v: %v offset:%d", shard.String(), request.Origin, string(entry.Key), offset)
-
-			if !entry.IsValid() {
-				log.Printf("read an invalid entry: %+v", entry)
-				continue
-			}
-			if targetClusterSize > 0 && jump.Hash(entry.PartitionHash, targetClusterSize) != targetShardId {
+			if targetClusterSize > 0 && jump.Hash(entry.GetPartitionHash(), targetClusterSize) != targetShardId {
 				// log.Printf("shard %v send %v skipped: %v, hash:%v, targetClusterSize:%d, targetShardId:%d ", shard.String(), request.Origin, string(entry.Key), entry.PartitionHash, targetClusterSize, targetShardId)
 				continue
 			}
 
 			// log.Printf("shard %v send %v: %v", shard.String(), request.Origin, string(entry.Key))
 
-			t.Entries = append(t.Entries, &pb.UpdateEntry{
-				PartitionHash: entry.PartitionHash,
-				UpdatedAtNs:   entry.UpdatedNanoSeconds,
-				TtlSecond:     entry.TtlSecond,
-				IsDelete:      entry.IsDelete,
-				Key:           entry.Key,
-				Value:         entry.Value,
-			})
+			t.Entries = append(t.Entries, entry)
 		}
 
 		if err := stream.Send(t); err != nil {
