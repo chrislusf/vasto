@@ -84,12 +84,8 @@ func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcCon
 			// process puts
 			put := entry.GetPut()
 			key := put.KeyValue.Key
-			t := &codec.Entry{
-				PartitionHash: put.PartitionHash,
-				UpdatedAtNs:   entry.UpdatedAtNs,
-				TtlSecond:     put.TtlSecond,
-				Value:         put.KeyValue.Value,
-			}
+			t := codec.NewPutEntry(put, entry.UpdatedAtNs)
+
 			if len(b) == 0 {
 				// no existing data found
 				// log.Printf("%v follow %d.%d new data %v", s, node.ShardInfo.ServerId, sourceShardId, string(key))

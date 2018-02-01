@@ -12,12 +12,7 @@ func (ss *storeServer) processPut(shard *shard, putRequest *pb.PutRequest) *pb.W
 
 	key := putRequest.KeyValue.Key
 	nowInNano := uint64(time.Now().UnixNano())
-	entry := &codec.Entry{
-		PartitionHash: putRequest.PartitionHash,
-		UpdatedAtNs:   nowInNano,
-		TtlSecond:     putRequest.TtlSecond,
-		Value:         putRequest.KeyValue.Value,
-	}
+	entry := codec.NewPutEntry(putRequest, nowInNano)
 
 	resp := &pb.WriteResponse{
 		Ok: true,
