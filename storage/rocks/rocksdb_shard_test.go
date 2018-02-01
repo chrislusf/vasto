@@ -6,6 +6,9 @@ import (
 
 	"github.com/chrislusf/gorocksdb"
 	"math"
+	"github.com/chrislusf/vasto/storage/codec"
+	"github.com/chrislusf/vasto/util"
+	"time"
 )
 
 func TestSetCompactionForShard(t *testing.T) {
@@ -15,11 +18,18 @@ func TestSetCompactionForShard(t *testing.T) {
 
 	total := 100000
 	shardCount := 5
+	now := uint64(time.Now().Unix())
 
 	for i := 0; i < total; i++ {
 		key := []byte(fmt.Sprintf("k%5d", i))
-		value := []byte(fmt.Sprintf("v%5d", i))
-		db.Put(key, value)
+		entry := &codec.Entry{
+			PartitionHash: util.Hash(key),
+			UpdatedAtNs:   now,
+			TtlSecond:     0,
+			Type:          codec.BYTES,
+			Value:         []byte(fmt.Sprintf("v%5d", i)),
+		}
+		db.Put(key, entry.ToBytes())
 	}
 
 	db.SetCompactionForShard(0, shardCount)
@@ -28,7 +38,7 @@ func TestSetCompactionForShard(t *testing.T) {
 	var counter4 = count(db)
 	expected := float64(total) / float64(shardCount)
 	if math.Abs(float64(counter4)-expected) > expected*0.01 {
-		t.Errorf("scanning expecting %d rows, but actual %d rows", 50000, counter4)
+		t.Errorf("scanning expecting %d rows, but actual %d rows", int(expected), counter4)
 	}
 	fmt.Printf("sharded to %d, expecting %.2f\n", counter4, expected)
 

@@ -20,13 +20,16 @@ func (m *shardingCompactionFilter) Name() string { return "vasto.sharding" }
 func (m *shardingCompactionFilter) Filter(level int, key, val []byte) (bool, []byte) {
 	entry := codec.FromBytes(val)
 	jumpHash := jump.Hash(entry.PartitionHash, m.shardCount)
-	if m.shardId == jumpHash {
-		return false, val
+	if m.shardId != jumpHash {
+		return true, nil
+	}
+	if entry.TtlSecond == 0 {
+		return false, nil
 	}
 	if entry.UpdatedAtNs/uint64(1000000)+uint64(entry.TtlSecond) < uint64(time.Now().Unix()) {
-		return false, val
- 	}
-	return true, val
+		return true, nil
+	}
+	return false, nil
 }
 
 func (d *Rocks) SetCompactionForShard(shardId, shardCount int) {
