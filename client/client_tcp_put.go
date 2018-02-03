@@ -21,7 +21,7 @@ func (c *VastoClient) Put(keyspace string, rows []*Row, options ...topology.Acce
 
 	shardIdToKeyValues := make(map[int][]*Row)
 	for _, row := range rows {
-		bucket := cluster.FindShardId(row.PartitionHash)
+		bucket := cluster.FindShardId(row.Key.GetPartitionHash())
 		shardIdToKeyValues[bucket] = append(shardIdToKeyValues[bucket], row)
 	}
 
@@ -51,10 +51,10 @@ func (c *VastoClient) batchPut(keyspace string, shardId int, rows []*Row, option
 			ShardId: uint32(shardId),
 			Put: &pb.PutRequest{
 				KeyValue: &pb.KeyValue{
-					Key:   row.Key,
+					Key:   row.Key.GetKey(),
 					Value: row.Value,
 				},
-				PartitionHash: row.PartitionHash,
+				PartitionHash: row.Key.GetPartitionHash(),
 				TtlSecond:     0,
 			},
 		}
