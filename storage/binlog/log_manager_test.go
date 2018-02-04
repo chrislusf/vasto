@@ -17,12 +17,11 @@ func TestLogManager(t *testing.T) {
 		a := &pb.LogEntry{
 			UpdatedAtNs: 2342342,
 			Put: &pb.PutRequest{
-				KeyValue: &pb.KeyValue{
-					Key:   []byte(fmt.Sprintf("key %4d", i)),
-					Value: []byte(fmt.Sprintf("value %4d", i)),
-				},
+				Key: []byte(fmt.Sprintf("key %4d", i)),
 				PartitionHash: uint64(i),
 				TtlSecond:     80908,
+				OpAndDataType: pb.OpAndDataType_BYTES,
+				Value:         []byte(fmt.Sprintf("value %4d", i)),
 			},
 		}
 
