@@ -212,10 +212,17 @@ message Request {
     DeleteRequest delete = 5;
 }
 
+enum OpAndDataType {
+    BYTES = 0;
+    FLOAT64 = 1;
+}
+
 message PutRequest {
-    KeyValue key_value = 1;
+    bytes Key = 1;
     uint64 partition_hash = 2;
     uint32 ttl_second = 3;
+    OpAndDataType op_and_data_type = 4;
+    bytes value = 5;
 }
 
 message WriteResponse {

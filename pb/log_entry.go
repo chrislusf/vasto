@@ -5,13 +5,6 @@ type writeRequest interface {
 	GetKey() []byte
 }
 
-func (m *PutRequest) GetKey() []byte {
-	if m != nil {
-		return m.KeyValue.Key
-	}
-	return nil
-}
-
 func (entry *LogEntry) GetPartitionHash() uint64 {
 	return entry.getWriteRequest().GetPartitionHash()
 }

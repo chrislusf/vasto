@@ -114,8 +114,8 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 			}
 		}
 	} else if command.GetPut() != nil {
-		key := command.Put.KeyValue.Key
-		value := command.Put.KeyValue.Value
+		key := command.Put.Key
+		value := command.Put.Value
 
 		row := client.NewRow(key, value)
 

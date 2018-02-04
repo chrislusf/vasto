@@ -83,7 +83,7 @@ func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcCon
 
 			// process puts
 			put := entry.GetPut()
-			key := put.KeyValue.Key
+			key := put.Key
 			t := codec.NewPutEntry(put, entry.UpdatedAtNs)
 
 			if len(b) == 0 {

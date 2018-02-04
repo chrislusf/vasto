@@ -7,7 +7,7 @@ func NewPutEntry(put *pb.PutRequest, updatedAtNs uint64) *Entry {
 		PartitionHash: put.PartitionHash,
 		UpdatedAtNs:   updatedAtNs,
 		TtlSecond:     put.TtlSecond,
-		OpAndDataType: BYTES,
-		Value:         put.KeyValue.Value,
+		OpAndDataType: OpAndDataType(put.OpAndDataType),
+		Value:         put.Value,
 	}
 }

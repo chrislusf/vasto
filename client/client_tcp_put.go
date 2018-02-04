@@ -50,12 +50,11 @@ func (c *VastoClient) batchPut(keyspace string, shardId int, rows []*Row, option
 		request := &pb.Request{
 			ShardId: uint32(shardId),
 			Put: &pb.PutRequest{
-				KeyValue: &pb.KeyValue{
-					Key:   row.Key.GetKey(),
-					Value: row.Value,
-				},
+				Key:           row.Key.GetKey(),
 				PartitionHash: row.Key.GetPartitionHash(),
 				TtlSecond:     0,
+				OpAndDataType: pb.OpAndDataType_BYTES,
+				Value:         row.Value,
 			},
 		}
 

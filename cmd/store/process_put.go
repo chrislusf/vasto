@@ -10,7 +10,7 @@ import (
 
 func (ss *storeServer) processPut(shard *shard, putRequest *pb.PutRequest) *pb.WriteResponse {
 
-	key := putRequest.KeyValue.Key
+	key := putRequest.Key
 	nowInNano := uint64(time.Now().UnixNano())
 	entry := codec.NewPutEntry(putRequest, nowInNano)
 
