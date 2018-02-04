@@ -218,7 +218,7 @@ enum OpAndDataType {
 }
 
 message PutRequest {
-    bytes Key = 1;
+    bytes key = 1;
     uint64 partition_hash = 2;
     uint32 ttl_second = 3;
     OpAndDataType op_and_data_type = 4;
