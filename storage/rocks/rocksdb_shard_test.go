@@ -23,11 +23,11 @@ func TestSetCompactionForShard(t *testing.T) {
 	for i := 0; i < total; i++ {
 		key := []byte(fmt.Sprintf("k%5d", i))
 		entry := &codec.Entry{
-			PartitionHash:  util.Hash(key),
-			UpdatedAtNs:    now,
-			TtlSecond:      0,
-			opsAndDataType: codec.BYTES,
-			Value:          []byte(fmt.Sprintf("v%5d", i)),
+			PartitionHash: util.Hash(key),
+			UpdatedAtNs:   now,
+			TtlSecond:     0,
+			OpAndDataType: codec.BYTES,
+			Value:         []byte(fmt.Sprintf("v%5d", i)),
 		}
 		db.Put(key, entry.ToBytes())
 	}
