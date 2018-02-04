@@ -37,15 +37,14 @@ func (e *Entry) ToBytes() []byte {
 
 func FromBytes(b []byte) *Entry {
 
-	e := &Entry{}
+	return &Entry{
+		PartitionHash: binary.LittleEndian.Uint64(b[0:8]),
+		UpdatedAtNs:   binary.LittleEndian.Uint64(b[8:16]),
+		TtlSecond:     binary.LittleEndian.Uint32(b[16:20]),
+		OpAndDataType: OpAndDataType(b[20]),
+		Value:         b[21:],
+	}
 
-	e.PartitionHash = binary.LittleEndian.Uint64(b[0:8])
-	e.UpdatedAtNs = binary.LittleEndian.Uint64(b[8:16])
-	e.TtlSecond = binary.LittleEndian.Uint32(b[16:20])
-	e.OpAndDataType = OpAndDataType(b[20])
-	e.Value = b[21:]
-
-	return e
 }
 
 func GetPartitionHashFromBytes(b []byte) uint64 {
