@@ -216,6 +216,7 @@ message Request {
 enum OpAndDataType {
     BYTES = 0;
     FLOAT64 = 1;
+    MAX_FLOAT64 = 2;
 }
 
 message PutRequest {
