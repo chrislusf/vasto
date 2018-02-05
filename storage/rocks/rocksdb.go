@@ -26,21 +26,23 @@ var (
 	ERR_SHUTDOWN = errors.New("shutdown in progress")
 )
 
-func New(path string) *Rocks {
+func NewDb(path string, mergeOperator gorocksdb.MergeOperator) *Rocks {
 	r := &Rocks{
 		compactionFilter: &shardingCompactionFilter{},
 	}
-	r.setup(path)
+	r.setup(path, mergeOperator)
 	return r
 }
 
-func (d *Rocks) setup(path string) {
+func (d *Rocks) setup(path string, mergeOperator gorocksdb.MergeOperator) {
 	d.path = path
 	d.dbOptions = gorocksdb.NewDefaultOptions()
 	d.dbOptions.SetCreateIfMissing(true)
 	d.dbOptions.SetAllowIngestBehind(true)
 	d.dbOptions.SetCompactionFilter(d.compactionFilter)
-	// d.dbOptions.SetMergeOperator()
+	if mergeOperator != nil {
+		d.dbOptions.SetMergeOperator(mergeOperator)
+	}
 	// d.dbOptions.SetAllowConcurrentMemtableWrites()
 
 	var err error
@@ -58,6 +60,17 @@ func (d *Rocks) Put(key []byte, msg []byte) (err error) {
 	// println("put", string(key), "value", string(msg))
 	if newClientCounter := atomic.AddInt32(&d.clientCounter, 1); newClientCounter > 0 {
 		err = d.db.Put(d.wo, key, msg)
+	} else {
+		err = ERR_SHUTDOWN
+	}
+	atomic.AddInt32(&d.clientCounter, -1)
+	return
+}
+
+func (d *Rocks) Merge(key []byte, msg []byte) (err error) {
+	// println("merge", string(key), "value", string(msg))
+	if newClientCounter := atomic.AddInt32(&d.clientCounter, 1); newClientCounter > 0 {
+		err = d.db.Merge(d.wo, key, msg)
 	} else {
 		err = ERR_SHUTDOWN
 	}

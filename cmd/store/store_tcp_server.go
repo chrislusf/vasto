@@ -120,6 +120,13 @@ func (ss *storeServer) processRequest(keyspace string, command *pb.Request) *pb.
 					Status: fmt.Sprintf("keyspace %s not found", keyspace),
 				},
 			}
+		} else if command.GetMerge() != nil {
+			return &pb.Response{
+				Write: &pb.WriteResponse{
+					Ok:     false,
+					Status: fmt.Sprintf("keyspace %s not found", keyspace),
+				},
+			}
 		} else if command.GetDelete() != nil {
 			return &pb.Response{
 				Write: &pb.WriteResponse{
@@ -144,6 +151,10 @@ func (ss *storeServer) processRequest(keyspace string, command *pb.Request) *pb.
 	} else if command.GetPut() != nil {
 		return &pb.Response{
 			Write: ss.processPut(shard, command.Put),
+		}
+	} else if command.GetMerge() != nil {
+		return &pb.Response{
+			Write: ss.processMerge(shard, command.Merge),
 		}
 	} else if command.GetDelete() != nil {
 		return &pb.Response{

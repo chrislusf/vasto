@@ -50,11 +50,13 @@ func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.
 
 	log.Printf("open %s.%d.%d in %s", keyspaceName, serverId, nodeId, dir)
 
+	mergeOperator := NewVastoMergeOperator()
+
 	s := &shard{
 		keyspace:        keyspaceName,
 		id:              shard_id(nodeId),
 		serverId:        server_id(serverId),
-		db:              rocks.New(dir),
+		db:              rocks.NewDb(dir, mergeOperator),
 		cluster:         cluster,
 		clusterListener: clusterListener,
 		nodeFinishChan:  make(chan bool),

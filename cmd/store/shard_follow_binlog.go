@@ -59,6 +59,16 @@ func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcCon
 
 		for _, entry := range changes.Entries {
 
+			// process merges
+			if entry.GetMerge() != nil {
+				merge := entry.GetMerge()
+				key := merge.Key
+				t := codec.NewMergeEntry(merge, entry.UpdatedAtNs)
+
+				s.db.Merge(key, t.ToBytes())
+				continue
+			}
+
 			// check local entry
 			b, err := s.db.Get(entry.GetKey())
 			if err != nil {
@@ -82,34 +92,32 @@ func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcCon
 			}
 
 			// process puts
-			put := entry.GetPut()
-			key := put.Key
-			t := codec.NewPutEntry(put, entry.UpdatedAtNs)
+			if entry.GetPut() != nil {
+				put := entry.GetPut()
+				key := put.Key
+				t := codec.NewPutEntry(put, entry.UpdatedAtNs)
 
-			if len(b) == 0 {
-				// no existing data found
-				// log.Printf("%v follow %d.%d new data %v", s, node.ShardInfo.ServerId, sourceShardId, string(key))
-				s.db.Put(key, t.ToBytes())
-				continue
-			}
-
-			row := codec.FromBytes(b)
-			// log.Printf("%s follow 3 entry: %v, expired %v, %v", s, string(entry.Key), row.IsExpired(), t.IsExpired())
-			if row.IsExpired() {
-				if !t.IsExpired() {
-					log.Printf("%s follow 3 entry: %v", s, string(key))
+				if len(b) == 0 {
+					// no existing data found
 					s.db.Put(key, t.ToBytes())
 					continue
 				}
-			} else {
-				// log.Printf("%v follow %d.%d: data time %d, existing time %d, delta %d", s, node.ShardInfo.ServerId, sourceShardId, row.UpdatedAtNs, entry.UpdatedAtNs, row.UpdatedAtNs-entry.UpdatedAtNs)
-				if row.UpdatedAtNs > entry.UpdatedAtNs {
+				row := codec.FromBytes(b)
+				if row.IsExpired() {
+					if !t.IsExpired() {
+						log.Printf("%s follow 3 entry: %v", s, string(key))
+						s.db.Put(key, t.ToBytes())
+						continue
+					}
+				} else {
+					if row.UpdatedAtNs > entry.UpdatedAtNs {
+						continue
+					}
+					s.db.Put(key, t.ToBytes())
 					continue
 				}
-				s.db.Put(key, t.ToBytes())
-				continue
+				// log.Printf("%s follow 4 entry: %v", s, string(entry.Key))
 			}
-			// log.Printf("%s follow 4 entry: %v", s, string(entry.Key))
 
 		}
 

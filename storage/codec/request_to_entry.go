@@ -11,3 +11,15 @@ func NewPutEntry(put *pb.PutRequest, updatedAtNs uint64) *Entry {
 		Value:         put.Value,
 	}
 }
+
+func NewMergeEntry(m *pb.MergeRequest, updatedAtNs uint64) *Entry {
+	return &Entry{
+		PartitionHash: m.PartitionHash,
+		UpdatedAtNs:   updatedAtNs,
+		TtlSecond:     0,
+		OpAndDataType: OpAndDataType(m.OpAndDataType),
+		Value:         m.Value,
+	}
+}
+
+

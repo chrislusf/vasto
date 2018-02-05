@@ -1,5 +1,10 @@
 package util
 
+import (
+	"math"
+	"encoding/binary"
+)
+
 // big endian
 
 func BytesToUint64(b []byte) (v uint64) {
@@ -50,4 +55,19 @@ func Uint8toBytes(v uint8) (b []byte) {
 	b = make([]byte, 1)
 	b[0] = byte(v)
 	return b
+}
+
+// float64 converts from bytes
+func BytesToFloat64(bytes []byte) float64 {
+	bits := binary.LittleEndian.Uint64(bytes)
+	float := math.Float64frombits(bits)
+	return float
+}
+
+// float64 converts to bytes
+func Float64ToBytes(float float64) []byte {
+	bits := math.Float64bits(float)
+	bytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bytes, bits)
+	return bytes
 }

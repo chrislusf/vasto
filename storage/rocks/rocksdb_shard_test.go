@@ -9,6 +9,7 @@ import (
 	"github.com/chrislusf/vasto/storage/codec"
 	"github.com/chrislusf/vasto/util"
 	"time"
+	"github.com/chrislusf/vasto/pb"
 )
 
 func TestSetCompactionForShard(t *testing.T) {
@@ -26,7 +27,7 @@ func TestSetCompactionForShard(t *testing.T) {
 			PartitionHash: util.Hash(key),
 			UpdatedAtNs:   now,
 			TtlSecond:     0,
-			OpAndDataType: codec.BYTES,
+			OpAndDataType: codec.OpAndDataType(pb.OpAndDataType_BYTES),
 			Value:         []byte(fmt.Sprintf("v%5d", i)),
 		}
 		db.Put(key, entry.ToBytes())

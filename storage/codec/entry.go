@@ -7,14 +7,6 @@ import (
 
 type OpAndDataType byte
 
-const (
-	// default merge operation
-	// for int64 and float64 : add
-	// for []byte : append
-	BYTES   OpAndDataType = 0
-	FLOAT64 OpAndDataType = 1
-)
-
 type Entry struct {
 	PartitionHash uint64
 	UpdatedAtNs   uint64

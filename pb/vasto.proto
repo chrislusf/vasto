@@ -210,6 +210,7 @@ message Request {
     GetRequest get = 3;
     GetByPrefixRequest get_by_prefix = 4;
     DeleteRequest delete = 5;
+    MergeRequest merge = 6;
 }
 
 enum OpAndDataType {
@@ -221,6 +222,13 @@ message PutRequest {
     bytes key = 1;
     uint64 partition_hash = 2;
     uint32 ttl_second = 3;
+    OpAndDataType op_and_data_type = 4;
+    bytes value = 5;
+}
+
+message MergeRequest {
+    bytes key = 1;
+    uint64 partition_hash = 2;
     OpAndDataType op_and_data_type = 4;
     bytes value = 5;
 }
@@ -272,6 +280,7 @@ message LogEntry {
     uint64 updated_at_ns = 1;
     PutRequest put = 2;
     DeleteRequest delete = 3;
+    MergeRequest merge = 4;
 }
 
 //////////////////////////////////////////////////
