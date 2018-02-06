@@ -36,7 +36,7 @@ func (c *CommandPut) Do(vastoClient *client.VastoClient, args []string, commandE
 
 	row := client.NewRow(key, value)
 
-	err = vastoClient.Put(commandEnv.keyspace, []*client.Row{row}, options...)
+	err = commandEnv.clusterClient.Put([]*client.Row{row}, options...)
 
 	fmt.Fprintln(writer)
 

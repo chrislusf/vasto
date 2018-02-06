@@ -8,15 +8,18 @@ import (
 	"log"
 	"github.com/chrislusf/vasto/pb"
 	"fmt"
+	"sync"
 )
 
 type VastoClient struct {
-	ctx             context.Context
-	Master          string
-	DataCenter      string
-	ClientName      string
-	ClusterListener *cluster_listener.ClusterListener
-	MasterClient    pb.VastoMasterClient
+	ctx                context.Context
+	Master             string
+	DataCenter         string
+	ClientName         string
+	ClusterListener    *cluster_listener.ClusterListener
+	MasterClient       pb.VastoMasterClient
+	clusterClients     map[string]*ClusterClient
+	clusterClientsLock sync.Mutex
 }
 
 func NewClient(ctx context.Context, clientName, master, dataCenter string) *VastoClient {
@@ -26,6 +29,7 @@ func NewClient(ctx context.Context, clientName, master, dataCenter string) *Vast
 		Master:          master,
 		ClientName:      clientName,
 		DataCenter:      dataCenter,
+		clusterClients:  make(map[string]*ClusterClient),
 	}
 	c.ClusterListener.RegisterShardEventProcessor(&cluster_listener.ClusterEventLogger{Prefix: clientName + " "})
 	c.ClusterListener.StartListener(ctx, c.Master, c.DataCenter)
@@ -39,11 +43,27 @@ func NewClient(ctx context.Context, clientName, master, dataCenter string) *Vast
 	return c
 }
 
-func (c *VastoClient) UseKeyspace(keyspace string) {
+func (c *VastoClient) GetClusterClient(keyspace string) (clusterClient *ClusterClient) {
 	c.ClusterListener.AddNewKeyspace(keyspace, 0, 0)
 	for !c.ClusterListener.HasConnectedKeyspace(keyspace) {
 		time.Sleep(100 * time.Millisecond)
 	}
+
+	var found bool
+	c.clusterClientsLock.Lock()
+	clusterClient, found = c.clusterClients[keyspace]
+	if !found {
+		clusterClient = &ClusterClient{
+			Master:          c.Master,
+			DataCenter:      c.DataCenter,
+			keyspace:        keyspace,
+			ClusterListener: c.ClusterListener,
+		}
+		c.clusterClients[keyspace] = clusterClient
+	}
+	c.clusterClientsLock.Unlock()
+
+	return
 }
 
 func (c *VastoClient) CreateCluster(keyspace, dataCenter string, clusterSize, replicationFactor int) (*pb.Cluster, error) {

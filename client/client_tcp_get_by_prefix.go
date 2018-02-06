@@ -7,14 +7,14 @@ import (
 	"github.com/chrislusf/vasto/topology"
 )
 
-func (c *VastoClient) GetByPrefix(keyspace string, partitionKey, prefix []byte, limit uint32, lastSeenKey []byte, options ...topology.AccessOption) ([]*pb.KeyValue, error) {
+func (c *ClusterClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, lastSeenKey []byte, options ...topology.AccessOption) ([]*pb.KeyValue, error) {
 
 	if partitionKey == nil {
 		partitionKey = prefix
 	}
-	shardId, _ := c.ClusterListener.GetShardId(keyspace, partitionKey)
+	shardId, _ := c.ClusterListener.GetShardId(c.keyspace, partitionKey)
 
-	conn, _, err := c.ClusterListener.GetConnectionByShardId(keyspace, shardId, options...)
+	conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, shardId, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +28,7 @@ func (c *VastoClient) GetByPrefix(keyspace string, partitionKey, prefix []byte, 
 		},
 	}
 
-	requests := &pb.Requests{Keyspace: keyspace}
+	requests := &pb.Requests{Keyspace: c.keyspace}
 	requests.Requests = append(requests.Requests, request)
 
 	responses, err := pb.SendRequests(conn, requests)

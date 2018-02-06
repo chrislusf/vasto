@@ -12,11 +12,11 @@ var (
 	NotFoundError = errors.New("NotFound")
 )
 
-func (c *VastoClient) Get(keyspace string, key []byte, options ...topology.AccessOption) ([]byte, error) {
+func (c *ClusterClient) Get(key []byte, options ...topology.AccessOption) ([]byte, error) {
 
-	shardId, _ := c.ClusterListener.GetShardId(keyspace, key)
+	shardId, _ := c.ClusterListener.GetShardId(c.keyspace, key)
 
-	conn, _, err := c.ClusterListener.GetConnectionByShardId(keyspace, shardId, options...)
+	conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, shardId, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +28,7 @@ func (c *VastoClient) Get(keyspace string, key []byte, options ...topology.Acces
 		},
 	}
 
-	requests := &pb.Requests{Keyspace: keyspace}
+	requests := &pb.Requests{Keyspace: c.keyspace}
 	requests.Requests = append(requests.Requests, request)
 
 	responses, err := pb.SendRequests(conn, requests)

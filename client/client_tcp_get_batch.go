@@ -13,14 +13,15 @@ type answer struct {
 	err       error
 }
 
-func (c *VastoClient) BatchGet(keyspace string, keys [][]byte, options ...topology.AccessOption) ([]*pb.KeyValue, error) {
+func (c *ClusterClient) BatchGet(keys [][]byte, options ...topology.AccessOption) ([]*pb.KeyValue, error) {
 
 	shardIdToRequests := make(map[int][]*pb.Request)
 
-	r, found := c.ClusterListener.GetCluster(keyspace)
-	if !found {
-		return nil, fmt.Errorf("no keyspace %s", keyspace)
+	r, err := c.GetCluster()
+	if err != nil {
+		return nil, err
 	}
+
 	for _, key := range keys {
 		shardId := r.FindShardId(util.Hash(key))
 		if _, ok := shardIdToRequests[shardId]; !ok {
@@ -40,13 +41,13 @@ func (c *VastoClient) BatchGet(keyspace string, keys [][]byte, options ...topolo
 	for shardId, requests := range shardIdToRequests {
 		go func(shardId int, requestList []*pb.Request) {
 
-			conn, _, err := c.ClusterListener.GetConnectionByShardId(keyspace, shardId, options...)
+			conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, shardId, options...)
 			if err != nil {
 				outputChan <- &answer{err: err}
 				return
 			}
 
-			requests := &pb.Requests{Keyspace: keyspace}
+			requests := &pb.Requests{Keyspace: c.keyspace}
 			requests.Requests = requestList
 
 			responses, err := pb.SendRequests(conn, requests)

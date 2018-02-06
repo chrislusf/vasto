@@ -8,15 +8,15 @@ import (
 	"sync"
 )
 
-func (c *VastoClient) Put(keyspace string, rows []*Row, options ...topology.AccessOption) error {
+func (c *ClusterClient) Put(rows []*Row, options ...topology.AccessOption) error {
 
 	if len(rows) == 0 {
 		return nil
 	}
 
-	cluster, found := c.ClusterListener.GetCluster(keyspace)
-	if !found {
-		return fmt.Errorf("no keyspace %s", keyspace)
+	cluster, err := c.GetCluster()
+	if err != nil {
+		return err
 	}
 
 	shardIdToKeyValues := make(map[int][]*Row)
@@ -25,8 +25,8 @@ func (c *VastoClient) Put(keyspace string, rows []*Row, options ...topology.Acce
 		shardIdToKeyValues[bucket] = append(shardIdToKeyValues[bucket], row)
 	}
 
-	err := eachShard(shardIdToKeyValues, func(shardId int, rows []*Row) error {
-		return c.batchPut(keyspace, shardId, rows, options...)
+	err = eachShard(shardIdToKeyValues, func(shardId int, rows []*Row) error {
+		return c.batchPut(shardId, rows, options...)
 	})
 
 	if err != nil {
@@ -36,15 +36,15 @@ func (c *VastoClient) Put(keyspace string, rows []*Row, options ...topology.Acce
 	return nil
 }
 
-func (c *VastoClient) batchPut(keyspace string, shardId int, rows []*Row, options ...topology.AccessOption) error {
+func (c *ClusterClient) batchPut(shardId int, rows []*Row, options ...topology.AccessOption) error {
 
-	conn, _, err := c.ClusterListener.GetConnectionByShardId(keyspace, shardId, options...)
+	conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, shardId, options...)
 
 	if err != nil {
 		return err
 	}
 
-	requests := &pb.Requests{Keyspace: keyspace}
+	requests := &pb.Requests{Keyspace: c.keyspace}
 
 	for _, row := range rows {
 		request := &pb.Request{

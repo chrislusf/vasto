@@ -54,8 +54,8 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 				return fmt.Sprintf("%.2f ops/sec", float64(b.Current())/b.TimeElapsed().Seconds())
 			})
 
-			b.startThreadsWithClient(ctx, *option.Tests, func(hist *Histogram, c *client.VastoClient, start, stop, batchSize int) {
-				b.execute(hist, c, start, stop, batchSize, func(c *client.VastoClient, i int) error {
+			b.startThreadsWithClient(ctx, *option.Tests, func(hist *Histogram, c *client.ClusterClient, start, stop, batchSize int) {
+				b.execute(hist, c, start, stop, batchSize, func(c *client.ClusterClient, i int) error {
 
 					var rows []*client.Row
 
@@ -70,7 +70,7 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 						bar.Incr()
 					}
 
-					err := c.Put(*b.option.Keyspace, rows)
+					err := c.Put(rows)
 					if err != nil {
 						log.Printf("write %d rows, started with %v:  %v", len(rows), string(rows[0].Key.GetKey()), err)
 					}
@@ -87,15 +87,15 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 				return fmt.Sprintf("%.2f ops/sec", float64(b.Current())/b.TimeElapsed().Seconds())
 			})
 
-			b.startThreadsWithClient(ctx, *option.Tests, func(hist *Histogram, c *client.VastoClient, start, stop, batchSize int) {
-				b.execute(hist, c, start, stop, batchSize, func(c *client.VastoClient, i int) error {
+			b.startThreadsWithClient(ctx, *option.Tests, func(hist *Histogram, c *client.ClusterClient, start, stop, batchSize int) {
+				b.execute(hist, c, start, stop, batchSize, func(c *client.ClusterClient, i int) error {
 
 					if batchSize == 1 {
 
 						key := []byte(fmt.Sprintf("k%d", i))
 						value := []byte(fmt.Sprintf("v%d", i))
 
-						data, err := c.Get(*b.option.Keyspace, key)
+						data, err := c.Get(key)
 
 						if err != nil {
 							log.Printf("read %s: %v", string(key), err)
@@ -118,7 +118,7 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 						keys = append(keys, key)
 					}
 
-					data, err := c.BatchGet(*b.option.Keyspace, keys)
+					data, err := c.BatchGet(keys)
 
 					if err != nil {
 						log.Printf("batch read %d keys: %v", len(keys), err)
@@ -150,19 +150,18 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 
 }
 
-func (b *benchmarker) startThreadsWithClient(ctx context.Context, name string, fn func(hist *Histogram, c *client.VastoClient, start, stop, batchSize int)) {
+func (b *benchmarker) startThreadsWithClient(ctx context.Context, name string, fn func(hist *Histogram, c *client.ClusterClient, start, stop, batchSize int)) {
 
 	requestCountEachClient := int(*b.option.RequestCount / *b.option.ClientCount)
 
 	b.startThreads(name, requestCountEachClient, int(*b.option.RequestCountStart), func(hist *Histogram, start, stop, batchSize int) {
-		c := client.NewClient(ctx, "benchmarker", *b.option.Master, *b.option.DataCenter)
-		c.UseKeyspace(*b.option.Keyspace)
-		fn(hist, c, start, stop, batchSize)
+		vc := client.NewClient(ctx, "benchmarker", *b.option.Master, *b.option.DataCenter)
+		fn(hist, vc.GetClusterClient(*b.option.Keyspace), start, stop, batchSize)
 	})
 
 }
 
-func (b *benchmarker) execute(hist *Histogram, c *client.VastoClient, start, stop, batchSize int, fn func(c *client.VastoClient, i int) error) error {
+func (b *benchmarker) execute(hist *Histogram, c *client.ClusterClient, start, stop, batchSize int, fn func(c *client.ClusterClient, i int) error) error {
 
 	for i := start; i < stop; i += batchSize {
 		start := time.Now()

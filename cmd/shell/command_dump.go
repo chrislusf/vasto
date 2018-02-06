@@ -34,9 +34,13 @@ func (c *CommandDump) Do(vastoClient *client.VastoClient, args []string, command
 		isKeysOnly = false
 	}
 
-	cluster, found := vastoClient.ClusterListener.GetCluster(commandEnv.keyspace)
-	if !found {
+	if commandEnv.clusterClient == nil {
 		return fmt.Errorf("no keyspace %s", commandEnv.keyspace)
+	}
+
+	cluster, err := commandEnv.clusterClient.GetCluster()
+	if err != nil {
+		return err
 	}
 
 	chans := make([]chan *pb.KeyValue, cluster.ExpectedSize())
@@ -98,7 +102,7 @@ func (c *CommandDump) Do(vastoClient *client.VastoClient, args []string, command
 
 	}
 
-	err := pb.MergeSorted(chans, func(t *pb.KeyValue) error {
+	err = pb.MergeSorted(chans, func(t *pb.KeyValue) error {
 		if isKeysOnly {
 			fmt.Fprintf(writer, "%v\n", string(t.Key))
 		} else {

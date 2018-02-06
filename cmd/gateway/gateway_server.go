@@ -54,7 +54,7 @@ func RunGateway(option *GatewayOption) {
 		go gs.serveTcp(unixSocketListener)
 	}
 
-	gs.vastoClient.UseKeyspace(*option.Keyspace)
+	gs.vastoClient.GetClusterClient(*option.Keyspace)
 
 	fmt.Printf("Vasto gateway ready\n")
 	select {}

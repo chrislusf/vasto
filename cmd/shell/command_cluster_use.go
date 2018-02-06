@@ -28,7 +28,9 @@ func (c *CommandClusterUse) Do(vastoClient *client.VastoClient, args []string, c
 
 	commandEnv.keyspace = args[1]
 
-	vastoClient.UseKeyspace(commandEnv.keyspace)
+	if commandEnv.keyspace != "" {
+		commandEnv.clusterClient = vastoClient.GetClusterClient(commandEnv.keyspace)
+	}
 
 	return nil
 }

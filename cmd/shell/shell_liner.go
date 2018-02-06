@@ -31,6 +31,9 @@ func (s *shell) runShell() {
 	commandEnv := &CommandEnv{
 		keyspace: *s.option.Keyspace,
 	}
+	if commandEnv.keyspace != "" {
+		commandEnv.clusterClient = s.vastoClient.GetClusterClient(commandEnv.keyspace)
+	}
 
 	for {
 		cmd, err := line.Prompt("> ")

@@ -7,12 +7,12 @@ import (
 	"github.com/chrislusf/vasto/topology"
 )
 
-func (c *VastoClient) Delete(keyspace string, key []byte, options ...topology.AccessOption) error {
+func (c *ClusterClient) Delete(key []byte, options ...topology.AccessOption) error {
 
 	// TODO use partition key here
-	shardId, partitionHash := c.ClusterListener.GetShardId(keyspace, key)
+	shardId, partitionHash := c.ClusterListener.GetShardId(c.keyspace, key)
 
-	conn, _, err := c.ClusterListener.GetConnectionByShardId(keyspace, shardId, options...)
+	conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, shardId, options...)
 	if err != nil {
 		return err
 	}
@@ -25,7 +25,7 @@ func (c *VastoClient) Delete(keyspace string, key []byte, options ...topology.Ac
 		},
 	}
 
-	requests := &pb.Requests{Keyspace: keyspace}
+	requests := &pb.Requests{Keyspace: c.keyspace}
 	requests.Requests = append(requests.Requests, request)
 
 	_, err = pb.SendRequests(conn, requests)

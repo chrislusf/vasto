@@ -7,9 +7,10 @@ import (
 )
 
 type CommandEnv struct {
-	env        map[string]string
-	keyspace   string
-	dataCenter string
+	env           map[string]string
+	keyspace      string
+	dataCenter    string
+	clusterClient *client.ClusterClient
 }
 
 type Command interface {
@@ -20,4 +21,4 @@ type Command interface {
 
 var commands = []Command{}
 
-var InvalidArguments = errors.New("Invalid Arguments")
+var InvalidArguments = errors.New("invalid arguments")

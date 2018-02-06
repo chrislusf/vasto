@@ -32,7 +32,7 @@ func (c *CommandGet) Do(vastoClient *client.VastoClient, args []string, commandE
 	if len(args) == 1 {
 		key := []byte(args[0])
 
-		value, err := vastoClient.Get(commandEnv.keyspace, key, options...)
+		value, err := commandEnv.clusterClient.Get(key, options...)
 
 		if err == nil {
 			fmt.Fprintf(writer, "%s\n", string(value))
@@ -44,7 +44,7 @@ func (c *CommandGet) Do(vastoClient *client.VastoClient, args []string, commandE
 		for _, arg := range args {
 			keys = append(keys, []byte(arg))
 		}
-		keyValues, err := vastoClient.BatchGet(commandEnv.keyspace, keys, options...)
+		keyValues, err := commandEnv.clusterClient.BatchGet(keys, options...)
 		if err != nil {
 			return err
 		}

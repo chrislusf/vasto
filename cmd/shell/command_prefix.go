@@ -43,7 +43,7 @@ func (c *CommandPrefix) Do(vastoClient *client.VastoClient, args []string, comma
 		lastSeenKey = []byte(args[2])
 	}
 
-	keyValues, err := vastoClient.GetByPrefix(commandEnv.keyspace, nil, prefix, limit, lastSeenKey, options...)
+	keyValues, err := commandEnv.clusterClient.GetByPrefix(nil, prefix, limit, lastSeenKey, options...)
 
 	if err != nil {
 		return err

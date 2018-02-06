@@ -25,7 +25,7 @@ func RunShell(option *ShellOption) {
 	}
 
 	if *option.Keyspace != ""{
-		b.vastoClient.UseKeyspace(*option.Keyspace)
+		b.vastoClient.GetClusterClient(*option.Keyspace)
 	}
 
 	if *option.Verbose {

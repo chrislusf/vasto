@@ -26,17 +26,17 @@ func TestOpen(t *testing.T) {
 
 	log.Println("created keyspace ks1")
 
-	c.UseKeyspace("ks1")
+	ks := c.GetClusterClient("ks1")
 
-	log.Println("UseKeyspace ks1")
+	log.Println("GetClusterClient ks1")
 
-	c.Put("ks1", []*client.Row{
+	ks.Put([]*client.Row{
 		client.NewRow([]byte("x1"), []byte("y2")),
 		client.NewRow([]byte("x2"), []byte("y2")),
 		client.NewRow([]byte("x3"), []byte("y3")),
 	})
 
-	data, err := c.Get("ks1", []byte("x2"))
+	data, err := ks.Get([]byte("x2"))
 	if err != nil {
 		t.Errorf("fail to get value: %v", err)
 	}

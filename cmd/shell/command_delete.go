@@ -29,7 +29,7 @@ func (c *CommandDelete) Do(vastoClient *client.VastoClient, args []string, comma
 
 	key := []byte(args[0])
 
-	err = vastoClient.Delete(commandEnv.keyspace, key, options...)
+	err = commandEnv.clusterClient.Delete(key, options...)
 
 	return err
 }
