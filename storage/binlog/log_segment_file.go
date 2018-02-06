@@ -43,6 +43,7 @@ func (f *logSegmentFile) appendEntry(entry *pb.LogEntry) (err error) {
 	f.accessLock.Lock()
 
 	// marshal the log entry
+	f.writeBuffer.Reset()
 	if err := f.writeBuffer.Marshal(entry); err != nil {
 		f.accessLock.Unlock()
 		return fmt.Errorf("appendEntry marshal log entry: %v", err)
