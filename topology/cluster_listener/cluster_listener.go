@@ -76,8 +76,12 @@ func (clusterListener *ClusterListener) GetOrSetCluster(keyspace string, cluster
 		t = topology.NewCluster(keyspace, clusterListener.dataCenter, clusterSize, replicationFactor)
 		clusterListener.clusters[keyspace_name(keyspace)] = t
 	}
-	t.SetExpectedSize(clusterSize)
-	t.SetReplicationFactor(replicationFactor)
+	if clusterSize > 0 {
+		t.SetExpectedSize(clusterSize)
+	}
+	if replicationFactor > 0 {
+		t.SetReplicationFactor(replicationFactor)
+	}
 	clusterListener.RUnlock()
 	return t
 }

@@ -57,6 +57,12 @@ func (cluster *Cluster) SetShard(store *pb.StoreResource, shard *pb.ShardInfo) (
 		ShardInfo:     shard,
 	})
 	cluster.logicalShards[shardId] = sortedShards(shardGroup, len(cluster.logicalShards))
+	if cluster.expectedSize != int(shard.ClusterSize) {
+		cluster.SetExpectedSize(int(shard.ClusterSize))
+	}
+	if cluster.replicationFactor != int(shard.ReplicationFactor) {
+		cluster.SetReplicationFactor(int(shard.ReplicationFactor))
+	}
 	return
 }
 
