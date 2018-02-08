@@ -5,31 +5,34 @@ import (
 
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
+	"github.com/chrislusf/vasto/util"
 )
 
 func (c *ClusterClient) Delete(key []byte, options ...topology.AccessOption) error {
 
 	// TODO use partition key here
-	shardId, partitionHash := c.ClusterListener.GetShardId(c.keyspace, key)
 
-	conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, shardId, options...)
-	if err != nil {
-		return err
-	}
+	partitionHash := util.Hash(key)
 
 	request := &pb.Request{
-		ShardId: uint32(shardId),
 		Delete: &pb.DeleteRequest{
 			Key:           key,
 			PartitionHash: partitionHash,
 		},
 	}
 
-	requests := &pb.Requests{Keyspace: c.keyspace}
-	requests.Requests = append(requests.Requests, request)
+	var response *pb.Response
+	err := c.batchProcess([]*pb.Request{request}, func(responses [] *pb.Response, err error) error {
+		if err != nil {
+			return err
+		}
+		if len(responses) == 0 {
+			return NotFoundError
+		}
+		response = responses[0]
+		return nil
+	})
 
-	_, err = pb.SendRequests(conn, requests)
-	conn.Close()
 	if err != nil {
 		return fmt.Errorf("delete error: %v", err)
 	}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
+	"github.com/chrislusf/vasto/util"
 )
 
 var (
@@ -14,34 +15,30 @@ var (
 
 func (c *ClusterClient) Get(key []byte, options ...topology.AccessOption) ([]byte, error) {
 
-	shardId, _ := c.ClusterListener.GetShardId(c.keyspace, key)
-
-	conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, shardId, options...)
-	if err != nil {
-		return nil, err
-	}
+	partitionHash := util.Hash(key)
 
 	request := &pb.Request{
-		ShardId: uint32(shardId),
 		Get: &pb.GetRequest{
-			Key: key,
+			Key:           key,
+			PartitionHash: partitionHash,
 		},
 	}
 
-	requests := &pb.Requests{Keyspace: c.keyspace}
-	requests.Requests = append(requests.Requests, request)
+	var response *pb.Response
+	err := c.batchProcess([]*pb.Request{request}, func(responses [] *pb.Response, err error) error {
+		if err != nil {
+			return err
+		}
+		if len(responses) == 0 {
+			return NotFoundError
+		}
+		response = responses[0]
+		return nil
+	})
 
-	responses, err := pb.SendRequests(conn, requests)
-	conn.Close()
 	if err != nil {
 		return nil, fmt.Errorf("get error: %v", err)
 	}
-
-	if len(responses.Responses) == 0 {
-		return nil, NotFoundError
-	}
-
-	response := responses.Responses[0]
 
 	if response.Get.Status != "" {
 		return nil, fmt.Errorf(response.Get.Status)
