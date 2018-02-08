@@ -100,7 +100,7 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 			select {
 			case msg := <-clientMessageChan:
 				if msg.GetCluster() != nil {
-					log.Printf("%s listener get cluster: %v", clusterListener.clientName, msg.GetCluster())
+					// log.Printf("%s listener get cluster: %v", clusterListener.clientName, msg.GetCluster())
 					cluster := clusterListener.GetOrSetCluster(msg.Cluster.Keyspace, int(msg.Cluster.ExpectedClusterSize), int(msg.Cluster.ReplicationFactor))
 					for _, node := range msg.Cluster.Nodes {
 						AddNode(cluster, node)
@@ -109,7 +109,7 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 						}
 					}
 				} else if msg.GetUpdates() != nil {
-					log.Printf("%s listener get update: %v", clusterListener.clientName, msg.GetUpdates())
+					// log.Printf("%s listener get update: %v", clusterListener.clientName, msg.GetUpdates())
 					cluster, found := clusterListener.GetCluster(msg.Updates.Keyspace)
 					if !found {
 						log.Printf("%s no keyspace %s found to update", clusterListener.clientName, msg.Updates.Keyspace)
@@ -140,7 +140,7 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 						}
 					}
 				} else if msg.GetResize() != nil {
-					log.Printf("%s listener get resize: %v", clusterListener.clientName, msg.GetResize())
+					// log.Printf("%s listener get resize: %v", clusterListener.clientName, msg.GetResize())
 					r, found := clusterListener.GetCluster(msg.Resize.Keyspace)
 					if !found {
 						log.Printf("%s no keyspace %s found to resize", clusterListener.clientName, msg.Resize.Keyspace)
