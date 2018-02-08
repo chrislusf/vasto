@@ -27,6 +27,9 @@ func (c *CommandGet) Do(vastoClient *client.VastoClient, args []string, commandE
 	if err != nil {
 		return err
 	}
+	if commandEnv.clusterClient == nil {
+		return NoKeyspaceSelected
+	}
 
 	// fmt.Printf("env: %+v\n", env)
 	if len(args) == 1 {

@@ -27,6 +27,10 @@ func (c *CommandDelete) Do(vastoClient *client.VastoClient, args []string, comma
 		return err
 	}
 
+	if commandEnv.clusterClient == nil {
+		return NoKeyspaceSelected
+	}
+
 	key := []byte(args[0])
 
 	err = commandEnv.clusterClient.Delete(key, options...)

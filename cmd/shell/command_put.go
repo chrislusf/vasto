@@ -27,6 +27,10 @@ func (c *CommandPut) Do(vastoClient *client.VastoClient, args []string, commandE
 	if err != nil {
 		return err
 	}
+	if commandEnv.clusterClient == nil {
+		return NoKeyspaceSelected
+	}
+
 	if len(args) < 2 {
 		return InvalidArguments
 	}

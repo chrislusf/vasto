@@ -35,7 +35,7 @@ func (c *CommandDump) Do(vastoClient *client.VastoClient, args []string, command
 	}
 
 	if commandEnv.clusterClient == nil {
-		return fmt.Errorf("no keyspace %s", commandEnv.keyspace)
+		return NoKeyspaceSelected
 	}
 
 	cluster, err := commandEnv.clusterClient.GetCluster()

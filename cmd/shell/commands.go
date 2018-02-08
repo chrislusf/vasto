@@ -19,6 +19,8 @@ type Command interface {
 	Do(*client.VastoClient, []string, *CommandEnv, io.Writer) error
 }
 
-var commands = []Command{}
-
-var InvalidArguments = errors.New("invalid arguments")
+var (
+	commands           = []Command{}
+	InvalidArguments   = errors.New("invalid arguments")
+	NoKeyspaceSelected = errors.New("no keyspace selected")
+)

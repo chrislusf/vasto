@@ -28,6 +28,9 @@ func (c *CommandPrefix) Do(vastoClient *client.VastoClient, args []string, comma
 	if err != nil {
 		return err
 	}
+	if commandEnv.clusterClient == nil {
+		return NoKeyspaceSelected
+	}
 
 	prefix := []byte(args[0])
 	limit := uint32(100)
