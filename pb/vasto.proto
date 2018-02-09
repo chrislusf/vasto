@@ -192,6 +192,13 @@ message ShardInfo {
 message Empty {
 }
 
+
+message KeyTypeValue {
+    bytes key = 1;
+    OpAndDataType data_type = 2;
+    bytes value = 3;
+}
+
 //////////////////////////////////////////////////
 //// data queries
 //////////////////////////////////////////////////
@@ -230,8 +237,8 @@ message PutRequest {
 message MergeRequest {
     bytes key = 1;
     uint64 partition_hash = 2;
-    OpAndDataType op_and_data_type = 4;
-    bytes value = 5;
+    OpAndDataType op_and_data_type = 3;
+    bytes value = 4;
 }
 
 message WriteResponse {
@@ -252,7 +259,7 @@ message GetRequest {
 message GetResponse {
     bool ok = 1;
     string status = 2;
-    RawKeyValue key_value = 3;
+    KeyTypeValue key_value = 3;
 }
 
 message GetByPrefixRequest {
@@ -265,7 +272,7 @@ message GetByPrefixRequest {
 message GetByPrefixResponse {
     bool ok = 1;
     string status = 2;
-    repeated RawKeyValue key_values = 3;
+    repeated KeyTypeValue key_values = 3;
 }
 
 message Response {

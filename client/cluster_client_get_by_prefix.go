@@ -8,7 +8,7 @@ import (
 	"github.com/chrislusf/vasto/util"
 )
 
-func (c *ClusterClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, lastSeenKey []byte, options ...topology.AccessOption) ([]*pb.RawKeyValue, error) {
+func (c *ClusterClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, lastSeenKey []byte, options ...topology.AccessOption) ([]*pb.KeyTypeValue, error) {
 
 	if partitionKey == nil {
 		partitionKey = prefix

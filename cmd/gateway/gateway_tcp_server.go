@@ -106,7 +106,7 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 			return &pb.Response{
 				Get: &pb.GetResponse{
 					Ok: true,
-					KeyValue: &pb.RawKeyValue{
+					KeyValue: &pb.KeyTypeValue{
 						Key:   key,
 						Value: value,
 					},

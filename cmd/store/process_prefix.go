@@ -7,7 +7,7 @@ import (
 
 func (ss *storeServer) processPrefix(shard *shard, prefixRequest *pb.GetByPrefixRequest) *pb.GetByPrefixResponse {
 
-	var keyValues []*pb.RawKeyValue
+	var keyValues []*pb.KeyTypeValue
 	resp := &pb.GetByPrefixResponse{
 		Ok: true,
 	}
@@ -20,9 +20,10 @@ func (ss *storeServer) processPrefix(shard *shard, prefixRequest *pb.GetByPrefix
 			if !entry.IsExpired() {
 				t := make([]byte, len(key))
 				copy(t, key)
-				keyValues = append(keyValues, &pb.RawKeyValue{
-					Key:   t,
-					Value: entry.Value,
+				keyValues = append(keyValues, &pb.KeyTypeValue{
+					Key:      t,
+					DataType: pb.OpAndDataType(entry.OpAndDataType),
+					Value:    entry.Value,
 				})
 			}
 			return true
