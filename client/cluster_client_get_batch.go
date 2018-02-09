@@ -27,7 +27,7 @@ func (c *ClusterClient) BatchGet(keys [][]byte, options ...topology.AccessOption
 
 	outputChan := make(chan *answer, len(keys))
 	go func() {
-		err = c.batchProcess(requests, func(responses [] *pb.Response, err error) error {
+		err = c.batchProcess(requests, options, func(responses [] *pb.Response, err error) error {
 			if err != nil {
 				outputChan <- &answer{err: err}
 				return nil

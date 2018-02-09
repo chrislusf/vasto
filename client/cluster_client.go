@@ -24,7 +24,11 @@ func (c *ClusterClient) GetCluster() (*topology.Cluster, error) {
 }
 
 // send requests to the cluster's different shards
-func (c *ClusterClient) batchProcess(requests []*pb.Request, processResultFunc func([] *pb.Response, error) error) error {
+func (c *ClusterClient) batchProcess(
+	requests []*pb.Request,
+	options []topology.AccessOption,
+	processResultFunc func([] *pb.Response, error) error,
+) error {
 
 	cluster, err := c.GetCluster()
 	if err != nil {
@@ -39,7 +43,7 @@ func (c *ClusterClient) batchProcess(requests []*pb.Request, processResultFunc f
 
 	err = forEachShard(shardIdToRequests, func(shardId uint32, requests []*pb.Request) error {
 
-		conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, int(shardId))
+		conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, int(shardId), options...)
 
 		if err != nil {
 			return err

@@ -25,7 +25,7 @@ func (c *ClusterClient) Get(key []byte, options ...topology.AccessOption) ([]byt
 	}
 
 	var response *pb.Response
-	err := c.batchProcess([]*pb.Request{request}, func(responses [] *pb.Response, err error) error {
+	err := c.batchProcess([]*pb.Request{request}, options, func(responses [] *pb.Response, err error) error {
 		if err != nil {
 			return err
 		}
