@@ -11,7 +11,7 @@ type answer struct {
 	err       error
 }
 
-func (c *ClusterClient) BatchGet(keys [][]byte, options ...topology.AccessOption) ([]*pb.KeyValue, error) {
+func (c *ClusterClient) BatchGet(keys [][]byte, options ...topology.AccessOption) (ret []*pb.KeyValue, err error) {
 
 	var requests []*pb.Request
 
@@ -25,16 +25,31 @@ func (c *ClusterClient) BatchGet(keys [][]byte, options ...topology.AccessOption
 		requests = append(requests, request)
 	}
 
-	var ret []*pb.KeyValue
-	err := c.batchProcess(requests, func(responses [] *pb.Response, err error) error {
-		if err != nil {
-			return err
+	outputChan := make(chan *answer, len(keys))
+	go func() {
+		err = c.batchProcess(requests, func(responses [] *pb.Response, err error) error {
+			if err != nil {
+				outputChan <- &answer{err: err}
+				return nil
+			}
+			var output []*pb.KeyValue
+			for _, response := range responses {
+				output = append(output, response.Get.KeyValue)
+			}
+
+			outputChan <- &answer{keyvalues: output}
+
+			return nil
+		})
+		close(outputChan)
+	}()
+
+	for ans := range outputChan {
+		if ans.err != nil {
+			return nil, ans.err
 		}
-		for _, response := range responses {
-			ret = append(ret, response.Get.KeyValue)
-		}
-		return nil
-	})
+		ret = append(ret, ans.keyvalues...)
+	}
 
 	return ret, err
 }
