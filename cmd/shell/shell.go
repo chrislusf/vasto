@@ -29,7 +29,7 @@ func RunShell(option *ShellOption) {
 	}
 
 	if *option.Verbose {
-		b.vastoClient.ClusterListener.RegisterShardEventProcessor(b)
+		// b.vastoClient.ClusterListener.RegisterShardEventProcessor(b)
 		b.vastoClient.ClusterListener.SetVerboseLog(true)
 	}
 
