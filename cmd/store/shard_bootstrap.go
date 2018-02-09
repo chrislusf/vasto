@@ -75,10 +75,10 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 	}
 
 	var bootstrapSourceServerIds []int
-	var sourceRowChans []chan *pb.KeyValue
+	var sourceRowChans []chan *pb.RawKeyValue
 	for _, shard := range bootstrapPlan.BootstrapSource {
 		bootstrapSourceServerIds = append(bootstrapSourceServerIds, shard.ServerId)
-		sourceRowChans = append(sourceRowChans, make(chan *pb.KeyValue, BOOTSTRAP_COPY_BATCH_SIZE))
+		sourceRowChans = append(sourceRowChans, make(chan *pb.RawKeyValue, BOOTSTRAP_COPY_BATCH_SIZE))
 	}
 
 	return util.Parallel(
@@ -102,7 +102,7 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 				return s.db.AddSstByWriter(fmt.Sprintf("%s bootstrapCopy write", s.String()),
 					func(w *gorocksdb.SSTFileWriter) (int, error) {
 						var counter int
-						err := pb.MergeSorted(sourceRowChans, func(keyValue *pb.KeyValue) error {
+						err := pb.MergeSorted(sourceRowChans, func(keyValue *pb.RawKeyValue) error {
 
 							if err := w.Add(keyValue.Key, keyValue.Value); err != nil {
 								return fmt.Errorf("add to sst: %v", err)
@@ -117,7 +117,7 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 
 			// slow way to backfill
 			log.Printf("bootstrap %v via sorted insert ...", s.String())
-			return pb.MergeSorted(sourceRowChans, func(keyValue *pb.KeyValue) error {
+			return pb.MergeSorted(sourceRowChans, func(keyValue *pb.RawKeyValue) error {
 
 				b, err := s.db.Get(keyValue.Key)
 				if err != nil || len(b) == 0 {
@@ -185,7 +185,7 @@ func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.Client
 
 }
 
-func (s *shard) doBootstrapCopy2(ctx context.Context, grpcConnection *grpc.ClientConn, node *pb.ClusterNode, clusterSize, targetClusterSize int, targetShardId int, rowChan chan *pb.KeyValue) (err error) {
+func (s *shard) doBootstrapCopy2(ctx context.Context, grpcConnection *grpc.ClientConn, node *pb.ClusterNode, clusterSize, targetClusterSize int, targetShardId int, rowChan chan *pb.RawKeyValue) (err error) {
 
 	log.Printf("bootstrap2 %s from %s %s filter by %d/%d", s.String(), node.StoreResource.Address, node.ShardInfo.IdentifierOnThisServer(), targetShardId, targetClusterSize)
 

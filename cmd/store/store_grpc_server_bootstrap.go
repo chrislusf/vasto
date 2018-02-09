@@ -37,9 +37,9 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 		batchSize *= targetClusterSize
 	}
 
-	err := shard.db.FullScan(batchSize, func(rows []*pb.KeyValue) error {
+	err := shard.db.FullScan(batchSize, func(rows []*pb.RawKeyValue) error {
 
-		var filteredRows []*pb.KeyValue
+		var filteredRows []*pb.RawKeyValue
 		for _, row := range rows {
 			if bytes.HasPrefix(row.Key, INTERNAL_PREFIX) {
 				continue

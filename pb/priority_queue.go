@@ -7,7 +7,7 @@ import (
 
 // An item is something we manage in a priority queue.
 type item struct {
-	*KeyValue
+	*RawKeyValue
 	chanIndex int
 }
 
@@ -37,7 +37,7 @@ func (pq *priorityQueue) Pop() interface{} {
 	return item
 }
 
-func MergeSorted(chans []chan *KeyValue, fn func(*KeyValue) error) error {
+func MergeSorted(chans []chan *RawKeyValue, fn func(*RawKeyValue) error) error {
 
 	pq := make(priorityQueue, 0, len(chans))
 
@@ -48,8 +48,8 @@ func MergeSorted(chans []chan *KeyValue, fn func(*KeyValue) error) error {
 		keyValue := <-chans[i]
 		if keyValue != nil {
 			pq = append(pq, &item{
-				KeyValue:  keyValue,
-				chanIndex: i,
+				RawKeyValue: keyValue,
+				chanIndex:   i,
 			})
 		}
 	}
@@ -57,14 +57,14 @@ func MergeSorted(chans []chan *KeyValue, fn func(*KeyValue) error) error {
 
 	for pq.Len() > 0 {
 		t := heap.Pop(&pq).(*item)
-		if err := fn(t.KeyValue); err != nil {
+		if err := fn(t.RawKeyValue); err != nil {
 			return err
 		}
 		newT, hasMore := <-chans[t.chanIndex]
 		if hasMore {
 			heap.Push(&pq, &item{
-				KeyValue:  newT,
-				chanIndex: t.chanIndex,
+				RawKeyValue: newT,
+				chanIndex:   t.chanIndex,
 			})
 			heap.Fix(&pq, len(pq)-1)
 		}

@@ -7,11 +7,11 @@ import (
 )
 
 type answer struct {
-	keyvalues []*pb.KeyValue
+	keyvalues []*pb.RawKeyValue
 	err       error
 }
 
-func (c *ClusterClient) BatchGet(keys [][]byte, options ...topology.AccessOption) (ret []*pb.KeyValue, err error) {
+func (c *ClusterClient) BatchGet(keys [][]byte, options ...topology.AccessOption) (ret []*pb.RawKeyValue, err error) {
 
 	var requests []*pb.Request
 
@@ -32,7 +32,7 @@ func (c *ClusterClient) BatchGet(keys [][]byte, options ...topology.AccessOption
 				outputChan <- &answer{err: err}
 				return nil
 			}
-			var output []*pb.KeyValue
+			var output []*pb.RawKeyValue
 			for _, response := range responses {
 				output = append(output, response.Get.KeyValue)
 			}

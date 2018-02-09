@@ -252,7 +252,7 @@ message GetRequest {
 message GetResponse {
     bool ok = 1;
     string status = 2;
-    KeyValue key_value = 3;
+    RawKeyValue key_value = 3;
 }
 
 message GetByPrefixRequest {
@@ -265,7 +265,7 @@ message GetByPrefixRequest {
 message GetByPrefixResponse {
     bool ok = 1;
     string status = 2;
-    repeated KeyValue key_values = 3;
+    repeated RawKeyValue key_values = 3;
 }
 
 message Response {
@@ -274,7 +274,7 @@ message Response {
     GetByPrefixResponse get_by_prefix = 3;
 }
 
-message KeyValue {
+message RawKeyValue {
     bytes key = 1;
     bytes value = 2;
 }
@@ -304,7 +304,7 @@ message BootstrapCopyRequest {
 }
 message BootstrapCopyResponse {
 
-    repeated KeyValue key_values = 1;
+    repeated RawKeyValue key_values = 1;
 
     // this message is only sent at the end of copying
     message BinlogTailProgress {

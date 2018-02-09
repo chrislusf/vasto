@@ -43,7 +43,7 @@ func (c *CommandDump) Do(vastoClient *client.VastoClient, args []string, command
 		return err
 	}
 
-	chans := make([]chan *pb.KeyValue, cluster.ExpectedSize())
+	chans := make([]chan *pb.RawKeyValue, cluster.ExpectedSize())
 
 	var counter int64
 
@@ -54,7 +54,7 @@ func (c *CommandDump) Do(vastoClient *client.VastoClient, args []string, command
 			continue
 		}
 
-		ch := make(chan *pb.KeyValue)
+		ch := make(chan *pb.RawKeyValue)
 		chans[i] = ch
 
 		go cluster.WithConnection("dump", i, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
@@ -102,7 +102,7 @@ func (c *CommandDump) Do(vastoClient *client.VastoClient, args []string, command
 
 	}
 
-	err = pb.MergeSorted(chans, func(t *pb.KeyValue) error {
+	err = pb.MergeSorted(chans, func(t *pb.RawKeyValue) error {
 		if isKeysOnly {
 			fmt.Fprintf(writer, "%v\n", string(t.Key))
 		} else {

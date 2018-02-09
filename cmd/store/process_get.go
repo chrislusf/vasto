@@ -26,7 +26,7 @@ func (ss *storeServer) processGet(shard *shard, getRequest *pb.GetRequest) *pb.G
 		}
 		return &pb.GetResponse{
 			Ok: true,
-			KeyValue: &pb.KeyValue{
+			KeyValue: &pb.RawKeyValue{
 				Key:   key,
 				Value: entry.Value,
 			},

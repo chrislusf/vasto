@@ -7,7 +7,7 @@ import (
 )
 
 // FullScan scan through all entries
-func (d *Rocks) FullScan(batchSize int, fn func([]*pb.KeyValue) error) error {
+func (d *Rocks) FullScan(batchSize int, fn func([]*pb.RawKeyValue) error) error {
 	newClientCounter := atomic.AddInt32(&d.clientCounter, 1)
 	defer atomic.AddInt32(&d.clientCounter, -1)
 	if newClientCounter <= 0 {
@@ -21,14 +21,14 @@ func (d *Rocks) FullScan(batchSize int, fn func([]*pb.KeyValue) error) error {
 	defer iter.Close()
 
 	var rowCount int
-	rows := make([]*pb.KeyValue, 0, batchSize)
+	rows := make([]*pb.RawKeyValue, 0, batchSize)
 	for iter.SeekToFirst(); iter.Valid(); iter.Next() {
 
 		k := iter.Key()
 		v := iter.Value()
 
 		rowCount++
-		rows = append(rows, &pb.KeyValue{
+		rows = append(rows, &pb.RawKeyValue{
 			Key:   []byte(string(k.Data())),
 			Value: []byte(string(v.Data())),
 		})
