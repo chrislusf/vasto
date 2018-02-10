@@ -3,18 +3,24 @@ package client
 import "github.com/chrislusf/vasto/util"
 
 type keyObject struct {
-	key          []byte
-	partitionKey []byte
+	key           []byte
+	partitionHash uint64
 }
 
 func Key(key []byte) *keyObject {
 	return &keyObject{
-		key: key,
+		key:           key,
+		partitionHash: util.Hash(key),
 	}
 }
 
 func (k *keyObject) SetPartitionKey(partitionKey []byte) *keyObject {
-	k.partitionKey = partitionKey
+	k.partitionHash = util.Hash(partitionKey)
+	return k
+}
+
+func (k *keyObject) SetPartitionHash(partitionHash uint64) *keyObject {
+	k.partitionHash = partitionHash
 	return k
 }
 
@@ -23,11 +29,7 @@ func (k *keyObject) GetKey() []byte {
 }
 
 func (k *keyObject) GetPartitionHash() uint64 {
-	partitionKey := k.partitionKey
-	if partitionKey == nil {
-		partitionKey = k.key
-	}
-	return util.Hash(partitionKey)
+	return k.partitionHash
 }
 
 type Row struct {

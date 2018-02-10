@@ -92,13 +92,13 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 
 					if batchSize == 1 {
 
-						key := []byte(fmt.Sprintf("k%d", i))
+						key := client.Key([]byte(fmt.Sprintf("k%d", i)))
 						value := []byte(fmt.Sprintf("v%d", i))
 
 						data, err := c.Get(key)
 
 						if err != nil {
-							log.Printf("read %s: %v", string(key), err)
+							log.Printf("read %s: %v", string(key.GetKey()), err)
 							return err
 						}
 						if bytes.Compare(data, value) != 0 {

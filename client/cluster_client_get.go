@@ -6,21 +6,18 @@ import (
 
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
-	"github.com/chrislusf/vasto/util"
 )
 
 var (
-	NotFoundError          = errors.New("not found")
+	NotFoundError = errors.New("not found")
 )
 
-func (c *ClusterClient) Get(key []byte, options ...topology.AccessOption) ([]byte, error) {
-
-	partitionHash := util.Hash(key)
+func (c *ClusterClient) Get(key *keyObject, options ...topology.AccessOption) ([]byte, error) {
 
 	request := &pb.Request{
 		Get: &pb.GetRequest{
-			Key:           key,
-			PartitionHash: partitionHash,
+			Key:           key.GetKey(),
+			PartitionHash: key.GetPartitionHash(),
 		},
 	}
 

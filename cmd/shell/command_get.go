@@ -33,7 +33,7 @@ func (c *CommandGet) Do(vastoClient *client.VastoClient, args []string, commandE
 
 	// fmt.Printf("env: %+v\n", env)
 	if len(args) == 1 {
-		key := []byte(args[0])
+		key := client.Key([]byte(args[0]))
 
 		value, err := commandEnv.clusterClient.Get(key, options...)
 

@@ -5,7 +5,7 @@ import (
 	"github.com/chrislusf/vasto/topology"
 )
 
-func (c *ClusterClient) Put(key keyObject, value []byte, options ...topology.AccessOption) error {
+func (c *ClusterClient) Put(key *keyObject, value []byte, options ...topology.AccessOption) error {
 
 	var requests []*pb.Request
 	request := &pb.Request{
@@ -24,7 +24,7 @@ func (c *ClusterClient) Put(key keyObject, value []byte, options ...topology.Acc
 	})
 }
 
-func (c *ClusterClient) Append(key keyObject, value []byte, options ...topology.AccessOption) error {
+func (c *ClusterClient) Append(key *keyObject, value []byte, options ...topology.AccessOption) error {
 
 	var requests []*pb.Request
 	request := &pb.Request{

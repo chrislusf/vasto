@@ -37,7 +37,7 @@ func TestOpen(t *testing.T) {
 		client.NewRow([]byte("x3"), []byte("y3")),
 	})
 
-	data, err := ks.Get([]byte("x2"))
+	data, err := ks.Get(client.Key([]byte("x2")))
 	if err != nil {
 		t.Errorf("fail to get value: %v", err)
 	}

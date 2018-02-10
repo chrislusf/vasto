@@ -95,7 +95,8 @@ func (ms *gatewayServer) handleRequest(reader io.Reader, writer io.Writer) error
 
 func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 	if command.GetGet() != nil {
-		key := command.Get.Key
+		key := client.Key(command.Get.Key)
+		key.SetPartitionHash(command.Get.PartitionHash)
 		if value, err := ms.vastoClient.GetClusterClient(*ms.option.Keyspace).Get(key); err != nil {
 			return &pb.Response{
 				Get: &pb.GetResponse{
@@ -107,22 +108,21 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 				Get: &pb.GetResponse{
 					Ok: true,
 					KeyValue: &pb.KeyTypeValue{
-						Key:   key,
+						Key:   key.GetKey(),
 						Value: value,
 					},
 				},
 			}
 		}
 	} else if command.GetPut() != nil {
-		key := command.Put.Key
+		key := client.Key(command.Get.Key)
+		key.SetPartitionHash(command.Get.PartitionHash)
 		value := command.Put.Value
-
-		row := client.NewRow(key, value)
 
 		resp := &pb.WriteResponse{
 			Ok: true,
 		}
-		err := ms.vastoClient.GetClusterClient(*ms.option.Keyspace).BatchPut([]*client.Row{row})
+		err := ms.vastoClient.GetClusterClient(*ms.option.Keyspace).Put(key, value)
 		if err != nil {
 			resp.Ok = false
 			resp.Status = err.Error()
