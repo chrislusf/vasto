@@ -45,59 +45,59 @@ func TestOpen(t *testing.T) {
 		t.Errorf("get: %v, expecting: %v", data, []byte("y2"))
 	}
 
-	k := client.Key([]byte("y1"))
+	t.Run("add", func(t *testing.T) {
+		k := client.Key([]byte("y1"))
 
-	// check add
-	ks.AddFloat64(k, 1)
-	ks.AddFloat64(k, 1)
-	ks.AddFloat64(k, 1)
+		ks.AddFloat64(k, 1)
+		ks.AddFloat64(k, 1)
+		ks.AddFloat64(k, 1)
 
-	x, _ := ks.GetFloat64(k)
+		x, _ := ks.GetFloat64(k)
 
-	if x != 3 {
-		t.Errorf("get float64: %f, expecting: %v", x, 3)
-	}
+		if x != 3 {
+			t.Errorf("get float64: %f, expecting: %v", x, 3)
+		}
+	})
 
-	// check max
-	k = client.Key([]byte("max1"))
-	ks.MaxFloat64(k, 1)
-	x, _ = ks.GetFloat64(k)
-	if x != 1 {
-		t.Errorf("get max float64: %f, expecting: %v", x, 1)
-	}
-	// check max
-	ks.MaxFloat64(k, 100)
-	x, _ = ks.GetFloat64(k)
-	if x != 100 {
-		t.Errorf("get max float64: %f, expecting: %v", x, 100)
-	}
-	// check max
-	ks.MaxFloat64(k, 50)
-	x, _ = ks.GetFloat64(k)
-	if x != 100 {
-		t.Errorf("get max float64: %f, expecting: %v", x, 100)
-	}
+	t.Run("max", func(t *testing.T) {
+		k := client.Key([]byte("max1"))
+		ks.MaxFloat64(k, 1)
+		x, _ := ks.GetFloat64(k)
+		if x != 1 {
+			t.Errorf("get max float64: %f, expecting: %v", x, 1)
+		}
+		ks.MaxFloat64(k, 100)
+		x, _ = ks.GetFloat64(k)
+		if x != 100 {
+			t.Errorf("get max float64: %f, expecting: %v", x, 100)
+		}
+		ks.MaxFloat64(k, 50)
+		x, _ = ks.GetFloat64(k)
+		if x != 100 {
+			t.Errorf("get max float64: %f, expecting: %v", x, 100)
+		}
+	})
 
-	// check min
-	k = client.Key([]byte("min1"))
-	ks.MinFloat64(k, 50)
-	x, _ = ks.GetFloat64(k)
-	if x != 50 {
-		t.Errorf("get min float64: %f, expecting: %v", x, 50)
-	}
-	// check min
-	ks.MinFloat64(k, 100)
-	x, _ = ks.GetFloat64(k)
-	if x != 50 {
-		t.Errorf("get min float64: %f, expecting: %v", x, 50)
-	}
-	// check min
-	ks.MinFloat64(k, 1)
-	x, _ = ks.GetFloat64(k)
-	if x != 1 {
-		t.Errorf("get min float64: %f, expecting: %v", x, 1)
-	}
+	t.Run("min", func(t *testing.T) {
+		k := client.Key([]byte("min1"))
+		ks.MinFloat64(k, 50)
+		x, _ := ks.GetFloat64(k)
+		if x != 50 {
+			t.Errorf("get min float64: %f, expecting: %v", x, 50)
+		}
+		ks.MinFloat64(k, 100)
+		x, _ = ks.GetFloat64(k)
+		if x != 50 {
+			t.Errorf("get min float64: %f, expecting: %v", x, 50)
+		}
+		ks.MinFloat64(k, 1)
+		x, _ = ks.GetFloat64(k)
+		if x != 1 {
+			t.Errorf("get min float64: %f, expecting: %v", x, 1)
+		}
+	})
 
+	os.RemoveAll("./ks1")
 }
 
 func startMasterAndStore() int {
@@ -108,7 +108,6 @@ func startMasterAndStore() int {
 		Address: getString(fmt.Sprintf(":%d", masterPort)),
 	})
 
-	os.RemoveAll("./ks1")
 	storeOption := &s.StoreOption{
 		Dir:               getString("."),
 		Host:              getString("localhost"),
