@@ -28,9 +28,8 @@ func (clusterListener *ClusterListener) GetConnectionByShardId(keyspace string, 
 		return nil, 0, fmt.Errorf("shardId %d not found", shardId)
 	}
 
-	clusterListener.connPoolLock.RLock()
+	clusterListener.connPoolLock.Lock()
 	connPool, foundPool := clusterListener.connPools[n.StoreResource.Address]
-	clusterListener.connPoolLock.RUnlock()
 	if !foundPool {
 		connPool, _ = pool.NewChannelPool(0, 100,
 			func() (net.Conn, error) {
@@ -50,10 +49,9 @@ func (clusterListener *ClusterListener) GetConnectionByShardId(keyspace string, 
 				}
 				return conn, err
 			})
-		clusterListener.connPoolLock.Lock()
 		clusterListener.connPools[n.StoreResource.Address] = connPool
-		clusterListener.connPoolLock.Unlock()
 	}
+	clusterListener.connPoolLock.Unlock()
 
 	conn, err := connPool.Get()
 	if err != nil {

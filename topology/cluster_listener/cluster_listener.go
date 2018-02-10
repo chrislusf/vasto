@@ -27,7 +27,7 @@ type ClusterListener struct {
 	verbose                   bool
 	clientName                string
 	connPools                 map[string]pool.Pool
-	connPoolLock              sync.RWMutex
+	connPoolLock              sync.Mutex
 }
 
 func NewClusterClient(dataCenter string, clientName string) *ClusterListener {
@@ -70,7 +70,7 @@ func (clusterListener *ClusterListener) GetCluster(keyspace string) (r *topology
 }
 
 func (clusterListener *ClusterListener) GetOrSetCluster(keyspace string, clusterSize int, replicationFactor int) *topology.Cluster {
-	clusterListener.RLock()
+	clusterListener.Lock()
 	t, ok := clusterListener.clusters[keyspace_name(keyspace)]
 	if !ok {
 		t = topology.NewCluster(keyspace, clusterListener.dataCenter, clusterSize, replicationFactor)
@@ -82,7 +82,7 @@ func (clusterListener *ClusterListener) GetOrSetCluster(keyspace string, cluster
 	if replicationFactor > 0 {
 		t.SetReplicationFactor(replicationFactor)
 	}
-	clusterListener.RUnlock()
+	clusterListener.Unlock()
 	return t
 }
 

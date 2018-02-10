@@ -62,18 +62,16 @@ func newMasterTopology() *masterTopology {
 }
 
 func (ks *keyspaces) getOrCreateKeyspace(keyspaceName string) *keyspace {
-	ks.RLock()
+	ks.Lock()
 	k, hasData := ks.keyspaces[keyspace_name(keyspaceName)]
-	ks.RUnlock()
 	if !hasData {
 		k = &keyspace{
 			name:     keyspace_name(keyspaceName),
 			clusters: make(map[data_center_name]*topology.Cluster),
 		}
-		ks.Lock()
 		ks.keyspaces[k.name] = k
-		ks.Unlock()
 	}
+	ks.Unlock()
 	return k
 }
 
@@ -105,14 +103,15 @@ func (k *keyspace) removeCluster(dataCenterName string) {
 
 func (k *keyspace) doGetOrCreateCluster(dataCenterName string, clusterSize int, replicationFactor int) (
 	cluster *topology.Cluster, isNew bool) {
-	cluster, found := k.getCluster(dataCenterName)
+
+	k.Lock()
+	cluster, found := k.clusters[data_center_name(dataCenterName)]
 	if !found {
 		cluster = topology.NewCluster(string(k.name), dataCenterName, clusterSize, replicationFactor)
-		k.Lock()
 		k.clusters[data_center_name(dataCenterName)] = cluster
-		k.Unlock()
 		isNew = true
 	}
+	k.Unlock()
 
 	return
 }
@@ -126,18 +125,18 @@ func (k *keyspace) getOrCreateCluster(dataCenterName string, clusterSize int, re
 }
 
 func (dcs *dataCenters) getOrCreateDataCenter(dataCenterName string) *dataCenter {
-	dcs.RLock()
+
+	dcs.Lock()
 	dc, hasData := dcs.dataCenters[data_center_name(dataCenterName)]
-	dcs.RUnlock()
 	if !hasData {
 		dc = &dataCenter{
 			name:    data_center_name(dataCenterName),
 			servers: make(map[server_address]*pb.StoreResource),
 		}
-		dcs.Lock()
 		dcs.dataCenters[dc.name] = dc
-		dcs.Unlock()
 	}
+	dcs.Unlock()
+
 	return dc
 }
 
@@ -149,14 +148,12 @@ func (dcs *dataCenters) getDataCenter(dataCenterName string) (dc *dataCenter, fo
 }
 
 func (dc *dataCenter) upsertServer(storeResource *pb.StoreResource) (existing *pb.StoreResource, hasData bool) {
-	dc.RLock()
+	dc.Lock()
 	existing, hasData = dc.servers[server_address(storeResource.Address)]
-	dc.RUnlock()
 	if !hasData {
-		dc.Lock()
 		dc.servers[server_address(storeResource.Address)] = storeResource
-		dc.Unlock()
 	}
+	dc.Unlock()
 	return
 }
 
@@ -172,13 +169,11 @@ func (dcs *dataCenters) deleteServer(dc *dataCenter, storeResource *pb.StoreReso
 }
 
 func (dc *dataCenter) doDeleteServer(storeResource *pb.StoreResource) (existing *pb.StoreResource, hasData bool) {
-	dc.RLock()
+	dc.Lock()
 	existing, hasData = dc.servers[server_address(storeResource.Address)]
-	dc.RUnlock()
 	if hasData {
-		dc.Lock()
 		delete(dc.servers, server_address(storeResource.Address))
-		dc.Unlock()
 	}
+	dc.Unlock()
 	return
 }
