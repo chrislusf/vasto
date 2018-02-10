@@ -224,6 +224,7 @@ enum OpAndDataType {
     BYTES = 0;
     FLOAT64 = 1;
     MAX_FLOAT64 = 2;
+    MIN_FLOAT64 = 3;
 }
 
 message PutRequest {

@@ -122,7 +122,7 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 		resp := &pb.WriteResponse{
 			Ok: true,
 		}
-		err := ms.vastoClient.GetClusterClient(*ms.option.Keyspace).Put([]*client.Row{row})
+		err := ms.vastoClient.GetClusterClient(*ms.option.Keyspace).BatchPut([]*client.Row{row})
 		if err != nil {
 			resp.Ok = false
 			resp.Status = err.Error()

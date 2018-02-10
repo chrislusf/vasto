@@ -70,7 +70,7 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 						bar.Incr()
 					}
 
-					err := c.Put(rows)
+					err := c.BatchPut(rows)
 					if err != nil {
 						log.Printf("write %d rows, started with %v:  %v", len(rows), string(rows[0].Key.GetKey()), err)
 					}

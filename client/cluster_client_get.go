@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	NotFoundError = errors.New("NotFound")
+	NotFoundError          = errors.New("not found")
 )
 
 func (c *ClusterClient) Get(key []byte, options ...topology.AccessOption) ([]byte, error) {

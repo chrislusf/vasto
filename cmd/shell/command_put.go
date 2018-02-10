@@ -40,7 +40,7 @@ func (c *CommandPut) Do(vastoClient *client.VastoClient, args []string, commandE
 
 	row := client.NewRow(key, value)
 
-	err = commandEnv.clusterClient.Put([]*client.Row{row}, options...)
+	err = commandEnv.clusterClient.BatchPut([]*client.Row{row}, options...)
 
 	fmt.Fprintln(writer)
 
