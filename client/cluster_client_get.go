@@ -12,7 +12,7 @@ var (
 	NotFoundError = errors.New("not found")
 )
 
-func (c *ClusterClient) Get(key *keyObject, options ...topology.AccessOption) ([]byte, error) {
+func (c *ClusterClient) Get(key *KeyObject, options ...topology.AccessOption) ([]byte, error) {
 
 	request := &pb.Request{
 		Get: &pb.GetRequest{

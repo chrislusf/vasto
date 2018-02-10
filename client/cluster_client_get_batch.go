@@ -3,7 +3,6 @@ package client
 import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
-	"github.com/chrislusf/vasto/util"
 )
 
 type answer struct {
@@ -11,15 +10,15 @@ type answer struct {
 	err       error
 }
 
-func (c *ClusterClient) BatchGet(keys [][]byte, options ...topology.AccessOption) (ret []*pb.KeyTypeValue, err error) {
+func (c *ClusterClient) BatchGet(keys []*KeyObject, options ...topology.AccessOption) (ret []*pb.KeyTypeValue, err error) {
 
 	var requests []*pb.Request
 
 	for _, key := range keys {
 		request := &pb.Request{
 			Get: &pb.GetRequest{
-				Key:           key,
-				PartitionHash: util.Hash(key),
+				Key:           key.GetKey(),
+				PartitionHash: key.GetPartitionHash(),
 			},
 		}
 		requests = append(requests, request)

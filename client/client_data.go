@@ -2,38 +2,38 @@ package client
 
 import "github.com/chrislusf/vasto/util"
 
-type keyObject struct {
+type KeyObject struct {
 	key           []byte
 	partitionHash uint64
 }
 
-func Key(key []byte) *keyObject {
-	return &keyObject{
+func Key(key []byte) *KeyObject {
+	return &KeyObject{
 		key:           key,
 		partitionHash: util.Hash(key),
 	}
 }
 
-func (k *keyObject) SetPartitionKey(partitionKey []byte) *keyObject {
+func (k *KeyObject) SetPartitionKey(partitionKey []byte) *KeyObject {
 	k.partitionHash = util.Hash(partitionKey)
 	return k
 }
 
-func (k *keyObject) SetPartitionHash(partitionHash uint64) *keyObject {
+func (k *KeyObject) SetPartitionHash(partitionHash uint64) *KeyObject {
 	k.partitionHash = partitionHash
 	return k
 }
 
-func (k *keyObject) GetKey() []byte {
+func (k *KeyObject) GetKey() []byte {
 	return k.key
 }
 
-func (k *keyObject) GetPartitionHash() uint64 {
+func (k *KeyObject) GetPartitionHash() uint64 {
 	return k.partitionHash
 }
 
 type Row struct {
-	Key   *keyObject
+	Key   *KeyObject
 	Value []byte
 }
 

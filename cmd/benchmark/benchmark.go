@@ -112,10 +112,10 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 
 					}
 
-					var keys [][]byte
+					var keys []*client.KeyObject
 					for t := 0; t < batchSize; t++ {
 						key := []byte(fmt.Sprintf("k%d", i+t))
-						keys = append(keys, key)
+						keys = append(keys, client.Key(key))
 					}
 
 					data, err := c.BatchGet(keys)

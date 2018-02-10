@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-func (c *ClusterClient) GetFloat64(key *keyObject, options ...topology.AccessOption) (float64, error) {
+func (c *ClusterClient) GetFloat64(key *KeyObject, options ...topology.AccessOption) (float64, error) {
 
 	request := &pb.Request{
 		Get: &pb.GetRequest{
@@ -45,7 +45,7 @@ func (c *ClusterClient) GetFloat64(key *keyObject, options ...topology.AccessOpt
 
 }
 
-func (c *ClusterClient) AddFloat64(key *keyObject, value float64, options ...topology.AccessOption) error {
+func (c *ClusterClient) AddFloat64(key *KeyObject, value float64, options ...topology.AccessOption) error {
 
 	var requests []*pb.Request
 	request := &pb.Request{
@@ -65,7 +65,7 @@ func (c *ClusterClient) AddFloat64(key *keyObject, value float64, options ...top
 
 // Max sets a value to the key, and when getting the key, the maximum value of all previous keys
 // will be returned.
-func (c *ClusterClient) MaxFloat64(key *keyObject, value float64, options ...topology.AccessOption) error {
+func (c *ClusterClient) MaxFloat64(key *KeyObject, value float64, options ...topology.AccessOption) error {
 
 	var requests []*pb.Request
 	request := &pb.Request{
@@ -85,7 +85,7 @@ func (c *ClusterClient) MaxFloat64(key *keyObject, value float64, options ...top
 
 // Min sets a value to the key, and when getting the key, the mininum value of all previous keys
 // will be returned.
-func (c *ClusterClient) MinFloat64(key *keyObject, value float64, options ...topology.AccessOption) error {
+func (c *ClusterClient) MinFloat64(key *KeyObject, value float64, options ...topology.AccessOption) error {
 
 	var requests []*pb.Request
 	request := &pb.Request{

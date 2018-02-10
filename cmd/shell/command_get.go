@@ -43,9 +43,9 @@ func (c *CommandGet) Do(vastoClient *client.VastoClient, args []string, commandE
 
 		return err
 	} else {
-		var keys [][]byte
+		var keys []*client.KeyObject
 		for _, arg := range args {
-			keys = append(keys, []byte(arg))
+			keys = append(keys, client.Key([]byte(arg)))
 		}
 		keyValues, err := commandEnv.clusterClient.BatchGet(keys, options...)
 		if err != nil {

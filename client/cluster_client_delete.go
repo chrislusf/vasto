@@ -7,7 +7,7 @@ import (
 	"github.com/chrislusf/vasto/topology"
 )
 
-func (c *ClusterClient) Delete(key *keyObject, options ...topology.AccessOption) error {
+func (c *ClusterClient) Delete(key *KeyObject, options ...topology.AccessOption) error {
 
 	request := &pb.Request{
 		Delete: &pb.DeleteRequest{
