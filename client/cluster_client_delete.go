@@ -5,19 +5,14 @@ import (
 
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
-	"github.com/chrislusf/vasto/util"
 )
 
-func (c *ClusterClient) Delete(key []byte, options ...topology.AccessOption) error {
-
-	// TODO use partition key here
-
-	partitionHash := util.Hash(key)
+func (c *ClusterClient) Delete(key *keyObject, options ...topology.AccessOption) error {
 
 	request := &pb.Request{
 		Delete: &pb.DeleteRequest{
-			Key:           key,
-			PartitionHash: partitionHash,
+			Key:           key.GetKey(),
+			PartitionHash: key.GetPartitionHash(),
 		},
 	}
 

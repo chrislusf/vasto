@@ -131,7 +131,7 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 			Write: resp,
 		}
 	} else if command.GetDelete() != nil {
-		key := command.Delete.Key
+		key := client.Key(command.Delete.Key)
 
 		resp := &pb.WriteResponse{
 			Ok: true,
