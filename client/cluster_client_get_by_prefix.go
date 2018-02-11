@@ -17,7 +17,10 @@ func (c *ClusterClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, l
 	}
 
 	if partitionKey != nil {
-		return c.sendToSingleShard(prefixRequest, partitionKey, options)
+
+		shardId, _ := c.ClusterListener.GetShardId(c.keyspace, partitionKey)
+
+		return c.prefixQueryToSingleShard(shardId, prefixRequest, options)
 	}
 
 	return c.broadcastEachShard(prefixRequest, options)
@@ -40,20 +43,15 @@ func (c *ClusterClient) broadcastEachShard(prefixRequest *pb.GetByPrefixRequest,
 
 			defer close(chans[shardId])
 
-			responses, err := c.sendRequestsToOneShard("getByPrefix", []*pb.Request{{
-				ShardId:     uint32(shardId),
-				GetByPrefix: prefixRequest,
-			}}, options)
+			keyValues, err := c.prefixQueryToSingleShard(shardId, prefixRequest, options)
 
 			if err != nil {
 				broadcastErr = err
 				return
 			}
 
-			if len(responses) == 1 {
-				for _, kv := range responses[0].GetByPrefix.KeyValues {
-					chans[shardId] <- kv
-				}
+			for _, kv := range keyValues {
+				chans[shardId] <- kv
 			}
 
 		}()
@@ -64,9 +62,7 @@ func (c *ClusterClient) broadcastEachShard(prefixRequest *pb.GetByPrefixRequest,
 
 }
 
-func (c *ClusterClient) sendToSingleShard(prefixRequest *pb.GetByPrefixRequest, partitionKey []byte, options []topology.AccessOption) (results []*pb.KeyTypeValue, err error) {
-
-	shardId, _ := c.ClusterListener.GetShardId(c.keyspace, partitionKey)
+func (c *ClusterClient) prefixQueryToSingleShard(shardId int, prefixRequest *pb.GetByPrefixRequest, options []topology.AccessOption) (results []*pb.KeyTypeValue, err error) {
 
 	responses, err := c.sendRequestsToOneShard("getByPrefix", []*pb.Request{{
 		ShardId:     uint32(shardId),
