@@ -63,7 +63,7 @@ func (c *ClusterClient) broadcastEachShard(prefixRequest *pb.GetByPrefixRequest,
 
 func (c *ClusterClient) prefixQueryToSingleShard(shardId int, prefixRequest *pb.GetByPrefixRequest, options []topology.AccessOption) (results []*pb.KeyTypeValue, err error) {
 
-	responses, err := c.sendRequestsToOneShard("getByPrefix", []*pb.Request{{
+	responses, err := c.sendRequestsToOneShard([]*pb.Request{{
 		ShardId:     uint32(shardId),
 		GetByPrefix: prefixRequest,
 	}}, options)
@@ -78,7 +78,7 @@ func (c *ClusterClient) prefixQueryToSingleShard(shardId int, prefixRequest *pb.
 
 // sendRequestsToOneShard send the requests to one shard
 // assuming the requests going to the same shard
-func (c *ClusterClient) sendRequestsToOneShard(name string, requests []*pb.Request, options []topology.AccessOption) (results []*pb.Response, err error) {
+func (c *ClusterClient) sendRequestsToOneShard(requests []*pb.Request, options []topology.AccessOption) (results []*pb.Response, err error) {
 
 	if len(requests) == 0 {
 		return nil, nil

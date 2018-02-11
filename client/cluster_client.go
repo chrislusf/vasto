@@ -43,23 +43,14 @@ func (c *ClusterClient) batchProcess(
 
 	err = mapEachShard(shardIdToRequests, func(shardId uint32, requests []*pb.Request) error {
 
-		conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, int(shardId), options...)
-
-		if err != nil {
-			return err
-		}
-
-		responses, err := pb.SendRequests(conn, &pb.Requests{
-			Keyspace: c.keyspace,
-			Requests: requests,
-		})
-		conn.Close()
-		if processResultFunc != nil {
-			return processResultFunc(responses.Responses, err)
-		}
+		responses, err := c.sendRequestsToOneShard(requests, options)
 
 		if err != nil {
 			return fmt.Errorf("shard %d process error: %v", shardId, err)
+		}
+
+		if processResultFunc != nil {
+			return processResultFunc(responses, err)
 		}
 
 		return nil
