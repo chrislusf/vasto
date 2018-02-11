@@ -265,9 +265,8 @@ message GetResponse {
 
 message GetByPrefixRequest {
     bytes prefix = 1;
-    uint64 partition_hash = 2;
-    uint32 limit = 3;
-    bytes last_seen_key = 4;
+    uint32 limit = 2;
+    bytes last_seen_key = 3;
 }
 
 message GetByPrefixResponse {

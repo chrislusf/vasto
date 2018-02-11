@@ -48,7 +48,7 @@ func doWithConnect(name string, node *pb.ClusterNode, serverId int, fn func(*pb.
 	}
 	defer grpcConnection.Close()
 
-	log.Printf("%s: connect to shard %s on %s", name, node.ShardInfo.IdentifierOnThisServer(), node.StoreResource.AdminAddress)
+	// log.Printf("%s: connect to shard %s on %s", name, node.ShardInfo.IdentifierOnThisServer(), node.StoreResource.AdminAddress)
 
 	return fn(node, grpcConnection)
 }

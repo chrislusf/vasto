@@ -7,7 +7,9 @@ func (r *Request) GetPartitionHash() (uint64) {
 		return r.Get.PartitionHash
 	}
 	if r.GetByPrefix != nil {
-		return r.GetByPrefix.PartitionHash
+		// TODO change the caller function batchProcess to batchWriteProcess
+		log.Fatalf("unexpected r.GetByPrefix")
+		// return r.GetByPrefix.PartitionHash
 	}
 	if r.Put != nil {
 		return r.Put.PartitionHash

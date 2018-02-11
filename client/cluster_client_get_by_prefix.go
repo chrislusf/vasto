@@ -5,7 +5,6 @@ import (
 
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
-	"github.com/chrislusf/vasto/util"
 	"google.golang.org/grpc"
 )
 
@@ -18,7 +17,7 @@ func (c *ClusterClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, l
 	}
 
 	if partitionKey != nil {
-		prefixRequest.PartitionHash = util.Hash(partitionKey)
+		return c.sendToSingleShard(prefixRequest, partitionKey, options)
 	}
 
 	return c.broadcastEachShard(prefixRequest, options)
@@ -36,40 +35,90 @@ func (c *ClusterClient) broadcastEachShard(prefixRequest *pb.GetByPrefixRequest,
 
 		shardId := i
 		chans[shardId] = make(chan *pb.KeyTypeValue)
-		go cluster.WithConnection("getByPrefix", shardId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+
+		go func() {
+
 			defer close(chans[shardId])
 
-			conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, int(shardId), options...)
+			responses, err := c.sendRequestsToOneShard("getByPrefix", []*pb.Request{{
+				ShardId:     uint32(shardId),
+				GetByPrefix: prefixRequest,
+			}}, options)
 
 			if err != nil {
 				broadcastErr = err
-				return nil
+				return
 			}
 
-			responses, err := pb.SendRequests(conn, &pb.Requests{
-				Keyspace: c.keyspace,
-				Requests: []*pb.Request{&pb.Request{
-					ShardId:     uint32(shardId),
-					GetByPrefix: prefixRequest,
-				}},
-			})
-			conn.Close()
-
-			if err != nil {
-				broadcastErr = fmt.Errorf("shard %d process error: %v", shardId, err)
-				return nil
-			}
-
-			for _, response := range responses.Responses {
-				for _, kv := range response.GetByPrefix.KeyValues {
+			if len(responses) == 1 {
+				for _, kv := range responses[0].GetByPrefix.KeyValues {
 					chans[shardId] <- kv
 				}
 			}
-			return nil
-		})
+
+		}()
 
 	}
 
 	return pb.LimitedMergeSorted(chans, int(prefixRequest.Limit)), broadcastErr
+
+}
+
+func (c *ClusterClient) sendToSingleShard(prefixRequest *pb.GetByPrefixRequest, partitionKey []byte, options []topology.AccessOption) (results []*pb.KeyTypeValue, err error) {
+
+	shardId, _ := c.ClusterListener.GetShardId(c.keyspace, partitionKey)
+
+	responses, err := c.sendRequestsToOneShard("getByPrefix", []*pb.Request{{
+		ShardId:     uint32(shardId),
+		GetByPrefix: prefixRequest,
+	}}, options)
+
+	if len(responses) == 1 {
+		results = responses[0].GetByPrefix.KeyValues
+	}
+
+	return
+
+}
+
+// sendRequestsToOneShard send the requests to one shard
+// assuming the requests going to the same shard
+func (c *ClusterClient) sendRequestsToOneShard(name string, requests []*pb.Request, options []topology.AccessOption) (results []*pb.Response, err error) {
+
+	if len(requests) == 0 {
+		return nil, nil
+	}
+
+	cluster, err := c.GetCluster()
+	if err != nil {
+		return nil, err
+	}
+
+	shardId := requests[0].ShardId
+
+	err = cluster.WithConnection(name, int(shardId), func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
+
+		conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, int(shardId), options...)
+
+		if err != nil {
+			return err
+		}
+
+		responses, err := pb.SendRequests(conn, &pb.Requests{
+			Keyspace: c.keyspace,
+			Requests: requests,
+		})
+		conn.Close()
+
+		if err != nil {
+			return fmt.Errorf("shard %d process error: %v", shardId, err)
+		}
+
+		results = responses.Responses
+
+		return nil
+	})
+
+	return
 
 }
