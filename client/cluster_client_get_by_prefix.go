@@ -5,7 +5,6 @@ import (
 
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
-	"google.golang.org/grpc"
 )
 
 func (c *ClusterClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, lastSeenKey []byte, options ...topology.AccessOption) ([]*pb.KeyTypeValue, error) {
@@ -85,35 +84,25 @@ func (c *ClusterClient) sendRequestsToOneShard(name string, requests []*pb.Reque
 		return nil, nil
 	}
 
-	cluster, err := c.GetCluster()
+	shardId := requests[0].ShardId
+
+	conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, int(shardId), options...)
+
 	if err != nil {
 		return nil, err
 	}
 
-	shardId := requests[0].ShardId
-
-	err = cluster.WithConnection(name, int(shardId), func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
-
-		conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, int(shardId), options...)
-
-		if err != nil {
-			return err
-		}
-
-		responses, err := pb.SendRequests(conn, &pb.Requests{
-			Keyspace: c.keyspace,
-			Requests: requests,
-		})
-		conn.Close()
-
-		if err != nil {
-			return fmt.Errorf("shard %d process error: %v", shardId, err)
-		}
-
-		results = responses.Responses
-
-		return nil
+	responses, err := pb.SendRequests(conn, &pb.Requests{
+		Keyspace: c.keyspace,
+		Requests: requests,
 	})
+	conn.Close()
+
+	if err != nil {
+		return nil, fmt.Errorf("shard %d process error: %v", shardId, err)
+	}
+
+	results = responses.Responses
 
 	return
 
