@@ -20,7 +20,7 @@ func (c *CommandPrefix) Name() string {
 }
 
 func (c *CommandPrefix) Help() string {
-	return "prefix [limit lastSeenKey], prefix should also be the partition key"
+	return "<prefix> [<limit> <lastSeenKey>], prefix should also be the partition key"
 }
 
 func (c *CommandPrefix) Do(vastoClient *client.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {

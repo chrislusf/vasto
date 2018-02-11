@@ -41,7 +41,7 @@ func (c *ClusterClient) batchProcess(
 		shardIdToRequests[req.ShardId] = append(shardIdToRequests[req.ShardId], req)
 	}
 
-	err = forEachShard(shardIdToRequests, func(shardId uint32, requests []*pb.Request) error {
+	err = mapEachShard(shardIdToRequests, func(shardId uint32, requests []*pb.Request) error {
 
 		conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, int(shardId), options...)
 
@@ -73,7 +73,7 @@ func (c *ClusterClient) batchProcess(
 
 }
 
-func forEachShard(buckets map[uint32][]*pb.Request, eachFunc func(uint32, []*pb.Request) error) (err error) {
+func mapEachShard(buckets map[uint32][]*pb.Request, eachFunc func(uint32, []*pb.Request) error) (err error) {
 	var wg sync.WaitGroup
 	for shardId, requests := range buckets {
 		wg.Add(1)

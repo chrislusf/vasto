@@ -35,14 +35,22 @@ func (d *Rocks) enumerate(iter *gorocksdb.Iterator, prefix, lastKey []byte, limi
 		iter.Seek(prefix)
 	} else {
 		iter.Seek(lastKey)
-		iter.Next()
+
+		k := iter.Key()
+		key := k.Data()
+		k.Free()
+
+		if bytes.Equal(key, lastKey) {
+			iter.Next()
+		}
 	}
-	i := -1
+
+	i := 0
 	for ; iter.Valid(); iter.Next() {
 
 		if limit > 0 {
 			i++
-			if i >= limit {
+			if i > limit {
 				break
 			}
 		}

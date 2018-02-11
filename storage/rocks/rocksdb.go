@@ -39,6 +39,7 @@ func (d *Rocks) setup(path string, mergeOperator gorocksdb.MergeOperator) {
 	d.dbOptions = gorocksdb.NewDefaultOptions()
 	d.dbOptions.SetCreateIfMissing(true)
 	d.dbOptions.SetAllowIngestBehind(true)
+	// d.dbOptions.SetUseDirectReads(true)
 	d.dbOptions.SetCompactionFilter(d.compactionFilter)
 	if mergeOperator != nil {
 		d.dbOptions.SetMergeOperator(mergeOperator)
