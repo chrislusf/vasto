@@ -1,8 +1,6 @@
 package client
 
 import (
-	"fmt"
-
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
 )
@@ -71,38 +69,6 @@ func (c *ClusterClient) prefixQueryToSingleShard(shardId int, prefixRequest *pb.
 	if len(responses) == 1 {
 		results = responses[0].GetByPrefix.KeyValues
 	}
-
-	return
-
-}
-
-// sendRequestsToOneShard send the requests to one shard
-// assuming the requests going to the same shard
-func (c *ClusterClient) sendRequestsToOneShard(requests []*pb.Request, options []topology.AccessOption) (results []*pb.Response, err error) {
-
-	if len(requests) == 0 {
-		return nil, nil
-	}
-
-	shardId := requests[0].ShardId
-
-	conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, int(shardId), options...)
-
-	if err != nil {
-		return nil, err
-	}
-
-	responses, err := pb.SendRequests(conn, &pb.Requests{
-		Keyspace: c.keyspace,
-		Requests: requests,
-	})
-	conn.Close()
-
-	if err != nil {
-		return nil, fmt.Errorf("shard %d process error: %v", shardId, err)
-	}
-
-	results = responses.Responses
 
 	return
 

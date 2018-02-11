@@ -23,6 +23,38 @@ func (c *ClusterClient) GetCluster() (*topology.Cluster, error) {
 	return cluster, nil
 }
 
+// sendRequestsToOneShard send the requests to one shard
+// assuming the requests going to the same shard
+func (c *ClusterClient) sendRequestsToOneShard(requests []*pb.Request, options []topology.AccessOption) (results []*pb.Response, err error) {
+
+	if len(requests) == 0 {
+		return nil, nil
+	}
+
+	shardId := requests[0].ShardId
+
+	conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, int(shardId), options...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	responses, err := pb.SendRequests(conn, &pb.Requests{
+		Keyspace: c.keyspace,
+		Requests: requests,
+	})
+	conn.Close()
+
+	if err != nil {
+		return nil, fmt.Errorf("shard %d process error: %v", shardId, err)
+	}
+
+	results = responses.Responses
+
+	return
+
+}
+
 // send requests to the cluster's different shards
 func (c *ClusterClient) batchProcess(
 	requests []*pb.Request,
