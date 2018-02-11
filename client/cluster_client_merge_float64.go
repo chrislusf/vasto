@@ -41,6 +41,10 @@ func (c *ClusterClient) GetFloat64(key *KeyObject, options ...topology.AccessOpt
 		return 0, NotFoundError
 	}
 
+	if len(kv.Value) != 8 {
+		return 0, WrongDataFormatError
+	}
+
 	return util.BytesToFloat64(kv.Value), nil
 
 }

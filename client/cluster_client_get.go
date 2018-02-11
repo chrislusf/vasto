@@ -10,6 +10,7 @@ import (
 
 var (
 	NotFoundError = errors.New("not found")
+	WrongDataFormatError = errors.New("wrong data format")
 )
 
 func (c *ClusterClient) Get(key *KeyObject, options ...topology.AccessOption) ([]byte, error) {
