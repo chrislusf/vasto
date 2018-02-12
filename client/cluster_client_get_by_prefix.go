@@ -5,6 +5,11 @@ import (
 	"github.com/chrislusf/vasto/topology"
 )
 
+// GetByPrefix list the entries keyed with the same prefix
+// partitionKey: limit the prefix query to one specific shard. If nil, broadcast the query to the whole cluster.
+// prefix: the entries should have a key with this prefix
+// limit: number of entries to return
+// lastSeenKey: the last key seen during pagination
 func (c *ClusterClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, lastSeenKey []byte, options ...topology.AccessOption) ([]*pb.KeyTypeValue, error) {
 
 	prefixRequest := &pb.GetByPrefixRequest{
