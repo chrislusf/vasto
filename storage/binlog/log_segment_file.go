@@ -22,7 +22,6 @@ type logSegmentFile struct {
 	logFileMaxSize  int64
 	hasShutdown     bool
 	accessLock      sync.Mutex
-	writeBuffer     *proto.Buffer
 }
 
 func newLogSegmentFile(fillName string, segment uint32, logFileMaxSize int64) *logSegmentFile {
@@ -33,40 +32,37 @@ func newLogSegmentFile(fillName string, segment uint32, logFileMaxSize int64) *l
 		sizeBufForRead:  make([]byte, 4),
 		followerCond:    &sync.Cond{L: &sync.Mutex{}},
 		logFileMaxSize:  logFileMaxSize,
-		writeBuffer:     proto.NewBuffer(nil),
 	}
 }
 
 func (f *logSegmentFile) appendEntry(entry *pb.LogEntry) (err error) {
 
-	// lock writeBuffer, sizeBufForWrite, and file writes
-	f.accessLock.Lock()
-
 	// marshal the log entry
-	f.writeBuffer.Reset()
-	if err := f.writeBuffer.Marshal(entry); err != nil {
-		f.accessLock.Unlock()
+	encodedData, err := proto.Marshal(entry)
+	if err != nil {
 		return fmt.Errorf("appendEntry marshal log entry: %v", err)
 	}
 
+	// lock writeBuffer, sizeBufForWrite, and file writes
+	f.accessLock.Lock()
+
 	// write to disk
-	dataLen := len(f.writeBuffer.Bytes())
+	dataLen := len(encodedData)
 	binary.LittleEndian.PutUint32(f.sizeBufForWrite, uint32(dataLen))
 	if _, err := f.file.WriteAt(f.sizeBufForWrite, f.offset); err != nil {
 		f.accessLock.Unlock()
 		return fmt.Errorf("appendEntry write log entry size: %v", err)
 	}
-	writtenDataLen, err := f.file.WriteAt(f.writeBuffer.Bytes(), f.offset+4)
+	writtenDataLen, err := f.file.WriteAt(encodedData, f.offset+4)
+	f.accessLock.Unlock()
 	if err != nil {
-		f.accessLock.Unlock()
 		return fmt.Errorf("appendEntry write log entry data: %v", err)
 	}
-	f.accessLock.Unlock()
 
 	if err == nil && writtenDataLen == dataLen {
 		// println("broadcast file condition change")
 		f.followerCond.L.Lock()
-		f.offset += int64(dataLen)
+		f.offset += int64(dataLen+4)
 		f.followerCond.Broadcast()
 		f.followerCond.L.Unlock()
 	} else {
@@ -93,7 +89,7 @@ func (f *logSegmentFile) readEntries(offset int64, limit int) (entries []*pb.Log
 	f.followerCond.L.Unlock()
 
 	if f.hasShutdown {
-		return nil, 0, fmt.Errorf("log file %v shutdown in progress...", f.fullName)
+		return nil, 0, fmt.Errorf("log file %v shutdown in progress", f.fullName)
 	}
 
 	nextOffset = offset
