@@ -99,6 +99,7 @@ var (
 		DataCenter:        bench.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
 		Keyspace:          bench.Flag("keyspace", "keyspace name").Default("benchmark").String(),
 		Tests:             bench.Flag("tests", "[put|get]").Default("put,get").Short('t').String(),
+		DisableUnixSocket: bench.Flag("disableUnixSocket", "avoid unix socket and only use tcp network").Default("false").Bool(),
 	}
 	benchProfile = bench.Flag("cpuprofile", "cpu profile output file").Default("").String()
 

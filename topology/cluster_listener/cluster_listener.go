@@ -28,6 +28,7 @@ type ClusterListener struct {
 	clientName                string
 	connPools                 map[string]pool.Pool
 	connPoolLock              sync.Mutex
+	disableUnixSocket         bool
 }
 
 func NewClusterClient(dataCenter string, clientName string) *ClusterListener {
@@ -162,6 +163,12 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 
 func (clusterListener *ClusterListener) SetVerboseLog(verbose bool) {
 	clusterListener.verbose = verbose
+}
+
+// SetUnixSocket whether or not use unix socket if available. Default to true.
+// When client or gateway is on the same machine as the store server, using unix socket can avoid some network cost.
+func (clusterListener *ClusterListener) SetUnixSocket(useUnixSocket bool) {
+	clusterListener.disableUnixSocket = !useUnixSocket
 }
 
 func (clusterListener *ClusterListener) HasConnectedKeyspace(keyspace string) bool {

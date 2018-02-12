@@ -22,6 +22,7 @@ type BenchmarkOption struct {
 	RequestCountStart *int32
 	BatchSize         *int32
 	Tests             *string
+	DisableUnixSocket *bool
 }
 
 type benchmarker struct {
@@ -156,6 +157,9 @@ func (b *benchmarker) startThreadsWithClient(ctx context.Context, name string, f
 
 	b.startThreads(name, requestCountEachClient, int(*b.option.RequestCountStart), func(hist *Histogram, start, stop, batchSize int) {
 		vc := client.NewClient(ctx, "benchmarker", *b.option.Master, *b.option.DataCenter)
+		if *b.option.DisableUnixSocket {
+			vc.ClusterListener.SetUnixSocket(false)
+		}
 		fn(hist, vc.GetClusterClient(*b.option.Keyspace), start, stop, batchSize)
 	})
 
