@@ -8,7 +8,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"fmt"
 	"sync"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 type VastoClient struct {

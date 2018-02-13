@@ -3,7 +3,7 @@ package store
 import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 // the following functions implements cluster_listener.ShardEventProcessor

@@ -9,7 +9,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc"
 	"sync/atomic"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 func init() {

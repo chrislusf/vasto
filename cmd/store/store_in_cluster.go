@@ -6,7 +6,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 const (

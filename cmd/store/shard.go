@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc"
 	"sync"
 	"time"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 type shard_id int

@@ -5,7 +5,7 @@ import (
 
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer) error {

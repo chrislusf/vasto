@@ -8,7 +8,7 @@ import (
 	"github.com/chrislusf/vasto/client"
 	"github.com/chrislusf/vasto/util/on_interrupt"
 	"os"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 type GatewayOption struct {

@@ -5,7 +5,7 @@ import (
 
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 func (ss *storeServer) processPut(shard *shard, putRequest *pb.PutRequest) *pb.WriteResponse {

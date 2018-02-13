@@ -7,7 +7,7 @@ import (
 	"github.com/chrislusf/gorocksdb"
 	"sync/atomic"
 	"time"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 type Rocks struct {

@@ -9,7 +9,7 @@ import (
 	"io"
 	"strings"
 	"time"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 func (ss *storeServer) keepConnectedToMasterServer(ctx context.Context) {

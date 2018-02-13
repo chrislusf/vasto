@@ -5,7 +5,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
 	"golang.org/x/net/context"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 // ReplicateNodePrepare

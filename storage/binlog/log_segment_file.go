@@ -8,7 +8,7 @@ import (
 	"sync"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 type logSegmentFile struct {

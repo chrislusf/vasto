@@ -4,7 +4,7 @@ import (
 	"context"
 	"math/rand"
 	"time"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 func Retry(fn func() error) error {

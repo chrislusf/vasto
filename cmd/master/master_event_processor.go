@@ -3,7 +3,7 @@ package master
 import (
 	"fmt"
 	"sync"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 type clientsStat struct {

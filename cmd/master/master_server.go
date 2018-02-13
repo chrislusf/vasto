@@ -7,7 +7,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	//"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 type MasterOption struct {

@@ -5,7 +5,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"golang.org/x/net/context"
 	"os"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 // DeleteKeyspace

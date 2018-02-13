@@ -29,7 +29,7 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 	"os/user"
 	"strings"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 	"flag"
 )
 
@@ -122,7 +122,7 @@ func main() {
 
 	flag.Parse()
 
-	cmd := kingpin.MustParse(app.Parse(os.Args[1:]))
+	cmd := kingpin.MustParse(app.Parse(flag.Args()))
 
 	cpuProfile := *storeProfile + *gatewayProfile + *benchProfile
 

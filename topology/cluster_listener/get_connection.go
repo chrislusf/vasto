@@ -7,7 +7,7 @@ import (
 	"gopkg.in/fatih/pool.v2"
 	"net"
 	"time"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 /*

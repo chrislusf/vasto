@@ -9,7 +9,7 @@ import (
 	"github.com/chrislusf/vasto/util"
 	"gopkg.in/fatih/pool.v2"
 	"sync"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 type keyspace_name string

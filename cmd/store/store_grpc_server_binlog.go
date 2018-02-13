@@ -7,7 +7,7 @@ import (
 	"golang.org/x/net/context"
 	"io"
 	"time"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 // TailBinlog sends all data if PullUpdateRequest's TargetClusterSize==0,

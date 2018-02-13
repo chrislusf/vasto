@@ -6,7 +6,7 @@ import (
 	"github.com/chrislusf/vasto/topology"
 	"golang.org/x/net/context"
 	"os"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 // 1. create the new or missing shards, bootstrap the data, one-time follows, and regular follows.

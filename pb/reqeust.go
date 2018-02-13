@@ -1,7 +1,7 @@
 package pb
 
 import (
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 func (r *Request) GetPartitionHash() (uint64) {

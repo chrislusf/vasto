@@ -8,7 +8,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
 	"google.golang.org/grpc"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 const (

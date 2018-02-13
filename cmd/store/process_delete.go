@@ -3,7 +3,7 @@ package store
 import (
 	"github.com/chrislusf/vasto/pb"
 	"time"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 func (ss *storeServer) processDelete(shard *shard, deleteRequest *pb.DeleteRequest) *pb.WriteResponse {

@@ -10,7 +10,7 @@ import (
 	"io"
 	"net"
 	"time"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 // Run starts the heartbeating to master and starts accepting requests.

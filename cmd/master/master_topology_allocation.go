@@ -8,7 +8,7 @@ import (
 	"math"
 	"sort"
 	"sync"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 // allocateServers

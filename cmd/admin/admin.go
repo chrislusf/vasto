@@ -3,7 +3,7 @@ package admin
 import (
 	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 type AdminOption struct {

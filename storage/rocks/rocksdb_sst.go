@@ -5,7 +5,7 @@ import (
 	"github.com/chrislusf/gorocksdb"
 	"io/ioutil"
 	"os"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 func (d *Rocks) addSst(name string, next func() (bool, []byte, []byte)) error {

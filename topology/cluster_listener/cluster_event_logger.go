@@ -3,7 +3,7 @@ package cluster_listener
 import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 type ClusterEventLogger struct {

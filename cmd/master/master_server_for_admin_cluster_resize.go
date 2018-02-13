@@ -7,7 +7,7 @@ import (
 	"github.com/chrislusf/vasto/topology"
 	"google.golang.org/grpc"
 	"time"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest) (resp *pb.ResizeResponse, err error) {

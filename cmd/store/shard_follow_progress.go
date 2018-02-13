@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 type progressKey struct {

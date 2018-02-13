@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 	"github.com/chrislusf/vasto/pb"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 type LogManager struct {

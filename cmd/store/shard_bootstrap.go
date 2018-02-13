@@ -11,7 +11,7 @@ import (
 	"github.com/chrislusf/vasto/util"
 	"google.golang.org/grpc"
 	"sync"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 func (s *shard) peerShards() []topology.ClusterShard {

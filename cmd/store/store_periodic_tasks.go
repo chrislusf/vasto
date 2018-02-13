@@ -2,7 +2,7 @@ package store
 
 import (
 	"time"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 type PeriodicTask interface {

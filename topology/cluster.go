@@ -7,7 +7,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/dgryski/go-jump"
 	"sort"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 type Cluster struct {

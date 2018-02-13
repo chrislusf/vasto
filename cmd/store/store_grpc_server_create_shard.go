@@ -6,7 +6,7 @@ import (
 	"github.com/chrislusf/vasto/topology"
 	"golang.org/x/net/context"
 	"os"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 // CreateShard

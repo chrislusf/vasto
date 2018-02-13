@@ -13,7 +13,7 @@ import (
 	"github.com/chrislusf/vasto/util/on_interrupt"
 	"github.com/tidwall/evio"
 	"sync"
-	"github.com/golang/glog"
+	"github.com/chrislusf/glog"
 )
 
 type StoreOption struct {
