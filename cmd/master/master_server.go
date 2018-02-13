@@ -7,6 +7,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc"
 	"github.com/chrislusf/glog"
+	"sync/atomic"
 )
 
 type MasterOption struct {
@@ -18,7 +19,7 @@ type masterServer struct {
 	clientChans          *clientChannels
 	clientsStat          *clientsStat
 	topo                 *masterTopology
-	keyspaceMutexMap     map[string]*sync.Mutex
+	keyspaceMutexMap     map[string]*mutexWithCounter
 	keyspaceMutexMapLock sync.Mutex
 }
 
@@ -28,7 +29,7 @@ func RunMaster(option *MasterOption) {
 		clientChans:      newClientChannels(),
 		clientsStat:      newClientsStat(),
 		topo:             newMasterTopology(),
-		keyspaceMutexMap: make(map[string]*sync.Mutex),
+		keyspaceMutexMap: make(map[string]*mutexWithCounter),
 	}
 
 	listener, err := net.Listen("tcp", *option.Address)
@@ -54,13 +55,19 @@ func (ms *masterServer) serveGrpc(listener net.Listener) {
 	grpcServer.Serve(listener)
 }
 
+type mutexWithCounter struct {
+	sync.Mutex
+	counter int64
+}
+
 func (ms *masterServer) lock(keyspace string) {
 	ms.keyspaceMutexMapLock.Lock()
 	mu, found := ms.keyspaceMutexMap[keyspace]
 	if !found {
-		mu = &sync.Mutex{}
+		mu = &mutexWithCounter{}
 		ms.keyspaceMutexMap[keyspace] = mu
 	}
+	atomic.AddInt64(&mu.counter, 1)
 	ms.keyspaceMutexMapLock.Unlock()
 
 	mu.Lock()
@@ -69,10 +76,13 @@ func (ms *masterServer) lock(keyspace string) {
 func (ms *masterServer) unlock(keyspace string) {
 	ms.keyspaceMutexMapLock.Lock()
 	mu, found := ms.keyspaceMutexMap[keyspace]
-	ms.keyspaceMutexMapLock.Unlock()
-	if !found {
-		return
+	if found {
+		if atomic.AddInt64(&mu.counter, -1) == 0 {
+			delete(ms.keyspaceMutexMap, keyspace)
+		}
 	}
+	ms.keyspaceMutexMapLock.Unlock()
 
 	mu.Unlock()
+
 }
