@@ -6,15 +6,15 @@ import (
 	"github.com/dgryski/go-jump"
 	"golang.org/x/net/context"
 	"io"
-	"log"
 	"time"
+	"github.com/golang/glog"
 )
 
 // TailBinlog sends all data if PullUpdateRequest's TargetClusterSize==0,
 // or sends all data belong to TargetShardId in cluster of TargetClusterSize
 func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.VastoStore_TailBinlogServer) error {
 
-	log.Printf("TailBinlog %v", request)
+	glog.V(1).Infof("TailBinlog %v", request)
 
 	shard, found := ss.keyspaceShards.getShard(request.Keyspace, shard_id(request.ShardId))
 	if !found || shard.isShutdown {
@@ -50,13 +50,13 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 	}
 
 	defer func() {
-		log.Printf("TailBinlog completed shard %v for %v", shard.String(), request.Origin)
+		glog.V(1).Infof("TailBinlog completed shard %v for %v", shard.String(), request.Origin)
 	}()
 
 	for {
 
 		// println("TailBinlog server reading entries, segment", segment, "offset", offset, "limit", limit)
-		// log.Printf("TailBinlog shard %v %v read entries %d:%d", shard.String(), request.Origin, segment, offset)
+		// glog.V(2).Infof("TailBinlog shard %v %v read entries %d:%d", shard.String(), request.Origin, segment, offset)
 
 		entries, nextOffset, err := shard.lm.ReadEntries(segment, offset, limit)
 		if err == io.EOF {
@@ -73,7 +73,7 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 			}
 		}
 
-		// log.Printf("shard %v read for %v: %d, @ %d:%d, next %d", shard.String(), request.Origin, len(entries), segment, offset, nextOffset)
+		// glog.V(2).Infof("shard %v read for %v: %d, @ %d:%d, next %d", shard.String(), request.Origin, len(entries), segment, offset, nextOffset)
 
 		t := &pb.PullUpdateResponse{
 			NextSegment: segment,
@@ -82,19 +82,19 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 
 		for _, entry := range entries {
 
-			// log.Printf("shard %v send0 %v: %v offset:%d", shard.String(), request.Origin, string(entry.Key), offset)
+			// glog.V(2).Infof("shard %v send0 %v: %v offset:%d", shard.String(), request.Origin, string(entry.Key), offset)
 			if targetClusterSize > 0 && jump.Hash(entry.GetPartitionHash(), targetClusterSize) != targetShardId {
-				// log.Printf("shard %v send %v skipped: %v, hash:%v, targetClusterSize:%d, targetShardId:%d ", shard.String(), request.Origin, string(entry.Key), entry.PartitionHash, targetClusterSize, targetShardId)
+				// glog.V(2).Infof("shard %v send %v skipped: %v, hash:%v, targetClusterSize:%d, targetShardId:%d ", shard.String(), request.Origin, string(entry.Key), entry.PartitionHash, targetClusterSize, targetShardId)
 				continue
 			}
 
-			// log.Printf("shard %v send %v: %v", shard.String(), request.Origin, string(entry.Key))
+			// glog.V(2).Infof("shard %v send %v: %v", shard.String(), request.Origin, string(entry.Key))
 
 			t.Entries = append(t.Entries, entry)
 		}
 
 		if err := stream.Send(t); err != nil {
-			log.Printf("TailBinlog shard %v send %v: %v", shard.String(), request.Origin, err)
+			glog.Errorf("TailBinlog shard %v send %v: %v", shard.String(), request.Origin, err)
 			return err
 		}
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
-	"log"
+	"github.com/golang/glog"
 )
 
 type progressKey struct {
@@ -34,7 +34,7 @@ func genSegmentOffsetKeys(serverAdminAddress string, shardId shard_id) (segmentK
 
 // implementing PeriodicTask
 func (s *shard) EverySecond() {
-	// log.Printf("%s every second", s)
+	// glog.V(2).Infof("%s every second", s)
 	s.followProcessesLock.Lock()
 	for pk, pv := range s.followProgress {
 		if segment, offset, hasProgress, err := s.loadProgress(pk.serverAdminAddress, pk.shardId); err == nil {
@@ -68,7 +68,7 @@ func (s *shard) loadProgress(serverAdminAddress string, targetShardId shard_id) 
 
 func (s *shard) saveProgress(serverAdminAddress string, targetShardId shard_id, segment uint32, offset uint64) (err error) {
 
-	log.Printf("shard %s follow server %v shard %d next segment %d offset %d", s, serverAdminAddress, targetShardId, segment, offset)
+	glog.V(1).Infof("shard %s follow server %v shard %d next segment %d offset %d", s, serverAdminAddress, targetShardId, segment, offset)
 
 	segmentKey, offsetKey := genSegmentOffsetKeys(serverAdminAddress, targetShardId)
 
@@ -86,7 +86,7 @@ func (s *shard) saveProgress(serverAdminAddress string, targetShardId shard_id, 
 
 func (s *shard) clearProgress(serverAdminAddress string, targetShardId shard_id) {
 
-	log.Printf("shard %s stops following server %v.%d", s, serverAdminAddress, targetShardId)
+	glog.V(1).Infof("shard %s stops following server %v.%d", s, serverAdminAddress, targetShardId)
 
 	segmentKey, offsetKey := genSegmentOffsetKeys(serverAdminAddress, targetShardId)
 

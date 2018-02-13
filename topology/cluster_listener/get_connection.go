@@ -5,9 +5,9 @@ import (
 	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
 	"gopkg.in/fatih/pool.v2"
-	"log"
 	"net"
 	"time"
+	"github.com/golang/glog"
 )
 
 /*
@@ -60,7 +60,7 @@ func (clusterListener *ClusterListener) GetConnectionByShardId(keyspace string, 
 
 	if clusterListener.verbose {
 		if replica > 0 {
-			log.Printf("connecting to server %d at %s replica=%d", shardId, n.StoreResource.Address, replica)
+			glog.V(2).Infof("connecting to server %d at %s replica=%d", shardId, n.StoreResource.Address, replica)
 		}
 	}
 

@@ -6,8 +6,8 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
 	"google.golang.org/grpc"
-	"log"
 	"time"
+	"github.com/golang/glog"
 )
 
 func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest) (resp *pb.ResizeResponse, err error) {
@@ -58,7 +58,7 @@ func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest
 		eachShardSizeGb := uint32(1)
 		newServers, allocateErr = allocateServers(cluster, dc, int(req.TargetClusterSize)-cluster.ExpectedSize(), float64(eachShardSizeGb))
 		if allocateErr != nil {
-			log.Printf("allocateServers %v: %v", req, err)
+			glog.Errorf("allocateServers %v: %v", req, err)
 			resp.Error = fmt.Sprintf("fail to allocate %d servers: %v", int(req.TargetClusterSize)-cluster.ExpectedSize(), allocateErr)
 			return
 		}
@@ -70,7 +70,7 @@ func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest
 	// 2. create missing shards on existing servers, create new shards on new servers
 	servers := append(existingServers, newServers...)
 	if err = resizeCreateShards(ctx, req.Keyspace, uint32(cluster.ExpectedSize()), req.TargetClusterSize, uint32(cluster.ReplicationFactor()), servers); err != nil {
-		log.Printf("resizeCreateShards %v: %v", req, err)
+		glog.Errorf("resizeCreateShards %v: %v", req, err)
 		resp.Error = err.Error()
 		return
 	}
@@ -82,14 +82,14 @@ func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest
 	}
 
 	if err = ms.adjustAndBroadcastUpcomingShardStatuses(ctx, req, cluster, servers, existingServers); err != nil {
-		log.Printf("adjustAndBroadcastUpcomingShardStatuses %v: %v", req, err)
+		glog.Errorf("adjustAndBroadcastUpcomingShardStatuses %v: %v", req, err)
 		resp.Error = err.Error()
 		return
 	}
 
 	// 3. cleanup old shards
 	if err = resizeCleanup(ctx, req.Keyspace, req.TargetClusterSize, servers); err != nil {
-		log.Printf("resizeCleanup %v: %v", req, err)
+		glog.Errorf("resizeCleanup %v: %v", req, err)
 		resp.Error = err.Error()
 		return
 	}
@@ -121,7 +121,7 @@ func allocateServers(cluster *topology.Cluster, dc *dataCenter, serverCount int,
 func resizeCreateShards(ctx context.Context, keyspace string, clusterSize, targetClusterSize, replicationFactor uint32, stores []*pb.StoreResource) error {
 
 	return eachStore(stores, func(serverId int, store *pb.StoreResource) error {
-		// log.Printf("connecting to server %d at %s", serverId, store.GetAdminAddress())
+		// glog.V(2).Infof"connecting to server %d at %s", serverId, store.GetAdminAddress())
 		return withConnection(store, func(grpcConnection *grpc.ClientConn) error {
 
 			client := pb.NewVastoStoreClient(grpcConnection)
@@ -133,7 +133,7 @@ func resizeCreateShards(ctx context.Context, keyspace string, clusterSize, targe
 				TargetClusterSize: targetClusterSize,
 			}
 
-			log.Printf("resize create shard on %v: %v", store.AdminAddress, request)
+			glog.V(1).Infof("resize create shard on %v: %v", store.AdminAddress, request)
 			resp, err := client.ResizePrepare(ctx, request)
 			if err != nil {
 				return err
@@ -149,7 +149,7 @@ func resizeCreateShards(ctx context.Context, keyspace string, clusterSize, targe
 func resizeCommit(ctx context.Context, keyspace string, clusterSize uint32, stores []*pb.StoreResource) error {
 
 	return eachStore(stores, func(serverId int, store *pb.StoreResource) error {
-		// log.Printf("connecting to server %d at %s", serverId, store.GetAdminAddress())
+		// glog.V(2).Infof"connecting to server %d at %s", serverId, store.GetAdminAddress())
 		return withConnection(store, func(grpcConnection *grpc.ClientConn) error {
 
 			client := pb.NewVastoStoreClient(grpcConnection)
@@ -158,7 +158,7 @@ func resizeCommit(ctx context.Context, keyspace string, clusterSize uint32, stor
 				TargetClusterSize: clusterSize,
 			}
 
-			log.Printf("resize commit on %v: %v", store.AdminAddress, request)
+			glog.V(1).Infof("resize commit on %v: %v", store.AdminAddress, request)
 			resp, err := client.ResizeCommit(ctx, request)
 			if err != nil {
 				return err
@@ -173,7 +173,7 @@ func resizeCommit(ctx context.Context, keyspace string, clusterSize uint32, stor
 
 func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Context, req *pb.ResizeRequest, cluster *topology.Cluster, newStores []*pb.StoreResource, existingServers []*pb.StoreResource) error {
 
-	log.Printf("adjustAndBroadcastUpcomingShardStatuses %v", req)
+	glog.V(1).Infof("adjustAndBroadcastUpcomingShardStatuses %v", req)
 
 	// wait a little bit for shards created and update back shard status to master
 	time.Sleep(time.Second)
@@ -191,7 +191,7 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 				node.ShardInfo.IsCandidate = false
 				cluster.SetShard(node.StoreResource, node.ShardInfo)
 				ms.notifyPromotion(node.ShardInfo, node.StoreResource)
-				log.Printf("promoting new shard %v on %s", node.ShardInfo.IdentifierOnThisServer(), node.StoreResource.GetAddress())
+				glog.V(1).Infof("promoting new shard %v on %s", node.ShardInfo.IdentifierOnThisServer(), node.StoreResource.GetAddress())
 			}
 		}
 	}
@@ -205,7 +205,7 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 				if int(node.ShardInfo.ClusterSize) != newClusterSize {
 					node.ShardInfo.ClusterSize = uint32(newClusterSize)
 					ms.notifyUpdate(node.ShardInfo, node.GetStoreResource())
-					log.Printf("change shard %v on %s to cluster size %d", node.ShardInfo.IdentifierOnThisServer(), node.StoreResource.GetAddress(), newClusterSize)
+					glog.V(1).Infof("change shard %v on %s to cluster size %d", node.ShardInfo.IdentifierOnThisServer(), node.StoreResource.GetAddress(), newClusterSize)
 				}
 			} else {
 				// move removing outside to avoid modifying when iterating
@@ -225,7 +225,7 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 		cluster.RemoveShard(node.StoreResource, node.ShardInfo)
 		node.ShardInfo.IsPermanentDelete = true
 		ms.notifyDeletion(node.ShardInfo, node.GetStoreResource())
-		log.Printf("delete shard %v on %s for cluster size %d", node.ShardInfo.IdentifierOnThisServer(), node.StoreResource.GetAddress(), newClusterSize)
+		glog.V(1).Infof("delete shard %v on %s for cluster size %d", node.ShardInfo.IdentifierOnThisServer(), node.StoreResource.GetAddress(), newClusterSize)
 	}
 
 	// notify clients of shards on to-be-cleanup servers, if shrinking
@@ -235,7 +235,7 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 			for _, shardInfo := range cluster.RemoveStore(store) {
 				shardInfo.IsPermanentDelete = true
 				ms.notifyDeletion(shardInfo, store)
-				log.Printf("remove shard %v on %s for cluster size %d", shardInfo.IdentifierOnThisServer(), store.GetAddress(), newClusterSize)
+				glog.V(1).Infof("remove shard %v on %s for cluster size %d", shardInfo.IdentifierOnThisServer(), store.GetAddress(), newClusterSize)
 			}
 		}
 	}
@@ -246,7 +246,7 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 func resizeCleanup(ctx context.Context, keyspace string, clusterSize uint32, stores []*pb.StoreResource) error {
 
 	return eachStore(stores, func(serverId int, store *pb.StoreResource) error {
-		// log.Printf("connecting to server %d at %s", serverId, store.GetAdminAddress())
+		// glog.V(2).Infof"connecting to server %d at %s", serverId, store.GetAdminAddress())
 		return withConnection(store, func(grpcConnection *grpc.ClientConn) error {
 
 			client := pb.NewVastoStoreClient(grpcConnection)
@@ -255,7 +255,7 @@ func resizeCleanup(ctx context.Context, keyspace string, clusterSize uint32, sto
 				TargetClusterSize: clusterSize,
 			}
 
-			log.Printf("resize cleanup on %v: %v", store.AdminAddress, request)
+			glog.V(1).Infof("resize cleanup on %v: %v", store.AdminAddress, request)
 			resp, err := client.ResizeCleanup(ctx, request)
 			if err != nil {
 				return err

@@ -1,11 +1,11 @@
 package store
 
 import (
-	"log"
 	"time"
 
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
+	"github.com/golang/glog"
 )
 
 func (ss *storeServer) processPut(shard *shard, putRequest *pb.PutRequest) *pb.WriteResponse {
@@ -18,7 +18,7 @@ func (ss *storeServer) processPut(shard *shard, putRequest *pb.PutRequest) *pb.W
 		Ok: true,
 	}
 
-	// log.Printf("shard %d put key: %v\n", shard.id, string(putRequest.KeyValue.Key))
+	// glog.V(2).Infof"shard %d put key: %v\n", shard.id, string(putRequest.KeyValue.Key))
 
 	err := shard.db.Put(key, entry.ToBytes())
 	if err != nil {
@@ -47,7 +47,7 @@ func (s *shard) logPut(putRequest *pb.PutRequest, updatedAtNs uint64) {
 	})
 
 	if err != nil {
-		log.Printf("append put log entry: %v", err)
+		glog.Errorf("append put log entry: %v", err)
 	}
 
 	// println("logPut3", putRequest.String())

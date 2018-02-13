@@ -1,13 +1,13 @@
 package master
 
 import (
-	"log"
 	"net"
 	//"strings"
 
 	"github.com/chrislusf/vasto/pb"
 	//"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
+	"github.com/golang/glog"
 )
 
 type MasterOption struct {
@@ -31,9 +31,9 @@ func RunMaster(option *MasterOption) {
 
 	listener, err := net.Listen("tcp", *option.Address)
 	if err != nil {
-		log.Fatal(err)
+		glog.Fatal(err)
 	}
-	log.Printf("Vasto master starts on %s\n", *option.Address)
+	glog.V(0).Infof("Vasto master starts on %s\n", *option.Address)
 
 	// m := cmux.New(listener)
 	// grpcListener := m.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))

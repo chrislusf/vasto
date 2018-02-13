@@ -1,13 +1,13 @@
 package rocks
 
 import (
-	"log"
 	"os"
 
 	"errors"
 	"github.com/chrislusf/gorocksdb"
 	"sync/atomic"
 	"time"
+	"github.com/golang/glog"
 )
 
 type Rocks struct {
@@ -49,7 +49,7 @@ func (d *Rocks) setup(path string, mergeOperator gorocksdb.MergeOperator) {
 	var err error
 	d.db, err = gorocksdb.OpenDb(d.dbOptions, d.path)
 	if err != nil {
-		log.Fatal(err)
+		glog.Fatalf("open db at %s : %v", d.path, err)
 	}
 
 	d.wo = gorocksdb.NewDefaultWriteOptions()
@@ -110,14 +110,14 @@ func (d *Rocks) Close() {
 		if swapped {
 			break
 		}
-		log.Printf("waiting to close db %s ...", d.path)
+		glog.V(1).Infof("waiting to close db %s ...", d.path)
 		time.Sleep(300 * time.Millisecond)
 	}
 	d.wo.Destroy()
 	d.ro.Destroy()
 	d.dbOptions.Destroy()
 	d.db.Close()
-	log.Printf("closed db %s", d.path)
+	glog.V(1).Infof("closed db %s", d.path)
 }
 
 func (d *Rocks) Size() (sum uint64) {

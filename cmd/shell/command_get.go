@@ -19,7 +19,7 @@ func (c *CommandGet) Name() string {
 }
 
 func (c *CommandGet) Help() string {
-	return "key"
+	return "<key>"
 }
 
 func (c *CommandGet) Do(vastoClient *client.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {

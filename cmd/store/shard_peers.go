@@ -6,7 +6,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
 	"google.golang.org/grpc"
-	"log"
+	"github.com/golang/glog"
 )
 
 func (s *shard) isBootstrapNeeded(ctx context.Context, bootstrapOption *topology.BootstrapPlan) (bestPeerToCopy topology.ClusterShard, isNeeded bool) {
@@ -47,9 +47,9 @@ func (s *shard) isBootstrapNeeded(ctx context.Context, bootstrapOption *topology
 	}
 
 	if isNeeded {
-		log.Printf("shard %v found peer server %v to bootstrap from", s.String(), bestPeerToCopy)
+		glog.V(1).Infof("shard %v found peer server %v to bootstrap from", s.String(), bestPeerToCopy)
 	} else {
-		log.Printf("shard %v found bootstrapping is not needed", s.id)
+		glog.V(2).Infof("shard %v found bootstrapping is not needed", s.id)
 	}
 
 	return bestPeerToCopy, isNeeded

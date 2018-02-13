@@ -10,9 +10,9 @@ import (
 	"github.com/chrislusf/vasto/topology/cluster_listener"
 	"github.com/chrislusf/vasto/util"
 	"google.golang.org/grpc"
-	"log"
 	"sync"
 	"time"
+	"github.com/golang/glog"
 )
 
 type shard_id int
@@ -48,7 +48,7 @@ func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
-	log.Printf("open %s.%d.%d in %s", keyspaceName, serverId, nodeId, dir)
+	glog.V(1).Infof("open %s.%d.%d in %s", keyspaceName, serverId, nodeId, dir)
 
 	mergeOperator := NewVastoMergeOperator()
 
@@ -61,7 +61,7 @@ func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.
 		clusterListener: clusterListener,
 		nodeFinishChan:  make(chan bool),
 		cancelFunc: func() {
-			log.Printf("cancelling shard %d.%d", serverId, nodeId)
+			glog.V(1).Infof("cancelling shard %d.%d", serverId, nodeId)
 			cancelFunc()
 		},
 		followProgress:  make(map[progressKey]progressValue),
@@ -78,7 +78,7 @@ func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.
 
 func (s *shard) shutdownNode() {
 
-	log.Printf("shutdownNode: %+v", s)
+	glog.V(1).Infof("shutdownNode: %+v", s)
 
 	s.isShutdown = true
 
@@ -113,17 +113,17 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 		if s.cluster != nil && bootstrapOption.IsNormalStartBootstrapNeeded {
 			err := s.maybeBootstrapAfterRestart(s.ctx)
 			if err != nil {
-				log.Printf("normal bootstrap %s: %v", s.String(), err)
+				glog.Errorf("normal bootstrap %s: %v", s.String(), err)
 				return fmt.Errorf("normal bootstrap %s: %v", s.String(), err)
 			}
 		}
 	} else {
-		log.Printf("start topo bootstrap %s, existing servers: %v", s.String(), existingPrimaryShards)
+		glog.V(1).Infof("start topo bootstrap %s, existing servers: %v", s.String(), existingPrimaryShards)
 		if err := s.topoChangeBootstrap(s.ctx, bootstrapOption, existingPrimaryShards); err != nil {
-			log.Printf("topo bootstrap %s: %v", s.String(), err)
+			glog.Errorf("topo bootstrap %s: %v", s.String(), err)
 			return fmt.Errorf("topo bootstrap %s: %v", s.String(), err)
 		}
-		log.Printf("finished topo bootstrap %s", s.String())
+		glog.V(1).Infof("finished topo bootstrap %s", s.String())
 	}
 
 	// add normal follow
@@ -132,10 +132,10 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 	oneTimeFollowCtx, oneTimeFollowCancelFunc := context.WithCancel(context.Background())
 
 	// add one time follow during transitional period, there are no retries, assuming the source shards are already up
-	log.Printf("%s one-time follow %+v, cluster %v", s.String(), bootstrapOption.TransitionalFollowSource, s.cluster.String())
+	glog.V(1).Infof("%s one-time follow %+v, cluster %v", s.String(), bootstrapOption.TransitionalFollowSource, s.cluster.String())
 	for _, shard := range bootstrapOption.TransitionalFollowSource {
 		go func(shard topology.ClusterShard, existingPrimaryShards []*pb.ClusterNode) {
-			log.Printf("%s one-time follow2 %+v, existing servers: %v", s.String(), shard, existingPrimaryShards)
+			glog.V(2).Infof("%s one-time follow2 %+v, existing servers: %v", s.String(), shard, existingPrimaryShards)
 			err := topology.PrimaryShards(existingPrimaryShards).WithConnection(
 				fmt.Sprintf("%s one-time follow %d.%d", s.String(), shard.ServerId, shard.ShardId),
 				shard.ServerId,
@@ -144,12 +144,12 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 				},
 			)
 			if err != nil {
-				log.Printf("%s one-time follow3 %+v: %v", s.String(), shard, err)
+				glog.Errorf("%s one-time follow3 %+v: %v", s.String(), shard, err)
 			}
 		}(shard, existingPrimaryShards)
 	}
 	s.oneTimeFollowCancel = func() {
-		log.Printf("cancelling shard %v one time followings", s.String())
+		glog.V(1).Infof("cancelling shard %v one time followings", s.String())
 		oneTimeFollowCancelFunc()
 	}
 
@@ -163,7 +163,7 @@ func (s *shard) adjustNormalFollowings(clusterSize, replicationFactor int) {
 
 	followTargetPeers := topology.PeerShards(int(s.serverId), int(s.id), clusterSize, replicationFactor)
 
-	log.Printf("%s follow peers %+v cluster %d replication %d", s.String(), followTargetPeers, clusterSize, replicationFactor)
+	glog.V(2).Infof("%s follow peers %+v cluster %d replication %d", s.String(), followTargetPeers, clusterSize, replicationFactor)
 
 	// add new followings
 	for _, peer := range followTargetPeers {
@@ -173,7 +173,7 @@ func (s *shard) adjustNormalFollowings(clusterSize, replicationFactor int) {
 		}
 
 		serverId, shardId := peer.ServerId, peer.ShardId
-		log.Printf("%s normal follow %d.%d", s.String(), serverId, shardId)
+		glog.V(1).Infof("%s normal follow %d.%d", s.String(), serverId, shardId)
 		ctx, cancelFunc := context.WithCancel(s.ctx)
 		s.startFollowProcess(peer, cancelFunc)
 

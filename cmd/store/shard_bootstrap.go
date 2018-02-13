@@ -3,8 +3,6 @@ package store
 import (
 	"fmt"
 	"io"
-	"log"
-
 	"context"
 	"github.com/chrislusf/gorocksdb"
 	"github.com/chrislusf/vasto/pb"
@@ -13,6 +11,7 @@ import (
 	"github.com/chrislusf/vasto/util"
 	"google.golang.org/grpc"
 	"sync"
+	"github.com/golang/glog"
 )
 
 func (s *shard) peerShards() []topology.ClusterShard {
@@ -33,11 +32,11 @@ func (s *shard) maybeBootstrapAfterRestart(ctx context.Context) error {
 	})
 
 	if !isNeeded {
-		// log.Printf("bootstrap shard %d is not needed", s.id)
+		// glog.V(2).Infof("bootstrap shard %d is not needed", s.id)
 		return nil
 	}
 
-	log.Printf("bootstrap from server %+v ...", bestPeerToCopy)
+	glog.V(1).Infof("bootstrap from server %+v ...", bestPeerToCopy)
 
 	return s.cluster.WithConnection(fmt.Sprintf("%s bootstrap after restart", s.String()), bestPeerToCopy.ServerId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 		_, canTailBinlog, err := s.checkBinlogAvailable(ctx, grpcConnection, node)
@@ -62,11 +61,11 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 
 		bestPeerToCopy, isNeeded := s.isBootstrapNeeded(ctx, bootstrapPlan)
 		if !isNeeded {
-			// log.Printf("bootstrap shard %d is not needed", s.id)
+			// glog.V(2).Infof("bootstrap shard %d is not needed", s.id)
 			return nil
 		}
 
-		log.Printf("bootstrap from %d.%d ...", bestPeerToCopy.ServerId, bestPeerToCopy.ShardId)
+		glog.V(1).Infof("bootstrap from %d.%d ...", bestPeerToCopy.ServerId, bestPeerToCopy.ShardId)
 
 		return topology.PrimaryShards(existingPrimaryShards).WithConnection(fmt.Sprintf("%s bootstrap from one exisiting %d.%d", s.String(), bestPeerToCopy.ServerId, bestPeerToCopy.ShardId),
 			bestPeerToCopy.ServerId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
@@ -98,7 +97,7 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 		func() error {
 			if !s.hasBackfilled {
 				s.hasBackfilled = true
-				log.Printf("bootstrap %v via sst ...", s.String())
+				glog.V(1).Infof("bootstrap %v via sst ...", s.String())
 				return s.db.AddSstByWriter(fmt.Sprintf("%s bootstrapCopy write", s.String()),
 					func(w *gorocksdb.SSTFileWriter) (int, error) {
 						var counter int
@@ -116,7 +115,7 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 			}
 
 			// slow way to backfill
-			log.Printf("bootstrap %v via sorted insert ...", s.String())
+			glog.V(1).Infof("bootstrap %v via sorted insert ...", s.String())
 			return pb.MergeSorted(sourceRowChans, func(keyValue *pb.RawKeyValue) error {
 
 				b, err := s.db.Get(keyValue.Key)
@@ -173,7 +172,7 @@ func (s *shard) checkBinlogAvailable(ctx context.Context, grpcConnection *grpc.C
 
 func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.ClientConn, node *pb.ClusterNode, clusterSize, targetClusterSize int, targetShardId int) error {
 
-	log.Printf("bootstrap %s from %s %s filter by %d/%d", s.String(), node.StoreResource.Address, node.ShardInfo.IdentifierOnThisServer(), targetShardId, targetClusterSize)
+	glog.V(1).Infof("bootstrap %s from %s %s filter by %d/%d", s.String(), node.StoreResource.Address, node.ShardInfo.IdentifierOnThisServer(), targetShardId, targetClusterSize)
 
 	segment, offset, err := s.writeToSst(ctx, grpcConnection, node.ShardInfo, clusterSize, targetClusterSize, targetShardId)
 
@@ -187,7 +186,7 @@ func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.Client
 
 func (s *shard) doBootstrapCopy2(ctx context.Context, grpcConnection *grpc.ClientConn, node *pb.ClusterNode, clusterSize, targetClusterSize int, targetShardId int, rowChan chan *pb.RawKeyValue) (err error) {
 
-	log.Printf("bootstrap2 %s from %s %s filter by %d/%d", s.String(), node.StoreResource.Address, node.ShardInfo.IdentifierOnThisServer(), targetShardId, targetClusterSize)
+	glog.V(1).Infof("bootstrap2 %s from %s %s filter by %d/%d", s.String(), node.StoreResource.Address, node.ShardInfo.IdentifierOnThisServer(), targetShardId, targetClusterSize)
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
@@ -233,7 +232,7 @@ func (s *shard) doBootstrapCopy2(ctx context.Context, grpcConnection *grpc.Clien
 
 	}
 
-	log.Printf("bootstrap2 %s from %s segment:offset=%d:%d : %v", s.String(), node.ShardInfo.IdentifierOnThisServer(), segment, offset, err)
+	glog.V(1).Infof("bootstrap2 %s from %s segment:offset=%d:%d : %v", s.String(), node.ShardInfo.IdentifierOnThisServer(), segment, offset, err)
 	s.saveProgress(node.StoreResource.GetAdminAddress(), shard_id(node.ShardInfo.ShardId), segment, offset)
 
 	return

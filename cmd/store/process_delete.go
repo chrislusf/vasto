@@ -3,7 +3,7 @@ package store
 import (
 	"github.com/chrislusf/vasto/pb"
 	"time"
-	"log"
+	"github.com/golang/glog"
 )
 
 func (ss *storeServer) processDelete(shard *shard, deleteRequest *pb.DeleteRequest) *pb.WriteResponse {
@@ -35,7 +35,7 @@ func (s *shard) logDelete(deleteRequest *pb.DeleteRequest, updatedAtNs uint64) {
 	})
 
 	if err != nil {
-		log.Printf("append delete log entry: %v", err)
+		glog.Errorf("append delete log entry: %v", err)
 	}
 
 }

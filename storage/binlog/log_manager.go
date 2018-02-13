@@ -3,12 +3,12 @@ package binlog
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"path"
 	"strconv"
 	"strings"
 	"sync"
 	"github.com/chrislusf/vasto/pb"
+	"github.com/golang/glog"
 )
 
 type LogManager struct {
@@ -190,11 +190,11 @@ func (m *LogManager) loadFilesFromDisk() error {
 			segmentNumber32, err := strconv.ParseUint(segment, 10, 32)
 			segmentNumber := uint32(segmentNumber32)
 			if err != nil {
-				log.Printf("parse file name %s under %s", name, m.dir)
+				glog.Errorf("parse file name %s under %s", name, m.dir)
 				return err
 			}
 			oneLogFile := newLogSegmentFile(m.getFileName(segmentNumber), segmentNumber, m.logFileMaxSize)
-			// log.Printf("add segment %d file %s", segmentNumber, oneLogFile.fullName)
+			// glog.V(2).Infof("add segment %d file %s", segmentNumber, oneLogFile.fullName)
 			m.files[segmentNumber] = oneLogFile
 			if maxSegmentNumber <= segmentNumber {
 				maxSegmentNumber = segmentNumber

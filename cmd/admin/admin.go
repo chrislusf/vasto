@@ -1,10 +1,9 @@
 package admin
 
 import (
-	"log"
-
 	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc"
+	"github.com/golang/glog"
 )
 
 type AdminOption struct {
@@ -20,7 +19,7 @@ func RunAdmin(option *AdminOption) {
 
 	conn, err := grpc.Dial(*option.Master, grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("fail to dial %v: %v", *option.Master, err)
+		glog.Fatalf("fail to dial %v: %v", *option.Master, err)
 	}
 	defer conn.Close()
 	masterClient := pb.NewVastoMasterClient(conn)

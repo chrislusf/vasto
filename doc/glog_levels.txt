@@ -1,0 +1,17 @@
+Glog Levels
+
+Level 0
+    server starts, stops
+
+Level 1
+    network topology changes
+    db open, close
+    db batch ingestion
+
+Level 2
+    important variable changes
+
+Level 3
+    debug messages for any possible variable value changes
+
+

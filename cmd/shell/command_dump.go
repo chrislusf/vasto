@@ -8,8 +8,8 @@ import (
 	"github.com/chrislusf/vasto/client"
 	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc"
-	"log"
 	"sync/atomic"
+	"github.com/golang/glog"
 )
 
 func init() {
@@ -84,7 +84,7 @@ func (c *CommandDump) Do(vastoClient *client.VastoClient, args []string, command
 				}
 				if err != nil {
 					doError = fmt.Errorf("dump: %v", err)
-					log.Printf("dump: %v", err)
+					glog.Errorf("dump: %v", err)
 					return err
 				}
 

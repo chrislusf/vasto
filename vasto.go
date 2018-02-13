@@ -15,7 +15,6 @@
 package main
 
 import (
-	"log"
 	"os"
 	"runtime/pprof"
 
@@ -30,6 +29,8 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 	"os/user"
 	"strings"
+	"github.com/golang/glog"
+	"flag"
 )
 
 var (
@@ -119,6 +120,8 @@ var (
 
 func main() {
 
+	flag.Parse()
+
 	cmd := kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	cpuProfile := *storeProfile + *gatewayProfile + *benchProfile
@@ -128,7 +131,7 @@ func main() {
 
 		f, err := os.Create(cpuProfile)
 		if err != nil {
-			log.Fatal(err)
+			glog.Fatal(err)
 		}
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
@@ -173,7 +176,7 @@ func fixHomeDir(dir string) string {
 	if strings.HasPrefix(dir, "~") {
 		usr, err := user.Current()
 		if err != nil {
-			log.Fatal(err)
+			glog.Fatal(err)
 		}
 		dir = usr.HomeDir + dir[1:]
 	}

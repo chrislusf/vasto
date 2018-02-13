@@ -6,8 +6,8 @@ import (
 
 	"github.com/chrislusf/vasto/pb"
 	"github.com/dgryski/go-jump"
-	"log"
 	"sort"
+	"github.com/golang/glog"
 )
 
 type Cluster struct {
@@ -82,7 +82,7 @@ func (cluster *Cluster) ReplaceShard(newStore *pb.StoreResource, shard *pb.Shard
 			return true
 		}
 	}
-	log.Printf("replace shard error: shard %s not found", shard.IdentifierOnThisServer())
+	glog.Errorf("replace shard error: shard %s not found", shard.IdentifierOnThisServer())
 	return false
 }
 

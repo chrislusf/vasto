@@ -21,7 +21,7 @@ func TestAddNormal(t *testing.T) {
 		db.Put(key, value)
 	}
 
-	log.Printf("%d messages inserted by put in: %v\n", limit, time.Now().Sub(now))
+	glog.V(2).Infof("%d messages inserted by put in: %v\n", limit, time.Now().Sub(now))
 
 }
 
@@ -56,7 +56,7 @@ func TestAddBySst(t *testing.T) {
 		t.Errorf("failed to ingest: %v", err)
 	}
 
-	log.Printf("%d messages inserted by sst in: %v\n", limit, time.Now().Sub(now))
+	glog.V(2).Infof("%d messages inserted by sst in: %v\n", limit, time.Now().Sub(now))
 
 	if v, err := db.Get([]byte("k12345")); err == nil {
 		// this should be returning n12345
@@ -74,7 +74,7 @@ func TestAddBySst(t *testing.T) {
 		t.Errorf("scanning expecting %d rows, but actual %d rows", 100000, counter)
 	}
 
-	log.Printf("%d messages counted %d: %v\n", limit, counter, time.Now().Sub(now))
+	glog.V(2).Infof("%d messages counted %d: %v\n", limit, counter, time.Now().Sub(now))
 
 	// if overlapping ranges, the addSst will fail
 	i, limit = 4, 7
@@ -91,5 +91,5 @@ func TestAddBySst(t *testing.T) {
 		t.Errorf("failed to generate ingest error")
 	}
 
-	log.Printf("when ingesting SSTable files with over lapping ranges: %v", err)
+	glog.V(2).Infof("when ingesting SSTable files with over lapping ranges: %v", err)
 }

@@ -5,7 +5,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
 	"golang.org/x/net/context"
-	"log"
+	"github.com/golang/glog"
 )
 
 // ReplicateNodePrepare
@@ -13,10 +13,10 @@ import (
 // 1. create the new shard and follow the old shard and its peers
 func (ss *storeServer) ReplicateNodePrepare(ctx context.Context, request *pb.ReplicateNodePrepareRequest) (*pb.ReplicateNodePrepareResponse, error) {
 
-	log.Printf("replicate shard prepare %v", request)
+	glog.V(1).Infof("replicate shard prepare %v", request)
 	err := ss.replicateNode(request)
 	if err != nil {
-		log.Printf("replicate shard prepare %v: %v", request, err)
+		glog.Errorf("replicate shard prepare %v: %v", request, err)
 		return &pb.ReplicateNodePrepareResponse{
 			Error: err.Error(),
 		}, nil
@@ -31,10 +31,10 @@ func (ss *storeServer) ReplicateNodePrepare(ctx context.Context, request *pb.Rep
 // 2. let the server to promote the new shard from CANDIDATE to READY
 func (ss *storeServer) ReplicateNodeCommit(ctx context.Context, request *pb.ReplicateNodeCommitRequest) (*pb.ReplicateNodeCommitResponse, error) {
 
-	log.Printf("replicate shard commit %v", request)
+	glog.V(1).Infof("replicate shard commit %v", request)
 	err := ss.setShardStatus(request)
 	if err != nil {
-		log.Printf("replicate shard commit %v: %v", request, err)
+		glog.Errorf("replicate shard commit %v: %v", request, err)
 		return &pb.ReplicateNodeCommitResponse{
 			Error: err.Error(),
 		}, nil
@@ -49,10 +49,10 @@ func (ss *storeServer) ReplicateNodeCommit(ctx context.Context, request *pb.Repl
 // 4. let the server to remove the old shard
 func (ss *storeServer) ReplicateNodeCleanup(ctx context.Context, request *pb.ReplicateNodeCleanupRequest) (*pb.ReplicateNodeCleanupResponse, error) {
 
-	log.Printf("cleanup shard %v", request)
+	glog.V(1).Infof("cleanup shard %v", request)
 	err := ss.deleteShards(request.Keyspace, false)
 	if err != nil {
-		log.Printf("cleanup shard %v: %v", request, err)
+		glog.Errorf("cleanup shard %v: %v", request, err)
 		return &pb.ReplicateNodeCleanupResponse{
 			Error: err.Error(),
 		}, nil

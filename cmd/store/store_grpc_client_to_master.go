@@ -3,14 +3,13 @@ package store
 import (
 	"context"
 	"fmt"
-	"log"
-
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/util"
 	"google.golang.org/grpc"
 	"io"
 	"strings"
 	"time"
+	"github.com/golang/glog"
 )
 
 func (ss *storeServer) keepConnectedToMasterServer(ctx context.Context) {
@@ -40,11 +39,11 @@ func (ss *storeServer) registerAtMasterServer() error {
 
 	stream, err := client.RegisterStore(context.Background())
 	if err != nil {
-		log.Printf("%s SendHeartbeat error: %v", ss.storeName, err)
+		glog.Errorf("%s SendHeartbeat error: %v", ss.storeName, err)
 		return err
 	}
 
-	log.Printf("%s register store to master %s", ss.storeName, *ss.option.Master)
+	glog.V(1).Infof("%s register store to master %s", ss.storeName, *ss.option.Master)
 
 	storeHeartbeat := &pb.StoreHeartbeat{
 		StoreResource: &pb.StoreResource{
@@ -57,10 +56,10 @@ func (ss *storeServer) registerAtMasterServer() error {
 		},
 	}
 
-	// log.Printf("Reporting store %v", storeHeartbeat.StoreResource)
+	// glog.V(2).Infof("Reporting store %v", storeHeartbeat.StoreResource)
 
 	if err := stream.Send(storeHeartbeat); err != nil {
-		log.Printf("RegisterStore (%+v) = %v", storeHeartbeat, err)
+		glog.Errorf("RegisterStore (%+v) = %v", storeHeartbeat, err)
 		return err
 	}
 
@@ -88,7 +87,7 @@ func (ss *storeServer) registerAtMasterServer() error {
 					ShardInfo: ShardInfo,
 				}
 				if err := stream.Send(storeHeartbeat); err != nil {
-					log.Printf("send shard status %v: %v", storeHeartbeat, err)
+					glog.Errorf("send shard status %v: %v", storeHeartbeat, err)
 					return
 				}
 			case <-finishChan:
@@ -116,10 +115,10 @@ func (ss *storeServer) registerAtMasterServer() error {
 func (ss *storeServer) sendShardInfoToMaster(ShardInfo *pb.ShardInfo, status pb.ShardInfo_Status) {
 	t := ShardInfo.Clone()
 	t.Status = status
-	log.Printf("%s sending master: %v", ss.storeName, t)
+	glog.V(2).Infof("%s sending master: %v", ss.storeName, t)
 	ss.ShardInfoChan <- t
 }
 
 func (ss *storeServer) processStoreMessage(msg *pb.StoreMessage) {
-	log.Printf("%s received message %v", ss.storeName, msg)
+	glog.V(2).Infof("%s received message %v", ss.storeName, msg)
 }

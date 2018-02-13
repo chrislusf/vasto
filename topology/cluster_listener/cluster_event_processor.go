@@ -3,7 +3,7 @@ package cluster_listener
 import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
-	"log"
+	"github.com/golang/glog"
 )
 
 type ShardEventProcessor interface {
@@ -16,7 +16,7 @@ type ShardEventProcessor interface {
 
 func (clusterListener *ClusterListener) RegisterShardEventProcessor(shardEventProcess ShardEventProcessor) {
 
-	// log.Printf("RegisterShardEventProcessor: %+v", shardEventProcess)
+	glog.V(2).Infof("RegisterShardEventProcessor: %+v", shardEventProcess)
 
 	found := -1
 	for k, p := range clusterListener.shardEventProcessors {
@@ -25,7 +25,7 @@ func (clusterListener *ClusterListener) RegisterShardEventProcessor(shardEventPr
 		}
 	}
 	if found >= 0 {
-		log.Printf("RegisterShardEventProcessor already exists!: %+v", shardEventProcess)
+		glog.Errorf("RegisterShardEventProcessor already exists!: %+v", shardEventProcess)
 		return
 	}
 	clusterListener.shardEventProcessors = append(clusterListener.shardEventProcessors, shardEventProcess)
@@ -33,7 +33,7 @@ func (clusterListener *ClusterListener) RegisterShardEventProcessor(shardEventPr
 
 func (clusterListener *ClusterListener) UnregisterShardEventProcessor(shardEventProcess ShardEventProcessor) {
 
-	log.Printf("UnregisterShardEventProcessor: %+v", shardEventProcess)
+	glog.V(2).Infof("UnregisterShardEventProcessor: %+v", shardEventProcess)
 
 	found := -1
 	for k, p := range clusterListener.shardEventProcessors {
@@ -42,7 +42,7 @@ func (clusterListener *ClusterListener) UnregisterShardEventProcessor(shardEvent
 		}
 	}
 	if found < 0 {
-		log.Printf("UnregisterShardEventProcessor removing failed! %+v", shardEventProcess)
+		glog.Errorf("UnregisterShardEventProcessor removing failed! %+v", shardEventProcess)
 		return
 	}
 	copy(clusterListener.shardEventProcessors[found:], clusterListener.shardEventProcessors[found+1:])

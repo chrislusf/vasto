@@ -2,13 +2,13 @@ package store
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"context"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
 	"google.golang.org/grpc"
+	"github.com/golang/glog"
 )
 
 const (
@@ -21,9 +21,9 @@ func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcCon
 
 	nextSegment, nextOffset, _, err := s.loadProgress(node.StoreResource.GetAdminAddress(), shard_id(sourceShardId))
 	if err != nil {
-		log.Printf("read shard %d follow progress: %v", s.id, err)
+		glog.Errorf("read shard %d follow progress: %v", s.id, err)
 	}
-	log.Printf("shard %v follows %d.%d from segment:offset %d:%d", s.String(), node.ShardInfo.ServerId, sourceShardId, nextSegment, nextOffset)
+	glog.V(1).Infof("shard %v follows %d.%d from segment:offset %d:%d", s.String(), node.ShardInfo.ServerId, sourceShardId, nextSegment, nextOffset)
 
 	// set in memory progress
 	if saveFollowProgress {
@@ -55,7 +55,7 @@ func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcCon
 			return fmt.Errorf("pull changes: %v", err)
 		}
 
-		// log.Printf("%s follow 0 entry: %d", s, len(changes.Entries))
+		// glog.V(2).Infof("%s follow 0 entry: %d", s, len(changes.Entries))
 
 		for _, entry := range changes.Entries {
 
@@ -72,7 +72,7 @@ func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcCon
 			// check local entry
 			b, err := s.db.Get(entry.GetKey())
 			if err != nil {
-				log.Printf("%s get %v: %v", s, string(entry.GetKey()), err)
+				glog.Errorf("%s get %v: %v", s, string(entry.GetKey()), err)
 				continue
 			}
 
@@ -105,7 +105,7 @@ func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcCon
 				row := codec.FromBytes(b)
 				if row.IsExpired() {
 					if !t.IsExpired() {
-						log.Printf("%s follow 3 entry: %v", s, string(key))
+						glog.V(3).Infof("%s follow 3 entry: %v", s, string(key))
 						s.db.Put(key, t.ToBytes())
 						continue
 					}
@@ -116,7 +116,7 @@ func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcCon
 					s.db.Put(key, t.ToBytes())
 					continue
 				}
-				// log.Printf("%s follow 4 entry: %v", s, string(entry.Key))
+				// glog.V(2).Infof("%s follow 4 entry: %v", s, string(entry.Key))
 			}
 
 		}

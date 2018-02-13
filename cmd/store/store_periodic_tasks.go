@@ -1,8 +1,8 @@
 package store
 
 import (
-	"log"
 	"time"
+	"github.com/golang/glog"
 )
 
 type PeriodicTask interface {
@@ -19,7 +19,7 @@ func (ss *storeServer) startPeriodTasks() {
 
 func (ss *storeServer) RegisterPeriodicTask(task PeriodicTask) {
 
-	log.Printf("RegisterPeriodicTask: %+v", task)
+	glog.V(3).Infof("RegisterPeriodicTask: %+v", task)
 
 	found := false
 	for _, t := range ss.periodTasks {
@@ -28,7 +28,7 @@ func (ss *storeServer) RegisterPeriodicTask(task PeriodicTask) {
 		}
 	}
 	if found {
-		log.Printf("RegisterPeriodicTask already exists!: %+v", task)
+		glog.V(3).Infof("RegisterPeriodicTask already exists!: %+v", task)
 		return
 	}
 
@@ -36,7 +36,7 @@ func (ss *storeServer) RegisterPeriodicTask(task PeriodicTask) {
 }
 
 func (ss *storeServer) UnregisterPeriodicTask(task PeriodicTask) {
-	log.Printf("UnregisterPeriodicTask: %+v", task)
+	glog.V(3).Infof("UnregisterPeriodicTask: %+v", task)
 	var t []PeriodicTask
 	for _, p := range ss.periodTasks {
 		if p != task {

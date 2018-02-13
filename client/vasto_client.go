@@ -5,10 +5,10 @@ import (
 	"github.com/chrislusf/vasto/topology/cluster_listener"
 	"time"
 	"google.golang.org/grpc"
-	"log"
 	"github.com/chrislusf/vasto/pb"
 	"fmt"
 	"sync"
+	"github.com/golang/glog"
 )
 
 type VastoClient struct {
@@ -36,7 +36,7 @@ func NewClient(ctx context.Context, clientName, master, dataCenter string) *Vast
 
 	conn, err := grpc.Dial(c.Master, grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("%s fail to dial %v: %v", c.ClientName, c.Master, err)
+		glog.Fatalf("%s fail to dial %v: %v", c.ClientName, c.Master, err)
 	}
 	c.MasterClient = pb.NewVastoMasterClient(conn)
 

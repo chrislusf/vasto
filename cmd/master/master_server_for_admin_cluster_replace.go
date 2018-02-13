@@ -6,10 +6,10 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
 	"google.golang.org/grpc"
-	"log"
 	"strconv"
 	"strings"
 	"time"
+	"github.com/golang/glog"
 )
 
 func (ms *masterServer) ReplaceNode(ctx context.Context, req *pb.ReplaceNodeRequest) (resp *pb.ReplaceNodeResponse, err error) {
@@ -53,25 +53,25 @@ func (ms *masterServer) ReplaceNode(ctx context.Context, req *pb.ReplaceNodeRequ
 	}
 
 	if err = replicateNodePrepare(ctx, req, cluster, newStore, oldServer); err != nil {
-		log.Printf("replicateNodePrepare %v: %v", req, err)
+		glog.Errorf("replicateNodePrepare %v: %v", req, err)
 		resp.Error = err.Error()
 		return
 	}
 
 	if err = replicateNodeCommit(ctx, req, cluster, newStore, oldServer); err != nil {
-		log.Printf("replicateNodeCommit %v: %v", req, err)
+		glog.Errorf("replicateNodeCommit %v: %v", req, err)
 		resp.Error = err.Error()
 		return
 	}
 
 	if err = ms.adjustAndBroadcastShardStatus(ctx, req, cluster, newStore, oldServer); err != nil {
-		log.Printf("adjustAndBroadcastShardStatus %v: %v", req, err)
+		glog.Errorf("adjustAndBroadcastShardStatus %v: %v", req, err)
 		resp.Error = err.Error()
 		return
 	}
 
 	if err = replicateNodeCleanup(ctx, req, cluster, newStore, oldServer); err != nil {
-		log.Printf("replicateNodeCleanup %v: %v", req, err)
+		glog.Errorf("replicateNodeCleanup %v: %v", req, err)
 		resp.Error = err.Error()
 		return
 	}
@@ -83,7 +83,7 @@ func (ms *masterServer) ReplaceNode(ctx context.Context, req *pb.ReplaceNodeRequ
 // 1. create the new shard and follow the old shard and its peers
 func replicateNodePrepare(ctx context.Context, req *pb.ReplaceNodeRequest, cluster *topology.Cluster, newStore *pb.StoreResource, oldServer *pb.StoreResource) error {
 
-	log.Printf("replicateNodePrepare %v", req)
+	glog.V(1).Infof("replicateNodePrepare %v", req)
 
 	return withConnection(newStore, func(grpcConnection *grpc.ClientConn) error {
 
@@ -95,7 +95,7 @@ func replicateNodePrepare(ctx context.Context, req *pb.ReplaceNodeRequest, clust
 			ReplicationFactor: uint32(cluster.ReplicationFactor()),
 		}
 
-		log.Printf("prepare replicate keyspace %s from %s to %v: %v", req.Keyspace, oldServer.GetAddress(), newStore.Address, request)
+		glog.V(1).Infof("prepare replicate keyspace %s from %s to %v: %v", req.Keyspace, oldServer.GetAddress(), newStore.Address, request)
 		resp, err := client.ReplicateNodePrepare(ctx, request)
 		if err != nil {
 			return err
@@ -110,7 +110,7 @@ func replicateNodePrepare(ctx context.Context, req *pb.ReplaceNodeRequest, clust
 // 2. let the server to promote the new shard from CANDIDATE to READY
 func replicateNodeCommit(ctx context.Context, req *pb.ReplaceNodeRequest, cluster *topology.Cluster, newStore *pb.StoreResource, oldServer *pb.StoreResource) error {
 
-	log.Printf("replicateNodeCommit %v", req)
+	glog.V(1).Infof("replicateNodeCommit %v", req)
 
 	return withConnection(newStore, func(grpcConnection *grpc.ClientConn) error {
 
@@ -118,7 +118,7 @@ func replicateNodeCommit(ctx context.Context, req *pb.ReplaceNodeRequest, cluste
 			Keyspace: req.Keyspace,
 		}
 
-		log.Printf("commit replicate keyspace %s from %s to %v: %v", req.Keyspace, oldServer.GetAddress(), newStore.Address, request)
+		glog.V(1).Infof("commit replicate keyspace %s from %s to %v: %v", req.Keyspace, oldServer.GetAddress(), newStore.Address, request)
 		resp, err := pb.NewVastoStoreClient(grpcConnection).ReplicateNodeCommit(ctx, request)
 		if err != nil {
 			return err
@@ -133,7 +133,7 @@ func replicateNodeCommit(ctx context.Context, req *pb.ReplaceNodeRequest, cluste
 // 3. remove the old shard, set the new shard from CANDIDATE to READY, and inform all clients of these changes
 func (ms *masterServer) adjustAndBroadcastShardStatus(ctx context.Context, req *pb.ReplaceNodeRequest, cluster *topology.Cluster, newStore *pb.StoreResource, oldServer *pb.StoreResource) error {
 
-	log.Printf("adjustAndBroadcastShardStatus %v", req)
+	glog.V(1).Infof("adjustAndBroadcastShardStatus %v", req)
 
 	// wait a little bit for shards created and update back shard status to master
 	time.Sleep(time.Second)
@@ -166,7 +166,7 @@ func (ms *masterServer) adjustAndBroadcastShardStatus(ctx context.Context, req *
 			shardInfo.IsCandidate = false
 			if cluster.ReplaceShard(candidate.StoreResource, shardInfo) {
 				ms.notifyPromotion(shardInfo, candidate.GetStoreResource())
-				log.Printf("promoting new shard %v on %s", shardInfo.IdentifierOnThisServer(), candidate.StoreResource.GetAddress())
+				glog.V(1).Infof("promoting new shard %v on %s", shardInfo.IdentifierOnThisServer(), candidate.StoreResource.GetAddress())
 			}
 		}
 
@@ -181,7 +181,7 @@ func (ms *masterServer) adjustAndBroadcastShardStatus(ctx context.Context, req *
 // 4. let the server to remove the old shard
 func replicateNodeCleanup(ctx context.Context, req *pb.ReplaceNodeRequest, cluster *topology.Cluster, newStore *pb.StoreResource, oldServer *pb.StoreResource) error {
 
-	log.Printf("replicateNodeCleanup %v", req)
+	glog.V(1).Infof("replicateNodeCleanup %v", req)
 
 	return withConnection(oldServer, func(grpcConnection *grpc.ClientConn) error {
 
@@ -189,7 +189,7 @@ func replicateNodeCleanup(ctx context.Context, req *pb.ReplaceNodeRequest, clust
 			Keyspace: req.Keyspace,
 		}
 
-		log.Printf("replicateNodeCleanup keyspace %s from %s to %v: %v", req.Keyspace, oldServer.GetAddress(), newStore.Address, request)
+		glog.V(1).Infof("replicateNodeCleanup keyspace %s from %s to %v: %v", req.Keyspace, oldServer.GetAddress(), newStore.Address, request)
 		resp, err := pb.NewVastoStoreClient(grpcConnection).ReplicateNodeCleanup(ctx, request)
 		if err != nil {
 			return err

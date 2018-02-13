@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/chrislusf/gorocksdb"
 	"io/ioutil"
-	"log"
 	"os"
+	"github.com/golang/glog"
 )
 
 func (d *Rocks) addSst(name string, next func() (bool, []byte, []byte)) error {
@@ -60,7 +60,7 @@ func (d *Rocks) AddSstByWriter(name string, writerFunc func(*gorocksdb.SSTFileWr
 	if counter == 0 {
 		return nil
 	}
-	log.Printf("%s: added %d entries", name, counter)
+	glog.V(1).Infof("%s: added %d entries", name, counter)
 
 	err = w.Finish()
 	if err != nil {
@@ -76,7 +76,7 @@ func (d *Rocks) AddSstByWriter(name string, writerFunc func(*gorocksdb.SSTFileWr
 	if err != nil {
 		return fmt.Errorf("%s: db %s ingest sst file %s: %v", name, d.path, filePath.Name(), err)
 	}
-	log.Printf("%s: db %s ingested %s", name, d.path, filePath.Name())
+	glog.V(1).Infof("%s: db %s ingested %s", name, d.path, filePath.Name())
 
 	return nil
 }

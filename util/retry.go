@@ -2,9 +2,9 @@ package util
 
 import (
 	"context"
-	"log"
 	"math/rand"
 	"time"
+	"github.com/golang/glog"
 )
 
 func Retry(fn func() error) error {
@@ -21,17 +21,17 @@ func RetryUntil(ctx context.Context, name string, fn func() error, waitTimes tim
 	for {
 		err := fn()
 		if err != nil {
-			log.Printf("%s failed: %v", name, err)
+			glog.Errorf("%s failed: %v", name, err)
 		}
 
 		time.Sleep(time.Duration((r.Float64() + 1) * float64(waitTimes)))
 
 		select {
 		case <-ctx.Done():
-			log.Printf("%s has finished", name)
+			glog.V(1).Infof("%s has finished", name)
 			return
 		default:
-			log.Printf("%s retrying...", name)
+			glog.V(2).Infof("%s retrying...", name)
 		}
 	}
 }
@@ -43,7 +43,7 @@ func timeDelayedRetry(fn func() error, waitTimes ...time.Duration) error {
 		return nil
 	}
 
-	log.Printf("Retrying after failure: %v", err)
+	glog.V(2).Infof("Retrying after failure: %v", err)
 
 	var i int
 	var t time.Duration
@@ -53,7 +53,7 @@ func timeDelayedRetry(fn func() error, waitTimes ...time.Duration) error {
 		if err == nil {
 			break
 		}
-		log.Printf("Failed %d time due to %v", i+1, err)
+		glog.V(2).Infof("Failed %d time due to %v", i+1, err)
 		time.Sleep(t)
 	}
 

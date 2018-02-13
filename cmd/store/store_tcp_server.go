@@ -4,13 +4,13 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"time"
 
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/util"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/glog"
 )
 
 // Run starts the heartbeating to master and starts accepting requests.
@@ -46,7 +46,7 @@ func (ss *storeServer) handleConnection(conn net.Conn) {
 	for {
 		if err := ss.handleRequest(reader, conn); err != nil {
 			if err != io.EOF {
-				log.Printf("handleRequest: %v", err)
+				glog.Errorf("handleRequest: %v", err)
 			}
 			return
 		}

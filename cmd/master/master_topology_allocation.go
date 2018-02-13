@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc"
-	"log"
 	"math"
 	"sort"
 	"sync"
+	"github.com/golang/glog"
 )
 
 // allocateServers
@@ -62,7 +62,7 @@ func meetRequirement(existingTags, requiredTags []string) bool {
 func createShards(ctx context.Context, keyspace string, clusterSize, replicationFactor, eachShardSizeGb uint32, stores []*pb.StoreResource) error {
 
 	return eachStore(stores, func(serverId int, store *pb.StoreResource) error {
-		// log.Printf("connecting to server %d at %s", serverId, store.GetAdminAddress())
+		// glog.V(2).Infof"connecting to server %d at %s", serverId, store.GetAdminAddress())
 		return withConnection(store, func(grpcConnection *grpc.ClientConn) error {
 
 			client := pb.NewVastoStoreClient(grpcConnection)
@@ -74,7 +74,7 @@ func createShards(ctx context.Context, keyspace string, clusterSize, replication
 				ShardDiskSizeGb:   eachShardSizeGb,
 			}
 
-			log.Printf("create shard on %v: %v", store.AdminAddress, request)
+			glog.V(1).Infof("create shard on %v: %v", store.AdminAddress, request)
 			resp, err := client.CreateShard(ctx, request)
 			if err != nil {
 				return err
@@ -90,7 +90,7 @@ func createShards(ctx context.Context, keyspace string, clusterSize, replication
 func deleteShards(ctx context.Context, req *pb.DeleteClusterRequest, stores []*pb.StoreResource) error {
 
 	return eachStore(stores, func(serverId int, store *pb.StoreResource) error {
-		// log.Printf("connecting to server %d at %s", serverId, store.GetAdminAddress())
+		// glog.V(2).Infof"connecting to server %d at %s", serverId, store.GetAdminAddress())
 		return withConnection(store, func(grpcConnection *grpc.ClientConn) error {
 
 			client := pb.NewVastoStoreClient(grpcConnection)
@@ -98,7 +98,7 @@ func deleteShards(ctx context.Context, req *pb.DeleteClusterRequest, stores []*p
 				Keyspace: req.Keyspace,
 			}
 
-			log.Printf("delete keyspace on %v: %v", store.AdminAddress, request)
+			glog.V(1).Infof("delete keyspace on %v: %v", store.AdminAddress, request)
 			resp, err := client.DeleteKeyspace(ctx, request)
 			if err != nil {
 				return err

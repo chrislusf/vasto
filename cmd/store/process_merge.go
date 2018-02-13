@@ -1,11 +1,11 @@
 package store
 
 import (
-	"log"
 	"time"
 
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
+	"github.com/golang/glog"
 )
 
 func (ss *storeServer) processMerge(shard *shard, mergeRequest *pb.MergeRequest) *pb.WriteResponse {
@@ -18,7 +18,7 @@ func (ss *storeServer) processMerge(shard *shard, mergeRequest *pb.MergeRequest)
 		Ok: true,
 	}
 
-	// log.Printf("shard %d put key: %v\n", shard.id, string(mergeRequest.KeyValue.Key))
+	// glog.V(2).Infof"shard %d put key: %v\n", shard.id, string(mergeRequest.KeyValue.Key))
 
 	err := shard.db.Merge(key, entry.ToBytes())
 	if err != nil {
@@ -47,7 +47,7 @@ func (s *shard) logMerge(mergeRequest *pb.MergeRequest, updatedAtNs uint64) {
 	})
 
 	if err != nil {
-		log.Printf("append put log entry: %v", err)
+		glog.Errorf("append put log entry: %v", err)
 	}
 
 	// println("logMerge3", mergeRequest.String())

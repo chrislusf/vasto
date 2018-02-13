@@ -5,17 +5,17 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
 	"golang.org/x/net/context"
-	"log"
 	"os"
+	"github.com/golang/glog"
 )
 
 // 1. create the new or missing shards, bootstrap the data, one-time follows, and regular follows.
 func (ss *storeServer) ResizePrepare(ctx context.Context, request *pb.ResizeCreateShardRequest) (*pb.ResizeCreateShardResponse, error) {
 
-	log.Printf("resize prepare %v", request)
+	glog.V(1).Infof("resize prepare %v", request)
 	err := ss.resizeCreateShards(ctx, request)
 	if err != nil {
-		log.Printf("resize prepare %v: %v", request, err)
+		glog.Errorf("resize prepare %v: %v", request, err)
 		return &pb.ResizeCreateShardResponse{
 			Error: err.Error(),
 		}, nil
@@ -30,10 +30,10 @@ func (ss *storeServer) ResizePrepare(ctx context.Context, request *pb.ResizeCrea
 // 2. commit the new shards, adjust local cluster size, status, etc, not informing the master of shard info changes
 func (ss *storeServer) ResizeCommit(ctx context.Context, request *pb.ResizeCommitRequest) (*pb.ResizeCommitResponse, error) {
 
-	log.Printf("resize commit %v", request)
+	glog.V(1).Infof("resize commit %v", request)
 	err := ss.resizeCommitShardInfoNewCluster(ctx, request)
 	if err != nil {
-		log.Printf("resize commit %v: %v", request, err)
+		glog.Errorf("resize commit %v: %v", request, err)
 		return &pb.ResizeCommitResponse{
 			Error: err.Error(),
 		}, nil
@@ -48,10 +48,10 @@ func (ss *storeServer) ResizeCommit(ctx context.Context, request *pb.ResizeCommi
 // 3. cleanup old shards, and stop one-time follows
 func (ss *storeServer) ResizeCleanup(ctx context.Context, request *pb.ResizeCleanupRequest) (*pb.ResizeCleanupResponse, error) {
 
-	log.Printf("cleanup old shards %v", request)
+	glog.V(1).Infof("cleanup old shards %v", request)
 	err := ss.deleteOldShardsInNewCluster(ctx, request)
 	if err != nil {
-		log.Printf("cleanup old shards %v: %v", request, err)
+		glog.Errorf("cleanup old shards %v: %v", request, err)
 		return &pb.ResizeCleanupResponse{
 			Error: err.Error(),
 		}, nil
@@ -96,12 +96,12 @@ func (ss *storeServer) resizeCommitShardInfoNewCluster(ctx context.Context, requ
 		if topology.IsShardInLocal(int(shardInfo.ShardId), int(localShardsStatus.Id), int(request.TargetClusterSize), int(localShardsStatus.ReplicationFactor)) {
 			if shardInfo.ClusterSize != request.TargetClusterSize {
 				shardInfo.ClusterSize = request.TargetClusterSize
-				log.Printf("adjuting shard %v to cluster size %d", shardInfo.String(), request.TargetClusterSize)
+				glog.V(1).Infof("adjuting shard %v to cluster size %d", shardInfo.String(), request.TargetClusterSize)
 				hasChanges = true
 			}
 			if shardInfo.IsCandidate == true {
 				shardInfo.IsCandidate = false
-				log.Printf("adjuting candidate shard %v to normal shard", shardInfo.String())
+				glog.V(1).Infof("adjuting candidate shard %v to normal shard", shardInfo.String())
 				hasChanges = true
 			}
 		}
@@ -139,7 +139,7 @@ func (ss *storeServer) deleteOldShardsInNewCluster(ctx context.Context, request 
 
 	for _, shard := range shards {
 		if shard.oneTimeFollowCancel != nil {
-			log.Printf("shard %v cancels one-time following", shard)
+			glog.V(1).Infof("shard %v cancels one-time following", shard)
 			shard.oneTimeFollowCancel()
 		}
 		if !topology.IsShardInLocal(int(shard.id), int(shard.serverId), int(request.TargetClusterSize), shard.cluster.ReplicationFactor()) {

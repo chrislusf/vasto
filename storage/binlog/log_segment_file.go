@@ -4,11 +4,11 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"sync"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/glog"
 )
 
 type logSegmentFile struct {
@@ -62,11 +62,11 @@ func (f *logSegmentFile) appendEntry(entry *pb.LogEntry) (err error) {
 	if err == nil && writtenDataLen == dataLen {
 		// println("broadcast file condition change")
 		f.followerCond.L.Lock()
-		f.offset += int64(dataLen+4)
+		f.offset += int64(dataLen + 4)
 		f.followerCond.Broadcast()
 		f.followerCond.L.Unlock()
 	} else {
-		log.Printf("append entry size %d, but %d: %v", dataLen, writtenDataLen, err)
+		glog.Errorf("append entry size %d, but %d: %v", dataLen, writtenDataLen, err)
 	}
 
 	return err
@@ -164,7 +164,7 @@ func (f *logSegmentFile) open() error {
 			f.offset = stat.Size()
 		}
 	}
-	log.Println("open log segment file", f.fullName, "to append")
+	glog.V(2).Infof("open log segment file %s to append", f.fullName)
 	return nil
 }
 
@@ -185,5 +185,5 @@ func (f *logSegmentFile) close() {
 func (f *logSegmentFile) purge() {
 	f.close()
 	os.Remove(f.fullName)
-	log.Println("purge log segment file", f.fullName)
+	glog.V(2).Infof("purge log segment file %s", f.fullName)
 }

@@ -2,10 +2,9 @@ package topology
 
 import (
 	"fmt"
-	"log"
-
 	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc"
+	"github.com/golang/glog"
 )
 
 func (cluster *Cluster) WithConnection(name string, serverId int, fn func(*pb.ClusterNode, *grpc.ClientConn) error) error {
@@ -13,7 +12,7 @@ func (cluster *Cluster) WithConnection(name string, serverId int, fn func(*pb.Cl
 	node, _, ok := cluster.GetNode(serverId)
 
 	if !ok {
-		log.Printf("cluster misses server %d: %+v", serverId, cluster.String())
+		glog.Errorf("cluster misses server %d: %+v", serverId, cluster.String())
 		return fmt.Errorf("server %d not found", serverId)
 	}
 
@@ -40,7 +39,7 @@ func doWithConnect(name string, node *pb.ClusterNode, serverId int, fn func(*pb.
 		return fmt.Errorf("%s: server %d is missing", name, serverId)
 	}
 
-	// log.Printf("connecting to server %d at %s", serverId, node.GetAdminAddress())
+	// glog.V(2).Infof("connecting to server %d at %s", serverId, node.GetAdminAddress())
 
 	grpcConnection, err := grpc.Dial(node.StoreResource.AdminAddress, grpc.WithInsecure())
 	if err != nil {
@@ -48,7 +47,7 @@ func doWithConnect(name string, node *pb.ClusterNode, serverId int, fn func(*pb.
 	}
 	defer grpcConnection.Close()
 
-	// log.Printf("%s: connect to shard %s on %s", name, node.ShardInfo.IdentifierOnThisServer(), node.StoreResource.AdminAddress)
+	// glog.V(2).Infof("%s: connect to shard %s on %s", name, node.ShardInfo.IdentifierOnThisServer(), node.StoreResource.AdminAddress)
 
 	return fn(node, grpcConnection)
 }

@@ -5,7 +5,7 @@ import (
 
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
-	"log"
+	"github.com/golang/glog"
 )
 
 func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer) error {
@@ -22,7 +22,7 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 
 	// add server to the data center
 	storeResource := storeHeartbeat.StoreResource
-	log.Printf("[master] + store datacenter(%s) %v", storeResource.DataCenter, storeResource.Address)
+	glog.V(1).Infof("[master] + store datacenter(%s) %v", storeResource.DataCenter, storeResource.Address)
 
 	dc := ms.topo.dataCenters.getOrCreateDataCenter(storeResource.DataCenter)
 
@@ -41,12 +41,12 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 			break
 		}
 		if err := ms.processShardInfo(seenShardsOnThisServer, storeResource, beat.ShardInfo); err != nil {
-			log.Printf("process shard status %v: %v", beat.ShardInfo, err)
-			log.Printf("[master] - store datacenter(%s) %v: %v", storeResource.DataCenter, storeResource.Address, e)
+			glog.Errorf("process shard status %v: %v", beat.ShardInfo, err)
+			glog.Errorf("[master] - store datacenter(%s) %v: %v", storeResource.DataCenter, storeResource.Address, e)
 			return err
 		}
 	}
-	log.Printf("[master] - store datacenter(%s) %v: %v", storeResource.DataCenter, storeResource.Address, e)
+	glog.V(1).Infof("[master] - store datacenter(%s) %v: %v", storeResource.DataCenter, storeResource.Address, e)
 
 	return nil
 }
@@ -112,7 +112,7 @@ func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.S
 		cluster.RemoveShard(storeResource, shardInfo)
 		ms.notifyDeletion(shardInfo, storeResource)
 		delete(seenShardsOnThisServer, shardInfo.IdentifierOnThisServer())
-		log.Printf("[master] - dc %s %s on %s master cluster %s", storeResource.DataCenter,
+		glog.V(2).Infof("[master] - dc %s %s on %s master cluster %s", storeResource.DataCenter,
 			shardInfo.IdentifierOnThisServer(), storeResource.Address, cluster)
 	} else {
 		// println("updated shard info:", shardInfo.String(), "store", storeResource.GetAddress())
@@ -121,14 +121,14 @@ func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.S
 		seenShardsOnThisServer[shardInfo.IdentifierOnThisServer()] = shardInfo
 		if oldShardInfo == nil {
 			if shardInfo.IsCandidate {
-				log.Printf("[master] => dc %s %s on %s master cluster %s", storeResource.DataCenter,
+				glog.V(1).Infof("[master] => dc %s %s on %s master cluster %s", storeResource.DataCenter,
 					shardInfo.IdentifierOnThisServer(), storeResource.Address, cluster)
 			} else {
-				log.Printf("[master] + dc %s %s on %s master cluster %s", storeResource.DataCenter,
+				glog.V(1).Infof("[master] + dc %s %s on %s master cluster %s", storeResource.DataCenter,
 					shardInfo.IdentifierOnThisServer(), storeResource.Address, cluster)
 			}
 		} else if oldShardInfo.Status != shardInfo.Status {
-			log.Printf("[master] * dc %s %s on %s master cluster %s status:%s=>%s", storeResource.DataCenter,
+			glog.V(1).Infof("[master] * dc %s %s on %s master cluster %s status:%s=>%s", storeResource.DataCenter,
 				shardInfo.IdentifierOnThisServer(), storeResource.Address, cluster,
 				oldShardInfo.Status, shardInfo.Status)
 		}

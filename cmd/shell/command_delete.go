@@ -18,7 +18,7 @@ func (c *CommandDelete) Name() string {
 }
 
 func (c *CommandDelete) Help() string {
-	return "key"
+	return "<key>"
 }
 
 func (c *CommandDelete) Do(vastoClient *VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {

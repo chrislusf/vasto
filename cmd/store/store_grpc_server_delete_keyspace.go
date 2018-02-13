@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
 	"golang.org/x/net/context"
-	"log"
 	"os"
+	"github.com/golang/glog"
 )
 
 // DeleteKeyspace
 // 1. if the shard is already created, do nothing
 func (ss *storeServer) DeleteKeyspace(ctx context.Context, request *pb.DeleteKeyspaceRequest) (*pb.DeleteKeyspaceResponse, error) {
 
-	log.Printf("delete keyspace %v", request)
+	glog.V(1).Infof("delete keyspace %v", request)
 	err := ss.deleteShards(request.Keyspace, true)
 	if err != nil {
-		log.Printf("delete keyspace %s: %v", request.Keyspace, err)
+		glog.Errorf("delete keyspace %s: %v", request.Keyspace, err)
 		return &pb.DeleteKeyspaceResponse{
 			Error: err.Error(),
 		}, nil

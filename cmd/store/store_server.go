@@ -2,7 +2,6 @@ package store
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"os"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/chrislusf/vasto/util/on_interrupt"
 	"github.com/tidwall/evio"
 	"sync"
+	"github.com/golang/glog"
 )
 
 type StoreOption struct {
@@ -67,7 +67,7 @@ func RunStore(option *StoreOption) {
 	// ss.clusterListener.RegisterShardEventProcessor(&cluster_listener.ClusterEventLogger{})
 
 	if err := ss.listExistingClusters(); err != nil {
-		log.Fatalf("%s load existing cluster files: %v", ss.storeName, err)
+		glog.Fatalf("%s load existing cluster files: %v", ss.storeName, err)
 	}
 
 	// connect to the master
@@ -79,7 +79,7 @@ func RunStore(option *StoreOption) {
 
 	for keyspaceName, storeStatus := range ss.statusInCluster {
 		if err := ss.startExistingNodes(keyspaceName, storeStatus); err != nil {
-			log.Fatalf("%s load existing keyspace %v: %v", ss.storeName, keyspaceName, err)
+			glog.Fatalf("%s load existing keyspace %v: %v", ss.storeName, keyspaceName, err)
 		}
 	}
 
@@ -87,9 +87,9 @@ func RunStore(option *StoreOption) {
 		grpcAddress := fmt.Sprintf("%s:%d", *option.ListenHost, option.GetAdminPort())
 		grpcListener, err := net.Listen("tcp", grpcAddress)
 		if err != nil {
-			log.Fatal(err)
+			glog.Fatal(err)
 		}
-		log.Printf("%s store admin %s", ss.storeName, grpcAddress)
+		glog.V(0).Infof("%s store admin %s", ss.storeName, grpcAddress)
 		go ss.serveGrpc(grpcListener)
 	}
 
@@ -125,7 +125,7 @@ func RunStore(option *StoreOption) {
 
 			response, err := ss.handleInputOutput(request)
 			if err != nil {
-				log.Printf("%s handleInputOutput: %v", ss.storeName, err)
+				glog.V(2).Infof("%s handleInputOutput: %v", ss.storeName, err)
 				c.is.End(data[4+int(length):])
 				return
 			}
@@ -138,18 +138,18 @@ func RunStore(option *StoreOption) {
 			c.is.End(data[4+int(length):])
 			return
 		}
-		log.Printf("%s Vasto store starts on %s", ss.storeName, *option.Dir)
+		glog.V(2).Infof("%s Vasto store starts on %s", ss.storeName, *option.Dir)
 		if err := evio.Serve(events, fmt.Sprintf("tcp://%s", tcpAddress), fmt.Sprintf("unix://%s", unixSocket)); err != nil {
-			log.Printf("evio.Serve: %v", err)
+			glog.V(2).Infof("evio.Serve: %v", err)
 		}
 	} else {
 		if *option.TcpPort != 0 {
 			tcpAddress := fmt.Sprintf("%s:%d", *option.ListenHost, *option.TcpPort)
 			tcpListener, err := net.Listen("tcp", tcpAddress)
 			if err != nil {
-				log.Fatal(err)
+				glog.Fatal(err)
 			}
-			log.Printf("%s listens on tcp %v", ss.storeName, tcpAddress)
+			glog.V(2).Infof("%s listens on tcp %v", ss.storeName, tcpAddress)
 			go ss.serveTcp(tcpListener)
 		}
 
@@ -161,9 +161,9 @@ func RunStore(option *StoreOption) {
 				}
 				unixSocketListener, err := net.Listen("unix", unixSocket)
 				if err != nil {
-					log.Fatal(err)
+					glog.Fatal(err)
 				}
-				log.Printf("listens on socket %s", unixSocket)
+				glog.V(2).Infof("listens on socket %s", unixSocket)
 				on_interrupt.OnInterrupt(func() {
 					os.Remove(unixSocket)
 				}, nil)
@@ -173,7 +173,7 @@ func RunStore(option *StoreOption) {
 		}
 	}
 
-	log.Printf("%s Vasto store starts on %s", ss.storeName, *option.Dir)
+	glog.V(2).Infof("%s Vasto store starts on %s", ss.storeName, *option.Dir)
 
 	select {}
 

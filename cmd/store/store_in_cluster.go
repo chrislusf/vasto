@@ -3,11 +3,10 @@ package store
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
-
 	"github.com/chrislusf/vasto/pb"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
+	"github.com/golang/glog"
 )
 
 const (
@@ -28,15 +27,15 @@ func (ss *storeServer) listExistingClusters() error {
 		fullPath := fmt.Sprintf("%s/%s/%s", *ss.option.Dir, keyspaceName, ClusterConfigFile)
 		txt, err := ioutil.ReadFile(fullPath)
 		if err != nil {
-			log.Printf("read file %s: %v", fullPath, err)
+			glog.Errorf("read file %s: %v", fullPath, err)
 			continue
 		}
-		log.Printf("%s load cluster %s config from %s", ss.storeName, keyspaceName, fullPath)
+		glog.V(1).Infof("%s load cluster %s config from %s", ss.storeName, keyspaceName, fullPath)
 
 		status := &pb.LocalShardsInCluster{}
 
 		if err = proto.UnmarshalText(string(txt), status); err != nil {
-			log.Printf("parse file %s: %v", fullPath, err)
+			glog.Errorf("parse file %s: %v", fullPath, err)
 			continue
 		}
 
@@ -56,12 +55,12 @@ func (ss *storeServer) saveClusterConfig(status *pb.LocalShardsInCluster, keyspa
 
 	fullPath := fmt.Sprintf("%s/%s/%s", *ss.option.Dir, keyspaceName, ClusterConfigFile)
 
-	log.Printf("%s save cluster %s to %s", ss.storeName, keyspaceName, fullPath)
+	glog.V(1).Infof("%s save cluster %s to %s", ss.storeName, keyspaceName, fullPath)
 
 	if err := ioutil.WriteFile(fullPath, []byte(txt), 0640); err == nil {
 		ss.statusInCluster[keyspaceName] = status
 	} else {
-		log.Printf("%+v", errors.WithStack(err))
+		glog.Errorf("%+v", errors.WithStack(err))
 		return errors.Errorf("save cluster %s to %s : %v", keyspaceName, fullPath, err)
 	}
 

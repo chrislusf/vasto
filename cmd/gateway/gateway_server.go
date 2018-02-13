@@ -2,13 +2,13 @@ package gateway
 
 import (
 	"fmt"
-	"log"
 	"net"
 
 	"context"
 	"github.com/chrislusf/vasto/client"
 	"github.com/chrislusf/vasto/util/on_interrupt"
 	"os"
+	"github.com/golang/glog"
 )
 
 type GatewayOption struct {
@@ -35,7 +35,7 @@ func RunGateway(option *GatewayOption) {
 	if *option.TcpAddress != "" {
 		tcpListener, err := net.Listen("tcp", *option.TcpAddress)
 		if err != nil {
-			log.Fatal(err)
+			glog.Fatal(err)
 		}
 		fmt.Printf("Vasto gateway listens on tcp %s\n", *option.TcpAddress)
 		go gs.serveTcp(tcpListener)
@@ -44,10 +44,10 @@ func RunGateway(option *GatewayOption) {
 	if *option.UnixSocket != "" {
 		unixSocketListener, err := net.Listen("unix", *option.UnixSocket)
 		if err != nil {
-			log.Printf("Vasto gateway starts on socket %s", *option.UnixSocket)
-			log.Fatal(err)
+			glog.Errorf("Vasto gateway starts on socket %s", *option.UnixSocket)
+			glog.Fatal(err)
 		}
-		log.Printf("Vasto gateway listens on socket %s", *option.UnixSocket)
+		glog.V(0).Infof("Vasto gateway listens on socket %s", *option.UnixSocket)
 		on_interrupt.OnInterrupt(func() {
 			os.Remove(*option.UnixSocket)
 		}, nil)
@@ -56,7 +56,7 @@ func RunGateway(option *GatewayOption) {
 
 	gs.vastoClient.GetClusterClient(*option.Keyspace)
 
-	fmt.Printf("Vasto gateway ready\n")
+	glog.V(0).Infof("Vasto gateway ready\n")
 	select {}
 
 }

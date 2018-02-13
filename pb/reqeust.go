@@ -1,6 +1,8 @@
 package pb
 
-import "log"
+import (
+	"github.com/golang/glog"
+)
 
 func (r *Request) GetPartitionHash() (uint64) {
 	if r.Get != nil {
@@ -8,7 +10,7 @@ func (r *Request) GetPartitionHash() (uint64) {
 	}
 	if r.GetByPrefix != nil {
 		// TODO change the caller function batchProcess to batchWriteProcess
-		log.Fatalf("unexpected r.GetByPrefix")
+		glog.Fatalf("unexpected r.GetByPrefix")
 		// return r.GetByPrefix.PartitionHash
 	}
 	if r.Put != nil {
@@ -21,6 +23,6 @@ func (r *Request) GetPartitionHash() (uint64) {
 		return r.Merge.PartitionHash
 	}
 
-	log.Fatalf("unexpected request without partition hash %v", r)
+	glog.Fatalf("unexpected request without partition hash %v", r)
 	return 0
 }

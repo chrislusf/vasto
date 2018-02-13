@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	// "log"
 
 	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc"
@@ -28,9 +27,9 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 	// TODO possible goroutine leaks if retry happens
 	go func() {
 		for keyspace, _ := range clusterListener.clusters {
-			// log.Printf("%s register cluster keyspace(%v) datacenter(%v)", clusterListener.clientName, keyspace, dataCenter)
+			// glog.V(2).Infof("%s register cluster keyspace(%v) datacenter(%v)", clusterListener.clientName, keyspace, dataCenter)
 			if err := registerForClusterAtMaster(stream, string(keyspace), dataCenter, false, clusterListener.clientName); err != nil {
-				// log.Printf("%s register cluster keyspace(%v) datacenter(%v): %v", clusterListener.clientName, keyspace, dataCenter, err)
+				// glog.V(2).Infof("%s register cluster keyspace(%v) datacenter(%v): %v", clusterListener.clientName, keyspace, dataCenter, err)
 				return
 			}
 		}
@@ -38,15 +37,15 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 		for {
 			msg := <-clusterListener.keyspaceFollowMessageChan
 			if msg.isUnfollow {
-				// log.Printf("%s unfollow cluster keyspace(%v) datacenter(%v)", clusterListener.clientName, msg.keyspace, dataCenter)
+				// glog.V(2).Infof("%s unfollow cluster keyspace(%v) datacenter(%v)", clusterListener.clientName, msg.keyspace, dataCenter)
 			} else {
-				// log.Printf("%s register cluster new keyspace(%v) datacenter(%v)", clusterListener.clientName, msg.keyspace, dataCenter)
+				// glog.V(2).Infof("%s register cluster new keyspace(%v) datacenter(%v)", clusterListener.clientName, msg.keyspace, dataCenter)
 			}
 			if err := registerForClusterAtMaster(stream, string(msg.keyspace), dataCenter, msg.isUnfollow, clusterListener.clientName); err != nil {
 				if msg.isUnfollow {
-					// log.Printf("%s unfollow cluster keyspace(%v) datacenter(%v): %v", clusterListener.clientName, msg.keyspace, dataCenter, err)
+					// glog.V(2).Infof("%s unfollow cluster keyspace(%v) datacenter(%v): %v", clusterListener.clientName, msg.keyspace, dataCenter, err)
 				} else {
-					// log.Printf("%s register cluster new keyspace(%v) datacenter(%v): %v", clusterListener.clientName, msg.keyspace, dataCenter, err)
+					// glog.V(2).Infof("%s register cluster new keyspace(%v) datacenter(%v): %v", clusterListener.clientName, msg.keyspace, dataCenter, err)
 				}
 				return
 			}
@@ -54,9 +53,9 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 
 	}()
 
-	// log.Printf("Reporting allocated %v", as.allocatedResource)
+	// glog.V(2).Infof("Reporting allocated %v", as.allocatedResource)
 
-	// log.Printf("%s from %s register client to master %s", clusterListener.clientName, dataCenter, master)
+	// glog.V(2).Infof("%s from %s register client to master %s", clusterListener.clientName, dataCenter, master)
 
 	for {
 		msg, err := stream.Recv()
@@ -68,7 +67,7 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 			return fmt.Errorf("client receive topology : %v", err)
 		}
 		msgChan <- msg
-		// log.Printf("%s client received message %v", clusterListener.clientName, msg)
+		// glog.V(2).Infof("%s client received message %v", clusterListener.clientName, msg)
 	}
 
 }

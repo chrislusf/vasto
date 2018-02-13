@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc/peer"
-	"log"
 	"net"
 	"strings"
+	"github.com/golang/glog"
 )
 
 func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServer) error {
@@ -18,16 +18,16 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 	// fmt.Printf("FromContext %+v\n", ctx)
 	pr, ok := peer.FromContext(ctx)
 	if !ok {
-		log.Println("failed to get peer from ctx")
+		glog.Error("failed to get peer from ctx")
 		return fmt.Errorf("failed to get peer from ctx")
 	}
 	if pr.Addr == net.Addr(nil) {
-		log.Println("failed to get peer address")
+		glog.Error("failed to get peer address")
 		return fmt.Errorf("failed to get peer address")
 	}
 
 	serverAddress := server_address(pr.Addr.String())
-	// log.Printf("+ client %v", serverAddress)
+	// glog.V(2).Infof("+ client %v", serverAddress)
 
 	// clean up if disconnects
 	clientWatchedKeyspaceAndDataCenters := make(map[string]string)
@@ -38,7 +38,7 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 			ms.clientChans.removeClient(keyspace, dc, serverAddress)
 			ms.OnClientDisconnectEvent(dc, keyspace, serverAddress, clientName)
 		}
-		// log.Printf("- client %v", serverAddress)
+		// glog.V(2).Infof("- client %v", serverAddress)
 	}()
 
 	// the channel is used to stop spawned goroutines
@@ -84,7 +84,7 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 									return
 								}
 								if err := stream.Send(msg); err != nil {
-									log.Printf("send to client %s message: %+v err: %v", serverAddress, msg, err)
+									glog.V(2).Infof("send to client %s message: %+v err: %v", serverAddress, msg, err)
 									return
 								}
 							case <-clientDisconnectedChan:
@@ -92,14 +92,14 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 							}
 						}
 					}()
-				}else {
-					log.Printf("master add client %s: %v", clientName, err)
+				} else {
+					glog.Errorf("master add client %s: %v", clientName, err)
 				}
 
 			}
 		}
 	}
 
-	log.Printf("for stopped: %v", clientWatchedKeyspaceAndDataCenters)
+	glog.V(1).Infof("for stopped: %v", clientWatchedKeyspaceAndDataCenters)
 	return nil
 }
