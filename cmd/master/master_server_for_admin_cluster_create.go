@@ -9,12 +9,24 @@ import (
 
 func (ms *masterServer) CreateCluster(ctx context.Context, req *pb.CreateClusterRequest) (resp *pb.CreateClusterResponse, err error) {
 
+	ms.lock(req.Keyspace)
+	defer ms.unlock(req.Keyspace)
+
 	resp = &pb.CreateClusterResponse{}
 
-	dc, found := ms.topo.dataCenters.getDataCenter(req.DataCenter)
-	if !found {
+	dc, foundDc := ms.topo.dataCenters.getDataCenter(req.DataCenter)
+	if !foundDc {
 		resp.Error = fmt.Sprintf("no datacenter %v found", req.DataCenter)
 		return
+	}
+
+	keyspace, foundKeyspace := ms.topo.keyspaces.getKeyspace(req.Keyspace)
+	if foundKeyspace {
+		cluster, foundCluster := keyspace.clusters[data_center_name(req.DataCenter)]
+		if foundCluster && cluster.ExpectedSize() > 0 {
+			resp.Error = fmt.Sprintf("keyspace %s in datacenter %s already exists", req.Keyspace, req.DataCenter)
+			return
+		}
 	}
 
 	servers, err := dc.allocateServers(int(req.ClusterSize), float64(req.TotalDiskSizeGb*req.ReplicationFactor),

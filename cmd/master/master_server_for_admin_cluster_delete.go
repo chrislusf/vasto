@@ -8,6 +8,9 @@ import (
 
 func (ms *masterServer) DeleteCluster(ctx context.Context, req *pb.DeleteClusterRequest) (resp *pb.DeleteClusterResponse, err error) {
 
+	ms.lock(req.Keyspace)
+	defer ms.unlock(req.Keyspace)
+
 	resp = &pb.DeleteClusterResponse{}
 
 	keyspace, found := ms.topo.keyspaces.getKeyspace(req.Keyspace)

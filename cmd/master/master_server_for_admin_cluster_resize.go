@@ -12,6 +12,9 @@ import (
 
 func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest) (resp *pb.ResizeResponse, err error) {
 
+	ms.lock(req.Keyspace)
+	defer ms.unlock(req.Keyspace)
+
 	resp = &pb.ResizeResponse{}
 
 	keyspace, found := ms.topo.keyspaces.getKeyspace(req.Keyspace)

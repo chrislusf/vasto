@@ -2,10 +2,9 @@ package master
 
 import (
 	"net"
-	//"strings"
+	"sync"
 
 	"github.com/chrislusf/vasto/pb"
-	//"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
 	"github.com/chrislusf/glog"
 )
@@ -15,18 +14,21 @@ type MasterOption struct {
 }
 
 type masterServer struct {
-	option      *MasterOption
-	clientChans *clientChannels
-	clientsStat *clientsStat
-	topo        *masterTopology
+	option               *MasterOption
+	clientChans          *clientChannels
+	clientsStat          *clientsStat
+	topo                 *masterTopology
+	keyspaceMutexMap     map[string]*sync.Mutex
+	keyspaceMutexMapLock sync.Mutex
 }
 
 func RunMaster(option *MasterOption) {
 	var ms = &masterServer{
-		option:      option,
-		clientChans: newClientChannels(),
-		clientsStat: newClientsStat(),
-		topo:        newMasterTopology(),
+		option:           option,
+		clientChans:      newClientChannels(),
+		clientsStat:      newClientsStat(),
+		topo:             newMasterTopology(),
+		keyspaceMutexMap: make(map[string]*sync.Mutex),
 	}
 
 	listener, err := net.Listen("tcp", *option.Address)
@@ -50,4 +52,27 @@ func (ms *masterServer) serveGrpc(listener net.Listener) {
 	grpcServer := grpc.NewServer()
 	pb.RegisterVastoMasterServer(grpcServer, ms)
 	grpcServer.Serve(listener)
+}
+
+func (ms *masterServer) lock(keyspace string) {
+	ms.keyspaceMutexMapLock.Lock()
+	mu, found := ms.keyspaceMutexMap[keyspace]
+	if !found {
+		mu = &sync.Mutex{}
+		ms.keyspaceMutexMap[keyspace] = mu
+	}
+	ms.keyspaceMutexMapLock.Unlock()
+
+	mu.Lock()
+}
+
+func (ms *masterServer) unlock(keyspace string) {
+	ms.keyspaceMutexMapLock.Lock()
+	mu, found := ms.keyspaceMutexMap[keyspace]
+	ms.keyspaceMutexMapLock.Unlock()
+	if !found {
+		return
+	}
+
+	mu.Unlock()
 }

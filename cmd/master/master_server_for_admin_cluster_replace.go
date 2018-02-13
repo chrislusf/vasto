@@ -14,6 +14,9 @@ import (
 
 func (ms *masterServer) ReplaceNode(ctx context.Context, req *pb.ReplaceNodeRequest) (resp *pb.ReplaceNodeResponse, err error) {
 
+	ms.lock(req.Keyspace)
+	defer ms.unlock(req.Keyspace)
+
 	resp = &pb.ReplaceNodeResponse{}
 
 	keyspace, found := ms.topo.keyspaces.getKeyspace(req.Keyspace)
