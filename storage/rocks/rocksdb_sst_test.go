@@ -2,9 +2,10 @@ package rocks
 
 import (
 	"fmt"
-	"log"
 	"testing"
 	"time"
+	"github.com/chrislusf/glog"
+	"log"
 )
 
 func TestAddNormal(t *testing.T) {
@@ -21,7 +22,7 @@ func TestAddNormal(t *testing.T) {
 		db.Put(key, value)
 	}
 
-	glog.V(2).Infof("%d messages inserted by put in: %v\n", limit, time.Now().Sub(now))
+	log.Printf("%d messages inserted by put in: %v\n", limit, time.Now().Sub(now))
 
 }
 
