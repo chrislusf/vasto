@@ -51,11 +51,6 @@ func Uint16toBytes(v uint16) (b []byte) {
 	b[1] = byte(v)
 	return b
 }
-func Uint8toBytes(v uint8) (b []byte) {
-	b = make([]byte, 1)
-	b[0] = byte(v)
-	return b
-}
 
 // float64 converts from bytes
 func BytesToFloat64(bytes []byte) float64 {
