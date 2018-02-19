@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func TestRetryForever(t *testing.T) {
+func xTestRetryForever(t *testing.T) {
 
 	var err error
 
