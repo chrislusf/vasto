@@ -9,6 +9,7 @@ import (
 	"sync"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/glog"
+	"math"
 )
 
 type LogManager struct {
@@ -152,6 +153,13 @@ func (m *LogManager) HasSegment(segment uint32) bool {
 
 func (m *LogManager) GetSegmentRange() (earlistSegment, latestSegment uint32) {
 	m.filesLock.Lock()
+	defer m.filesLock.Unlock()
+
+	if len(m.files) == 0 {
+		return
+	}
+
+	earlistSegment = uint32(math.MaxInt32)
 
 	for k, _ := range m.files {
 		if k <= earlistSegment {
@@ -161,8 +169,6 @@ func (m *LogManager) GetSegmentRange() (earlistSegment, latestSegment uint32) {
 			latestSegment = k
 		}
 	}
-
-	m.filesLock.Unlock()
 
 	return
 }
