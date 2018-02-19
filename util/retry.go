@@ -22,6 +22,7 @@ func RetryForever(ctx context.Context, name string, fn func() error, waitTimes t
 			}
 		} else {
 			if hasFailedBefore {
+				hasFailedBefore = false
 				glog.V(0).Infof("%s recovered", name)
 			} else {
 				glog.V(0).Infof("%s succeeded", name)
@@ -32,7 +33,7 @@ func RetryForever(ctx context.Context, name string, fn func() error, waitTimes t
 
 		select {
 		case <-ctx.Done():
-			glog.V(1).Infof("%s has finished", name)
+			glog.V(9).Infof("%s has finished", name)
 			return
 		default:
 			glog.V(2).Infof("%s retrying...", name)

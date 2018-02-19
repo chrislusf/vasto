@@ -7,14 +7,14 @@ import (
 	"time"
 )
 
-func xTestRetryForever(t *testing.T) {
+func TestRetryForever(t *testing.T) {
 
 	var err error
 
 	expiredAt := time.Now().Add(2 * time.Second)
 	ctx, _ := context.WithTimeout(context.Background(), time.Second)
 
-	RetryForever(ctx, "test", func() error {
+	RetryForever(ctx, "test1", func() error {
 		if time.Now().Before(expiredAt) {
 			err = io.EOF
 			return io.EOF
@@ -28,16 +28,16 @@ func xTestRetryForever(t *testing.T) {
 		t.Errorf("unexpected nil error")
 	}
 
-	expiredAt = time.Now().Add(time.Second)
-	ctx, _ = context.WithTimeout(context.Background(), 2*time.Second)
-	RetryForever(ctx, "test", func() error {
+	expiredAt = time.Now().Add(500*time.Millisecond)
+	ctx, _ = context.WithTimeout(context.Background(), time.Second)
+	RetryForever(ctx, "test2", func() error {
 		if time.Now().Before(expiredAt) {
 			err = io.EOF
 			return io.EOF
 		}
 		err = nil
 		return nil
-	}, 400*time.Millisecond,
+	}, 200*time.Millisecond,
 	)
 
 	if err != nil {
