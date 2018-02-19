@@ -39,17 +39,24 @@ func TestPut10Million(t *testing.T) {
 
 	limit := 100000
 
-	key := make([]byte, 4)
 	value := make([]byte, 4)
 	rand.Read(value)
 
+	var buf bytes.Buffer
 	now := time.Now()
 	for i := 0; i < limit; i++ {
-		rand.Read(key)
-		db.Put(key, value)
+		buf.Reset()
+		buf.WriteString(fmt.Sprintf("k%d", i))
+		db.Put(buf.Bytes(), value)
 	}
 
+	db.Delete([]byte(fmt.Sprintf("k%d", 23445)))
+
 	fmt.Printf("%d messages inserted in: %v\n", limit, time.Now().Sub(now))
+	fmt.Printf("db size: %v\n", db.Size())
+	for i, meta := range db.GetLiveFilesMetaData() {
+		fmt.Printf("%d. file %s size:%d level: %v, [%v,%v]\n", i, meta.Name, meta.Size, meta.Level, meta.SmallestKey, meta.LargestKey)
+	}
 
 	acc := 0
 	it := db.db.NewIterator(db.ro)
@@ -128,22 +135,30 @@ func TestFullScan(t *testing.T) {
 	limit := 100000
 	batchSize := 100
 
+	value := make([]byte, 4)
+	rand.Read(value)
+
+	var buf bytes.Buffer
 	for i := 0; i < limit; i++ {
-		key := []byte(fmt.Sprintf("k%5d", i))
-		value := []byte(fmt.Sprintf("v%5d", i))
-		db.Put(key, value)
+		buf.Reset()
+		buf.WriteString(fmt.Sprintf("k%d", i))
+		db.Put(buf.Bytes(), value)
 	}
+
+	db.Delete([]byte(fmt.Sprintf("k%d", 23445)))
 
 	var counter1 int
 	db.FullScan(batchSize, func(rows []*pb.RawKeyValue) error {
-		counter1++
-		if len(rows) != batchSize {
+		for range rows {
+			counter1++
+		}
+		if len(rows) > batchSize {
 			t.Errorf("full scan batch size %d, but actual %d", batchSize, len(rows))
 		}
 		return nil
 	})
-	if counter1 != limit/batchSize {
-		t.Errorf("full scan batches %d, but actual %d", limit/batchSize, counter1)
+	if counter1 != limit-1 {
+		t.Errorf("full scan batches %d, but actual %d", limit-1, counter1)
 	}
 
 }
