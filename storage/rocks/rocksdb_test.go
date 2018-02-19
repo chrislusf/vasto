@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"testing"
 	"time"
+	"github.com/chrislusf/vasto/pb"
 )
 
 func TestPutGet(t *testing.T) {
@@ -115,6 +116,34 @@ func TestRangeScan(t *testing.T) {
 
 	if count(db) != 100000 {
 		t.Errorf("scanning expecting %d rows, but actual %d rows", 100000, count(db))
+	}
+
+}
+
+func TestFullScan(t *testing.T) {
+
+	db := setupTestDb()
+	defer cleanup(db)
+
+	limit := 100000
+	batchSize := 100
+
+	for i := 0; i < limit; i++ {
+		key := []byte(fmt.Sprintf("k%5d", i))
+		value := []byte(fmt.Sprintf("v%5d", i))
+		db.Put(key, value)
+	}
+
+	var counter1 int
+	db.FullScan(batchSize, func(rows []*pb.RawKeyValue) error {
+		counter1++
+		if len(rows) != batchSize {
+			t.Errorf("full scan batch size %d, but actual %d", batchSize, len(rows))
+		}
+		return nil
+	})
+	if counter1 != limit/batchSize {
+		t.Errorf("full scan batches %d, but actual %d", limit/batchSize, counter1)
 	}
 
 }
