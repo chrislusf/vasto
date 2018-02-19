@@ -7,21 +7,25 @@ import (
 	"github.com/chrislusf/glog"
 )
 
-func Retry(fn func() error) error {
-	return timeDelayedRetry(fn, time.Second, 3*time.Second)
-}
-
 func RetryForever(ctx context.Context, name string, fn func() error, waitTimes time.Duration) {
-	RetryUntil(ctx, name, fn, waitTimes)
-}
-
-func RetryUntil(ctx context.Context, name string, fn func() error, waitTimes time.Duration) {
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	hasFailedBefore := false
 	for {
 		err := fn()
 		if err != nil {
-			glog.Errorf("%s failed: %v", name, err)
+			if hasFailedBefore {
+				glog.Errorf("%s still failed: %v", name, err)
+			} else {
+				hasFailedBefore = true
+				glog.Errorf("%s failed: %v", name, err)
+			}
+		} else {
+			if hasFailedBefore {
+				glog.V(0).Infof("%s recovered", name)
+			} else {
+				glog.V(0).Infof("%s succeeded", name)
+			}
 		}
 
 		time.Sleep(time.Duration((r.Float64() + 1) * float64(waitTimes)))
@@ -34,28 +38,4 @@ func RetryUntil(ctx context.Context, name string, fn func() error, waitTimes tim
 			glog.V(2).Infof("%s retrying...", name)
 		}
 	}
-}
-
-func timeDelayedRetry(fn func() error, waitTimes ...time.Duration) error {
-
-	err := fn()
-	if err == nil {
-		return nil
-	}
-
-	glog.V(2).Infof("Retrying after failure: %v", err)
-
-	var i int
-	var t time.Duration
-
-	for i, t = range waitTimes {
-		err = fn()
-		if err == nil {
-			break
-		}
-		glog.V(2).Infof("Failed %d time due to %v", i+1, err)
-		time.Sleep(t)
-	}
-
-	return err
 }
