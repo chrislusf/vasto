@@ -3,7 +3,6 @@ package topology
 import (
 	"testing"
 	"github.com/magiconair/properties/assert"
-	"container/ring"
 )
 
 func TestClusterOperations(t *testing.T) {
