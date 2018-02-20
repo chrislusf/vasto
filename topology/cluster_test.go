@@ -2,34 +2,38 @@ package topology
 
 import (
 	"testing"
+	"github.com/magiconair/properties/assert"
+	"container/ring"
 )
 
 func TestClusterOperations(t *testing.T) {
 	ring0 := createRing(0)
-	expected := "[] size 0/0 "
-	if ring0.String() != expected {
-		t.Errorf("unexpected %v, %v", ring0.String(), expected)
-	}
+	assert.Equal(t, ring0.String(), "[] size 0/0 ", "ring 0 to string")
 
 	ring3 := createRing(3)
-	if ring3.String() != "[0@0,1 1@1,2 2@2,0] size 3/3 " {
-		t.Errorf("unexpected %v", ring3.String())
-	}
+	assert.Equal(t, ring3.String(), "[0@0,1 1@1,2 2@2,0] size 3/3 ", "ring 3 to string")
 
 	ring3.Debug("test ")
 
 	node, replica, found := ring3.GetNode(1, NewAccessOption(1))
 
-	if !found || replica != 1 || node.ShardInfo.ShardId != 1 {
-		t.Errorf("failed to find shard 1 replica 1")
-	}
+	assert.Equal(t, found, true, "found node")
+	assert.Equal(t, replica, 1, "replica")
+	assert.Equal(t, node.ShardInfo.ShardId, 1, "shard id")
+	assert.Equal(t, ring3.ExpectedSize(), 3, "expected cluster size")
+	assert.Equal(t, ring3.ReplicationFactor(), 2, "expected ReplicationFactor")
 
-	if ring3.ExpectedSize() != 3 {
-		t.Errorf("expected size: %d, %d", ring3.ExpectedSize(), 3)
-	}
+}
 
-	if ring3.ReplicationFactor() != 2 {
-		t.Errorf("expected ReplicationFactor: %d, %d", ring3.ReplicationFactor(), 2)
-	}
+func TestClusterProto(t *testing.T) {
+
+	ring3 := createRing(3)
+
+	cluster := ring3.ToCluster()
+
+	assert.Equal(t, cluster.Keyspace, "ks1", "keyspace")
+	assert.Equal(t, cluster.DataCenter, "dc1", "data center")
+	assert.Equal(t, cluster.ExpectedClusterSize, uint32(3), "expected cluster size")
+	assert.Equal(t, cluster.CurrentClusterSize, uint32(3), "current cluster size")
 
 }
