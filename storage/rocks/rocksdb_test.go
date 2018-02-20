@@ -32,6 +32,31 @@ func TestPutGet(t *testing.T) {
 	}
 }
 
+func TestMerge(t *testing.T) {
+	db := setupTestDb()
+	defer cleanup(db)
+
+	key := make([]byte, 4)
+	rand.Read(key)
+
+	if err := db.Merge(key, []byte("123")); err != nil {
+		t.Errorf("insert should not return any error. err: %v", err)
+	}
+
+	if err := db.Merge(key, []byte("456")); err != nil {
+		t.Errorf("insert should not return any error. err: %v", err)
+	}
+
+	returned, err := db.Get(key)
+	if err != nil {
+		t.Errorf("get should not return any error. err: %v", err)
+	}
+
+	if !bytes.Equal([]byte("123456"), returned) {
+		t.Errorf("data value is different. is(%x) should be(%x)", returned, []byte("123456"))
+	}
+}
+
 func TestPut10Million(t *testing.T) {
 
 	db := setupTestDb()
@@ -164,7 +189,7 @@ func TestFullScan(t *testing.T) {
 }
 
 func setupTestDb() *Rocks {
-	db := NewDb("/tmp/rocks-test-go", nil)
+	db := NewDb("/tmp/rocks-test-go", &bytesMergeOperator{})
 	return db
 }
 
@@ -180,3 +205,19 @@ func count(db *Rocks) (count int) {
 	})
 	return count
 }
+
+type bytesMergeOperator struct {
+}
+
+func (mo bytesMergeOperator) FullMerge(key, existingValue []byte, operands [][]byte) ([]byte, bool) {
+	for _, operand := range operands {
+		existingValue = append(existingValue, operand...)
+	}
+	return existingValue, true
+}
+
+func (mo bytesMergeOperator) PartialMerge(key, leftOperand, rightOperand []byte) ([]byte, bool) {
+	out := append(leftOperand, rightOperand...)
+	return out, true
+}
+func (mo bytesMergeOperator) Name() string { return "bytesMergeOperator" }

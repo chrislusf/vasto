@@ -145,10 +145,6 @@ func (f *logSegmentFile) readOneEntry(offset int64) (entry *pb.LogEntry, nextOff
 
 }
 
-func (f *logSegmentFile) isInitialized() bool {
-	return f != nil && f.file != nil
-}
-
 func (f *logSegmentFile) open() error {
 	if f.file != nil {
 		f.file.Close()
