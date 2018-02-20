@@ -18,7 +18,7 @@ func TestClusterOperations(t *testing.T) {
 
 	assert.Equal(t, found, true, "found node")
 	assert.Equal(t, replica, 1, "replica")
-	assert.Equal(t, node.ShardInfo.ShardId, 1, "shard id")
+	assert.Equal(t, node.ShardInfo.ShardId, uint32(1), "shard id")
 	assert.Equal(t, ring3.ExpectedSize(), 3, "expected cluster size")
 	assert.Equal(t, ring3.ReplicationFactor(), 2, "expected ReplicationFactor")
 
