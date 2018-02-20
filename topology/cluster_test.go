@@ -114,3 +114,75 @@ func TestRemoveShard(t *testing.T) {
 	assert.Equal(t, isStoreDeleted, true, "remove shard 0")
 
 }
+
+func TestRemoveStore(t *testing.T) {
+
+	ring3 := createRing(3)
+
+	x := 1
+
+	node, _, _ := ring3.GetNode(1)
+	assert.Equal(t, node.StoreResource.Address, "localhost:7001", "original server address")
+
+	store := &pb.StoreResource{
+		DataCenter:   "dc1",
+		Network:      "tcp",
+		Address:      fmt.Sprint("localhost:", 7000+x),
+		AdminAddress: fmt.Sprint("localhost:", 8000+x),
+	}
+
+	shard0 := &pb.ShardInfo{
+		KeyspaceName:      "ks1",
+		ServerId:          uint32(1),
+		ShardId:           uint32(0),
+		ClusterSize:       uint32(3),
+		ReplicationFactor: uint32(2),
+	}
+
+	shard1 := &pb.ShardInfo{
+		KeyspaceName:      "ks1",
+		ServerId:          uint32(1),
+		ShardId:           uint32(1),
+		ClusterSize:       uint32(3),
+		ReplicationFactor: uint32(2),
+	}
+
+	removedShards := ring3.RemoveStore(store)
+
+	assert.Equal(t, len(removedShards), 2, "remove shard count")
+
+	assert.Equal(t, removedShards[0].ShardId, shard0.ShardId, "remove shard 0")
+	assert.Equal(t, removedShards[1].ShardId, shard1.ShardId, "remove shard 1")
+
+}
+
+func TestNextCluster(t *testing.T) {
+
+	ring := createRing(0)
+
+	x := 1
+
+	store := &pb.StoreResource{
+		DataCenter:   "dc1",
+		Network:      "tcp",
+		Address:      fmt.Sprint("localhost:", 7000+x),
+		AdminAddress: fmt.Sprint("localhost:", 8000+x),
+	}
+
+	shard0 := &pb.ShardInfo{
+		KeyspaceName:      "ks1",
+		ServerId:          uint32(0),
+		ShardId:           uint32(0),
+		ClusterSize:       uint32(1),
+		ReplicationFactor: uint32(1),
+	}
+
+	ring.SetShard(store, shard0)
+	assert.Equal(t, ring.ExpectedSize(), 1, "add shard 0")
+	assert.Equal(t, ring.CurrentSize(), 1, "current cluster size")
+
+	ring.SetNextCluster(2, 1)
+
+	ring.RemoveNextCluster()
+
+}
