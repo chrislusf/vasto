@@ -94,3 +94,29 @@ func TestLocalShards(t *testing.T) {
 	assert.Equal(t, 1, shards[1].ShardId)
 
 }
+
+func TestShardListContains(t *testing.T) {
+
+	shards := LocalShards(6, 7, 3)
+
+	assert.Equal(t, ShardListContains(shards, ClusterShard{
+		ShardId:  6,
+		ServerId: 6,
+	}), true, "server 6 shard 6")
+
+	assert.Equal(t, ShardListContains(shards, ClusterShard{
+		ShardId:  5,
+		ServerId: 6,
+	}), true, "server 6 shard 5")
+
+	assert.Equal(t, ShardListContains(shards, ClusterShard{
+		ShardId:  4,
+		ServerId: 6,
+	}), true, "server 6 shard 4")
+
+	assert.Equal(t, ShardListContains(shards, ClusterShard{
+		ShardId:  2,
+		ServerId: 6,
+	}), false, "server 6 shard 2")
+
+}
