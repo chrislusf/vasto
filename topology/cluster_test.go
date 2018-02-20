@@ -3,6 +3,8 @@ package topology
 import (
 	"testing"
 	"github.com/magiconair/properties/assert"
+	"fmt"
+	"github.com/chrislusf/vasto/pb"
 )
 
 func TestClusterOperations(t *testing.T) {
@@ -34,5 +36,81 @@ func TestClusterProto(t *testing.T) {
 	assert.Equal(t, cluster.DataCenter, "dc1", "data center")
 	assert.Equal(t, cluster.ExpectedClusterSize, uint32(3), "expected cluster size")
 	assert.Equal(t, cluster.CurrentClusterSize, uint32(3), "current cluster size")
+
+}
+
+func TestReplaceShard(t *testing.T) {
+
+	ring3 := createRing(3)
+
+	x := 5
+
+	node, _, _ := ring3.GetNode(1)
+	assert.Equal(t, node.StoreResource.Address, "localhost:7001", "original server address")
+
+	store := &pb.StoreResource{
+		DataCenter:   "dc1",
+		Network:      "tcp",
+		Address:      fmt.Sprint("localhost:", 7000+x),
+		AdminAddress: fmt.Sprint("localhost:", 8000+x),
+	}
+
+	shard := &pb.ShardInfo{
+		KeyspaceName:      "ks1",
+		ServerId:          uint32(1),
+		ShardId:           uint32(1),
+		ClusterSize:       uint32(3),
+		ReplicationFactor: uint32(2),
+	}
+
+	isReplaced := ring3.ReplaceShard(store, shard)
+
+	assert.Equal(t, isReplaced, true, "replace shard")
+
+	node, _, _ = ring3.GetNode(1)
+
+	assert.Equal(t, node.StoreResource.Address, store.Address, "replaced server address")
+
+}
+
+func TestRemoveShard(t *testing.T) {
+
+	ring3 := createRing(3)
+
+	x := 1
+
+	node, _, _ := ring3.GetNode(1)
+	assert.Equal(t, node.StoreResource.Address, "localhost:7001", "original server address")
+
+	store := &pb.StoreResource{
+		DataCenter:   "dc1",
+		Network:      "tcp",
+		Address:      fmt.Sprint("localhost:", 7000+x),
+		AdminAddress: fmt.Sprint("localhost:", 8000+x),
+	}
+
+	shard0 := &pb.ShardInfo{
+		KeyspaceName:      "ks1",
+		ServerId:          uint32(1),
+		ShardId:           uint32(0),
+		ClusterSize:       uint32(3),
+		ReplicationFactor: uint32(2),
+	}
+
+	shard1 := &pb.ShardInfo{
+		KeyspaceName:      "ks1",
+		ServerId:          uint32(1),
+		ShardId:           uint32(1),
+		ClusterSize:       uint32(3),
+		ReplicationFactor: uint32(2),
+	}
+
+	isStoreDeleted := ring3.RemoveShard(store, shard1)
+
+	assert.Equal(t, isStoreDeleted, false, "remove shard 1")
+
+	isStoreDeleted = ring3.RemoveShard(store, shard0)
+
+	assert.Equal(t, isStoreDeleted, true, "remove shard 0")
 
 }
