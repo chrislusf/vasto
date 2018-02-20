@@ -24,6 +24,8 @@ func TestBootstrapPeersWhenShrinkingSmall(t *testing.T) {
 	assert.Equal(t, 1, len(plan.BootstrapSource))
 	assert.Equal(t, 6, plan.BootstrapSource[0].ServerId)
 
+	println(plan.String())
+
 	plan = BootstrapPlanWithTopoChange(&BootstrapRequest{0, 4, 7, 6, 3})
 	assert.Equal(t, 3, len(plan.BootstrapSource))
 
