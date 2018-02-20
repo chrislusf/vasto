@@ -10,6 +10,7 @@ import (
 	"github.com/chrislusf/vasto/util"
 	"time"
 	"github.com/chrislusf/vasto/pb"
+	"github.com/magiconair/properties/assert"
 )
 
 func TestSetCompactionForShard(t *testing.T) {
@@ -42,5 +43,37 @@ func TestSetCompactionForShard(t *testing.T) {
 		t.Errorf("scanning expecting %d rows, but actual %d rows", int(expected), counter4)
 	}
 	fmt.Printf("sharded to %d, expecting %.2f\n", counter4, expected)
+
+}
+
+func TestSetTtlCompactionForShard(t *testing.T) {
+
+	db := setupTestDb()
+	defer cleanup(db)
+
+	total := 100000
+	shardCount := 5
+	now := uint64(time.Now().Unix())
+
+	for i := 0; i < total; i++ {
+		key := []byte(fmt.Sprintf("k%5d", i))
+		entry := &codec.Entry{
+			PartitionHash: util.Hash(key),
+			UpdatedAtNs:   now,
+			TtlSecond:     1,
+			OpAndDataType: codec.OpAndDataType(pb.OpAndDataType_BYTES),
+			Value:         []byte(fmt.Sprintf("v%5d", i)),
+		}
+		db.Put(key, entry.ToBytes())
+	}
+
+	time.Sleep(1200 * time.Millisecond)
+
+	db.SetCompactionForShard(0, shardCount)
+	db.db.CompactRange(gorocksdb.Range{nil, nil})
+
+	var counter4 = count(db)
+
+	assert.Equal(t, counter4, 0, "compaction with ttl")
 
 }
