@@ -19,11 +19,9 @@ func MergeEntry(a, b []byte) (mergedEntry *Entry, merged bool) {
 
 	x := FromBytes(a)
 
-	if !x.MergeWith(b) {
-		return nil, false
-	}
+	merged = x.MergeWith(b)
 
-	return x, true
+	return x, merged
 
 }
 
@@ -50,8 +48,6 @@ func (x *Entry) MergeWith(b []byte) (merged bool) {
 		if left > right {
 			x.Value = y.Value
 		}
-	default:
-		return false
 	}
 
 	return true

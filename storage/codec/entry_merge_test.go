@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/chrislusf/vasto/util"
 	"time"
+	"github.com/magiconair/properties/assert"
 )
 
 func TestMergeFloat64(t *testing.T) {
@@ -108,4 +109,28 @@ func TestMergeBytes(t *testing.T) {
 	if string(mergedEntry.Value) != "123456" {
 		t.Errorf("merge error: %x %x", mergedEntry.Value, "123456")
 	}
+}
+
+func TestMergeEntry(t *testing.T) {
+
+	aEntry := &Entry{
+		OpAndDataType: OpAndDataType(pb.OpAndDataType_BYTES),
+		Value:         []byte("123"),
+	}
+
+	bEntry := &Entry{
+		OpAndDataType: OpAndDataType(pb.OpAndDataType_BYTES),
+		Value:         []byte("456"),
+	}
+
+	// left nil
+	mergedEntry, merged := MergeEntry(nil, bEntry.ToBytes())
+	assert.Equal(t, merged, true, "left nil merged")
+	assert.Equal(t, bEntry.Value, mergedEntry.Value, "left nil merge")
+
+	// right nil
+	mergedEntry, merged = MergeEntry(aEntry.ToBytes(), nil)
+	assert.Equal(t, merged, true, "left nil merged")
+	assert.Equal(t, aEntry.Value, mergedEntry.Value, "left nil merge")
+
 }
