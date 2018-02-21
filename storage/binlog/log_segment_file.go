@@ -129,7 +129,7 @@ func (f *logSegmentFile) readOneEntry(offset int64) (entry *pb.LogEntry, nextOff
 	data := make([]byte, dataLen)
 	n, err := f.file.ReadAt(data, offset+4)
 	if err != nil {
-		println("reading", f.fullName, "offset", offset, "size", dataLen, err.Error())
+		glog.Warningf("reading %s offset %d size %d: %v", f.fullName, offset, dataLen, err)
 		return nil, 0, fmt.Errorf("read entry data: %v", err)
 	}
 	if n != int(dataLen) {
