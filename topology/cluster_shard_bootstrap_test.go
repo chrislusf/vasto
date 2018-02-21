@@ -150,3 +150,14 @@ func TestBootstrapPeersWhenGrowingBig(t *testing.T) {
 	assert.Equal(t, 0, len(plan.BootstrapSource))
 
 }
+
+func TestSomeCases(t *testing.T) {
+	// unexpected partition shards
+	shards := PartitionShards(3, 3, 2, 2)
+	assert.Equal(t, len(shards), 0, "unexpected partition shards")
+
+	// no cluster size changes
+	plan := BootstrapPlanWithTopoChange(&BootstrapRequest{5, 5, 6, 6, 3})
+	println(plan.String())
+
+}

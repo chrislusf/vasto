@@ -1,10 +1,10 @@
 package topology
 
 import (
-	"testing"
-	"github.com/magiconair/properties/assert"
 	"github.com/chrislusf/vasto/pb"
+	"github.com/magiconair/properties/assert"
 	"google.golang.org/grpc"
+	"testing"
 )
 
 func TestClusterWithConnection(t *testing.T) {

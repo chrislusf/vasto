@@ -1,10 +1,10 @@
 package topology
 
 import (
-	"testing"
-	"github.com/magiconair/properties/assert"
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
+	"github.com/magiconair/properties/assert"
+	"testing"
 )
 
 func TestClusterOperations(t *testing.T) {

@@ -22,9 +22,6 @@ type BootstrapPlan struct {
 	TransitionalFollowSource []ClusterShard
 	FromClusterSize          int
 	ToClusterSize            int
-
-	IsNormalStart                bool
-	IsNormalStartBootstrapNeeded bool
 }
 
 // BootstrapPeersWhenResize returns
@@ -115,38 +112,31 @@ func BootstrapPlanWithTopoChange(req *BootstrapRequest) (plan *BootstrapPlan) {
 
 func (plan *BootstrapPlan) String() string {
 	var buf bytes.Buffer
-	if plan.IsNormalStart {
-		if plan.IsNormalStartBootstrapNeeded {
-			buf.WriteString("check peer shards, ")
+	if len(plan.BootstrapSource) > 0 {
+		buf.WriteString("bootstraps from ")
+		if plan.PickBestBootstrapSource {
+			buf.WriteString("one of ")
 		}
-		buf.WriteString("normal start")
-	} else {
-		if len(plan.BootstrapSource) > 0 {
-			buf.WriteString("bootstraps from ")
-			if plan.PickBestBootstrapSource {
-				buf.WriteString("one of ")
+		buf.WriteString("[")
+		for i := 0; i < len(plan.BootstrapSource); i++ {
+			if i != 0 {
+				buf.WriteString(",")
 			}
-			buf.WriteString("[")
-			for i := 0; i < len(plan.BootstrapSource); i++ {
-				if i != 0 {
-					buf.WriteString(",")
-				}
-				buf.WriteString(fmt.Sprintf("%d.%d", plan.BootstrapSource[i].ServerId, plan.BootstrapSource[i].ShardId))
-			}
-			buf.WriteString("] ")
+			buf.WriteString(fmt.Sprintf("%d.%d", plan.BootstrapSource[i].ServerId, plan.BootstrapSource[i].ShardId))
 		}
-
-		if len(plan.TransitionalFollowSource) > 0 {
-			buf.WriteString("temporarily follows [")
-			for i := 0; i < len(plan.TransitionalFollowSource); i++ {
-				if i != 0 {
-					buf.WriteString(",")
-				}
-				buf.WriteString(fmt.Sprintf("%d.%d", plan.TransitionalFollowSource[i].ServerId, plan.TransitionalFollowSource[i].ShardId))
-			}
-			buf.WriteString("] ")
-		}
-		buf.WriteString("bootstrap start")
+		buf.WriteString("] ")
 	}
+
+	if len(plan.TransitionalFollowSource) > 0 {
+		buf.WriteString("temporarily follows [")
+		for i := 0; i < len(plan.TransitionalFollowSource); i++ {
+			if i != 0 {
+				buf.WriteString(",")
+			}
+			buf.WriteString(fmt.Sprintf("%d.%d", plan.TransitionalFollowSource[i].ServerId, plan.TransitionalFollowSource[i].ShardId))
+		}
+		buf.WriteString("] ")
+	}
+	buf.WriteString("bootstrap start")
 	return buf.String()
 }

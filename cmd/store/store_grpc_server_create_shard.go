@@ -123,8 +123,6 @@ func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.L
 			}
 
 			if err := shard.startWithBootstrapPlan(&topology.BootstrapPlan{
-				IsNormalStart:                true,
-				IsNormalStartBootstrapNeeded: *ss.option.Bootstrap,
 				ToClusterSize:                int(shardInfo.ClusterSize),
 			}, ss.selfAdminAddress(), nil); err != nil {
 				return fmt.Errorf("%s bootstrap shard %v : %v", ss.storeName, shardInfo.IdentifierOnThisServer(), err)

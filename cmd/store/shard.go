@@ -109,21 +109,12 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 	}
 
 	// bootstrap the data
-	if bootstrapOption.IsNormalStart {
-		if s.cluster != nil && bootstrapOption.IsNormalStartBootstrapNeeded {
-			err := s.maybeBootstrapAfterRestart(s.ctx)
-			if err != nil {
-				glog.Errorf("normal bootstrap %s: %v", s.String(), err)
-				return fmt.Errorf("normal bootstrap %s: %v", s.String(), err)
-			}
+	if s.cluster != nil {
+		err := s.maybeBootstrapAfterRestart(s.ctx)
+		if err != nil {
+			glog.Errorf("normal bootstrap %s: %v", s.String(), err)
+			return fmt.Errorf("normal bootstrap %s: %v", s.String(), err)
 		}
-	} else {
-		glog.V(1).Infof("start topo bootstrap %s, existing servers: %v", s.String(), existingPrimaryShards)
-		if err := s.topoChangeBootstrap(s.ctx, bootstrapOption, existingPrimaryShards); err != nil {
-			glog.Errorf("topo bootstrap %s: %v", s.String(), err)
-			return fmt.Errorf("topo bootstrap %s: %v", s.String(), err)
-		}
-		glog.V(1).Infof("finished topo bootstrap %s", s.String())
 	}
 
 	// add normal follow

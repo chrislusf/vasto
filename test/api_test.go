@@ -113,7 +113,6 @@ func startMasterAndStore() int {
 		Host:              getString("localhost"),
 		ListenHost:        getString(""),
 		TcpPort:           getInt32(getPort()),
-		Bootstrap:         getBool(true),
 		DisableUnixSocket: getBool(false),
 		Master:            getString(fmt.Sprintf("localhost:%d", masterPort)),
 		DataCenter:        getString("dc1"),
