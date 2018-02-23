@@ -1,17 +1,17 @@
 package store
 
 import (
-	"fmt"
-	"io"
 	"context"
+	"fmt"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/gorocksdb"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
 	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
 	"google.golang.org/grpc"
+	"io"
 	"sync"
-	"github.com/chrislusf/glog"
 )
 
 func (s *shard) peerShards() []topology.ClusterShard {

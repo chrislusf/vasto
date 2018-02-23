@@ -6,13 +6,13 @@ import (
 	"testing"
 
 	"bytes"
-	"github.com/chrislusf/vasto/client"
+	"context"
 	m "github.com/chrislusf/vasto/cmd/master"
 	s "github.com/chrislusf/vasto/cmd/store"
+	"github.com/chrislusf/vasto/vs"
 	"log"
-	"time"
-	"context"
 	"os"
+	"time"
 )
 
 func TestOpen(t *testing.T) {
@@ -21,7 +21,7 @@ func TestOpen(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	c := client.NewClient(context.Background(), "[testing]", fmt.Sprintf("localhost:%d", masterPort), "dc1")
+	c := vs.NewClient(context.Background(), "[testing]", fmt.Sprintf("localhost:%d", masterPort), "dc1")
 
 	c.CreateCluster("ks1", "dc1", 1, 1)
 
@@ -31,13 +31,13 @@ func TestOpen(t *testing.T) {
 
 	log.Println("GetClusterClient ks1")
 
-	ks.BatchPut([]*client.Row{
-		client.NewRow([]byte("x1"), []byte("y2")),
-		client.NewRow([]byte("x2"), []byte("y2")),
-		client.NewRow([]byte("x3"), []byte("y3")),
+	ks.BatchPut([]*vs.KeyBytesValue{
+		vs.NewKeyBytesValue([]byte("x1"), []byte("y2")),
+		vs.NewKeyBytesValue([]byte("x2"), []byte("y2")),
+		vs.NewKeyBytesValue([]byte("x3"), []byte("y3")),
 	})
 
-	data, err := ks.Get(client.Key([]byte("x2")))
+	data, err := ks.Get(vs.Key([]byte("x2")))
 	if err != nil {
 		t.Errorf("fail to get value: %v", err)
 	}
@@ -46,7 +46,7 @@ func TestOpen(t *testing.T) {
 	}
 
 	t.Run("add", func(t *testing.T) {
-		k := client.Key([]byte("y1"))
+		k := vs.Key([]byte("y1"))
 
 		ks.AddFloat64(k, 1)
 		ks.AddFloat64(k, 1)
@@ -60,7 +60,7 @@ func TestOpen(t *testing.T) {
 	})
 
 	t.Run("max", func(t *testing.T) {
-		k := client.Key([]byte("max1"))
+		k := vs.Key([]byte("max1"))
 		ks.MaxFloat64(k, 1)
 		x, _ := ks.GetFloat64(k)
 		if x != 1 {
@@ -79,7 +79,7 @@ func TestOpen(t *testing.T) {
 	})
 
 	t.Run("min", func(t *testing.T) {
-		k := client.Key([]byte("min1"))
+		k := vs.Key([]byte("min1"))
 		ks.MinFloat64(k, 50)
 		x, _ := ks.GetFloat64(k)
 		if x != 50 {

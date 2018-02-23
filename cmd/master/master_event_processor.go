@@ -2,8 +2,8 @@ package master
 
 import (
 	"fmt"
-	"sync"
 	"github.com/chrislusf/glog"
+	"sync"
 )
 
 type clientsStat struct {

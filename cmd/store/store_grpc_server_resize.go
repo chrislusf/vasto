@@ -2,11 +2,11 @@ package store
 
 import (
 	"fmt"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
 	"golang.org/x/net/context"
 	"os"
-	"github.com/chrislusf/glog"
 )
 
 // 1. create the new or missing shards, bootstrap the data, one-time follows, and regular follows.

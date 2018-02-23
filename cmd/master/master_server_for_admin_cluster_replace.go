@@ -3,13 +3,13 @@ package master
 import (
 	"context"
 	"fmt"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
 	"google.golang.org/grpc"
 	"strconv"
 	"strings"
 	"time"
-	"github.com/chrislusf/glog"
 )
 
 func (ms *masterServer) ReplaceNode(ctx context.Context, req *pb.ReplaceNodeRequest) (resp *pb.ReplaceNodeResponse, err error) {

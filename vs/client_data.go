@@ -1,4 +1,4 @@
-package client
+package vs
 
 import "github.com/chrislusf/vasto/util"
 
@@ -32,13 +32,13 @@ func (k *KeyObject) GetPartitionHash() uint64 {
 	return k.partitionHash
 }
 
-type Row struct {
+type KeyBytesValue struct {
 	Key   *KeyObject
 	Value []byte
 }
 
-func NewRow(key, value []byte) *Row {
-	r := &Row{
+func NewKeyBytesValue(key, value []byte) *KeyBytesValue {
+	r := &KeyBytesValue{
 		Key:   Key(key),
 		Value: value,
 	}

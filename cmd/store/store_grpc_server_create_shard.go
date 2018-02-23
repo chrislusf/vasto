@@ -2,11 +2,11 @@ package store
 
 import (
 	"fmt"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
 	"golang.org/x/net/context"
 	"os"
-	"github.com/chrislusf/glog"
 )
 
 // CreateShard
@@ -123,7 +123,7 @@ func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.L
 			}
 
 			if err := shard.startWithBootstrapPlan(&topology.BootstrapPlan{
-				ToClusterSize:                int(shardInfo.ClusterSize),
+				ToClusterSize: int(shardInfo.ClusterSize),
 			}, ss.selfAdminAddress(), nil); err != nil {
 				return fmt.Errorf("%s bootstrap shard %v : %v", ss.storeName, shardInfo.IdentifierOnThisServer(), err)
 			}

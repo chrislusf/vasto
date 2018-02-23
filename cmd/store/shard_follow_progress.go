@@ -3,9 +3,9 @@ package store
 import (
 	"context"
 	"fmt"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
-	"github.com/chrislusf/glog"
 )
 
 type progressKey struct {

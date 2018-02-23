@@ -4,10 +4,10 @@ import (
 	"os"
 
 	"errors"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/gorocksdb"
 	"sync/atomic"
 	"time"
-	"github.com/chrislusf/glog"
 )
 
 type Rocks struct {

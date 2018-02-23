@@ -21,5 +21,3 @@ func NewMergeEntry(m *pb.MergeRequest, updatedAtNs uint64) *Entry {
 		Value:         m.Value,
 	}
 }
-
-

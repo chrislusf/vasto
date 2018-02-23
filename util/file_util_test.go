@@ -1,10 +1,10 @@
 package util
 
 import (
-	"testing"
 	"fmt"
 	"os"
 	"strings"
+	"testing"
 )
 
 func TestGetUnixSocketFile(t *testing.T) {

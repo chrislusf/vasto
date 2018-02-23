@@ -1,10 +1,10 @@
 package util
 
 import (
-	"testing"
-	"math/rand"
 	"bytes"
 	"encoding/binary"
+	"math/rand"
+	"testing"
 )
 
 func TestBufferedWriter(t *testing.T) {

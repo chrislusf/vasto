@@ -1,8 +1,8 @@
 package util
 
 import (
-	"math"
 	"encoding/binary"
+	"math"
 )
 
 // big endian

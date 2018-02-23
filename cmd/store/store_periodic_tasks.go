@@ -1,8 +1,8 @@
 package store
 
 import (
-	"time"
 	"github.com/chrislusf/glog"
+	"time"
 )
 
 type PeriodicTask interface {

@@ -1,12 +1,12 @@
 package codec
 
 import (
-	"testing"
-	"github.com/chrislusf/vasto/pb"
-	"fmt"
-	"github.com/chrislusf/vasto/util"
-	"time"
 	"bytes"
+	"fmt"
+	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/util"
+	"testing"
+	"time"
 )
 
 func TestPutRequestConversion(t *testing.T) {

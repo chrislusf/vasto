@@ -1,9 +1,9 @@
 package cluster_listener
 
 import (
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
-	"github.com/chrislusf/glog"
 )
 
 type ShardEventProcessor interface {

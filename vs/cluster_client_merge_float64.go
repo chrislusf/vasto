@@ -1,10 +1,10 @@
-package client
+package vs
 
 import (
+	"fmt"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
-	"fmt"
 )
 
 func (c *ClusterClient) GetFloat64(key *KeyObject, options ...topology.AccessOption) (float64, error) {
@@ -17,7 +17,7 @@ func (c *ClusterClient) GetFloat64(key *KeyObject, options ...topology.AccessOpt
 	}
 
 	var response *pb.Response
-	err := c.batchProcess([]*pb.Request{request}, options, func(responses [] *pb.Response, err error) error {
+	err := c.batchProcess([]*pb.Request{request}, options, func(responses []*pb.Response, err error) error {
 		if err != nil {
 			return err
 		}
@@ -62,7 +62,7 @@ func (c *ClusterClient) AddFloat64(key *KeyObject, value float64, options ...top
 	}
 	requests = append(requests, request)
 
-	return c.batchProcess(requests, options, func(responses [] *pb.Response, err error) error {
+	return c.batchProcess(requests, options, func(responses []*pb.Response, err error) error {
 		return err
 	})
 }
@@ -82,7 +82,7 @@ func (c *ClusterClient) MaxFloat64(key *KeyObject, value float64, options ...top
 	}
 	requests = append(requests, request)
 
-	return c.batchProcess(requests, options, func(responses [] *pb.Response, err error) error {
+	return c.batchProcess(requests, options, func(responses []*pb.Response, err error) error {
 		return err
 	})
 }
@@ -102,7 +102,7 @@ func (c *ClusterClient) MinFloat64(key *KeyObject, value float64, options ...top
 	}
 	requests = append(requests, request)
 
-	return c.batchProcess(requests, options, func(responses [] *pb.Response, err error) error {
+	return c.batchProcess(requests, options, func(responses []*pb.Response, err error) error {
 		return err
 	})
 }

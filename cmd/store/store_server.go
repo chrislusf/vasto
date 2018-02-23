@@ -7,13 +7,13 @@ import (
 
 	"context"
 	"encoding/binary"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology/cluster_listener"
 	"github.com/chrislusf/vasto/util"
 	"github.com/chrislusf/vasto/util/on_interrupt"
 	"github.com/tidwall/evio"
 	"sync"
-	"github.com/chrislusf/glog"
 )
 
 type StoreOption struct {
@@ -121,7 +121,7 @@ func RunStore(option *StoreOption) {
 				c.is.End(data)
 				return
 			}
-			request := data[4: 4+int(length)]
+			request := data[4 : 4+int(length)]
 
 			response, err := ss.handleInputOutput(request)
 			if err != nil {

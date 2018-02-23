@@ -2,10 +2,10 @@ package rocks
 
 import (
 	"fmt"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/gorocksdb"
 	"io/ioutil"
 	"os"
-	"github.com/chrislusf/glog"
 )
 
 func (d *Rocks) addSst(name string, next func() (bool, []byte, []byte)) error {

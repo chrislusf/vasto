@@ -1,9 +1,9 @@
 package store
 
 import (
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
-	"github.com/chrislusf/glog"
 )
 
 // the following functions implements cluster_listener.ShardEventProcessor

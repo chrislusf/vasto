@@ -4,9 +4,9 @@ import (
 	"net"
 	"sync"
 
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc"
-	"github.com/chrislusf/glog"
 	"sync/atomic"
 )
 

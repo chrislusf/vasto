@@ -33,7 +33,7 @@ func (pq *pqRawKeyValue) Pop() interface{} {
 	old := *pq
 	n := len(old)
 	rawItem := old[n-1]
-	*pq = old[0: n-1]
+	*pq = old[0 : n-1]
 	return rawItem
 }
 

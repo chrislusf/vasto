@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/chrislusf/vasto/client"
+	"github.com/chrislusf/vasto/vs"
 )
 
 func init() {
@@ -22,7 +22,7 @@ func (c *CommandPut) Help() string {
 	return "<key> <value>"
 }
 
-func (c *CommandPut) Do(vastoClient *client.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {
+func (c *CommandPut) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {
 	options, err := parseEnv(commandEnv.env)
 	if err != nil {
 		return err
@@ -38,9 +38,7 @@ func (c *CommandPut) Do(vastoClient *client.VastoClient, args []string, commandE
 	key := []byte(args[0])
 	value := []byte(args[1])
 
-	row := client.NewRow(key, value)
-
-	err = commandEnv.clusterClient.BatchPut([]*client.Row{row}, options...)
+	err = commandEnv.clusterClient.Put(vs.Key(key), value, options...)
 
 	fmt.Fprintln(writer)
 

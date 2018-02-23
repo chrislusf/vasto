@@ -1,8 +1,8 @@
 package util
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
 func TestHash(t *testing.T) {

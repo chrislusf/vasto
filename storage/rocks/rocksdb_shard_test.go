@@ -5,12 +5,12 @@ import (
 	"testing"
 
 	"github.com/chrislusf/gorocksdb"
-	"math"
+	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
 	"github.com/chrislusf/vasto/util"
-	"time"
-	"github.com/chrislusf/vasto/pb"
 	"github.com/magiconair/properties/assert"
+	"math"
+	"time"
 )
 
 func TestSetCompactionForShard(t *testing.T) {

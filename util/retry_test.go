@@ -1,9 +1,9 @@
 package util
 
 import (
-	"testing"
-	"io"
 	"context"
+	"io"
+	"testing"
 	"time"
 )
 
@@ -28,7 +28,7 @@ func TestRetryForever(t *testing.T) {
 		t.Errorf("unexpected nil error")
 	}
 
-	expiredAt = time.Now().Add(500*time.Millisecond)
+	expiredAt = time.Now().Add(500 * time.Millisecond)
 	ctx, _ = context.WithTimeout(context.Background(), time.Second)
 	RetryForever(ctx, "test2", func() error {
 		if time.Now().Before(expiredAt) {

@@ -3,12 +3,12 @@ package binlog
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/chrislusf/glog"
+	"github.com/chrislusf/vasto/pb"
+	"github.com/golang/protobuf/proto"
 	"io"
 	"os"
 	"sync"
-	"github.com/chrislusf/vasto/pb"
-	"github.com/golang/protobuf/proto"
-	"github.com/chrislusf/glog"
 )
 
 type logSegmentFile struct {

@@ -4,7 +4,7 @@ import (
 	"github.com/chrislusf/glog"
 )
 
-func (r *Request) GetPartitionHash() (uint64) {
+func (r *Request) GetPartitionHash() uint64 {
 	if r.Get != nil {
 		return r.Get.PartitionHash
 	}

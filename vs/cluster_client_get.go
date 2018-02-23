@@ -1,4 +1,4 @@
-package client
+package vs
 
 import (
 	"errors"
@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	NotFoundError = errors.New("not found")
+	NotFoundError        = errors.New("not found")
 	WrongDataFormatError = errors.New("wrong data format")
 )
 
@@ -23,7 +23,7 @@ func (c *ClusterClient) Get(key *KeyObject, options ...topology.AccessOption) ([
 	}
 
 	var response *pb.Response
-	err := c.batchProcess([]*pb.Request{request}, options, func(responses [] *pb.Response, err error) error {
+	err := c.batchProcess([]*pb.Request{request}, options, func(responses []*pb.Response, err error) error {
 		if err != nil {
 			return err
 		}

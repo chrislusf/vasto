@@ -2,9 +2,9 @@ package util
 
 import (
 	"context"
+	"github.com/chrislusf/glog"
 	"math/rand"
 	"time"
-	"github.com/chrislusf/glog"
 )
 
 func RetryForever(ctx context.Context, name string, fn func() error, waitTimes time.Duration) {

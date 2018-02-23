@@ -1,8 +1,8 @@
 package util
 
 import (
-	"testing"
 	"io"
+	"testing"
 )
 
 func TestParallel(t *testing.T) {

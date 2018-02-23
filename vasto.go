@@ -18,6 +18,8 @@ import (
 	"os"
 	"runtime/pprof"
 
+	"flag"
+	"github.com/chrislusf/glog"
 	a "github.com/chrislusf/vasto/cmd/admin"
 	b "github.com/chrislusf/vasto/cmd/benchmark"
 	g "github.com/chrislusf/vasto/cmd/gateway"
@@ -29,8 +31,6 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 	"os/user"
 	"strings"
-	"github.com/chrislusf/glog"
-	"flag"
 )
 
 var (

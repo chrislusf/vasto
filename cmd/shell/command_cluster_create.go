@@ -5,8 +5,8 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/chrislusf/vasto/client"
 	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/vs"
 )
 
 func init() {
@@ -24,7 +24,7 @@ func (c *CommandCreateKeyspace) Help() string {
 	return "cluster <keysapce> <datacenter> <server count> <replication factor>"
 }
 
-func (c *CommandCreateKeyspace) Do(vastoClient *client.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) (err error) {
+func (c *CommandCreateKeyspace) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) (err error) {
 
 	if len(args) != 5 {
 		return InvalidArguments

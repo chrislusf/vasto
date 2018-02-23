@@ -2,11 +2,11 @@ package binlog
 
 import (
 	"fmt"
-	"os"
-	"testing"
 	"github.com/chrislusf/vasto/pb"
-	"path"
 	"github.com/magiconair/properties/assert"
+	"os"
+	"path"
+	"testing"
 )
 
 func TestLogManager(t *testing.T) {
@@ -35,13 +35,13 @@ func TestLogManager(t *testing.T) {
 	}
 
 	err := m.AppendEntry(nil)
-	assert.Equal(t, err!=nil, true, "nil entry")
+	assert.Equal(t, err != nil, true, "nil entry")
 
 	entries, nextOffset, err := m.ReadEntries(0, 0, 10)
 	assert.Equal(t, err, nil, "read entrie")
 
 	_, _, err = m.ReadEntries(0, 10000000, 10)
-	assert.Equal(t, err!=nil, true, "read entrie out of range")
+	assert.Equal(t, err != nil, true, "read entrie out of range")
 
 	println("next offset", nextOffset)
 

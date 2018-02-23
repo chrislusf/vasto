@@ -1,14 +1,14 @@
-package client
+package vs
 
 import (
 	"context"
-	"github.com/chrislusf/vasto/topology/cluster_listener"
-	"time"
-	"google.golang.org/grpc"
-	"github.com/chrislusf/vasto/pb"
 	"fmt"
-	"sync"
 	"github.com/chrislusf/glog"
+	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/topology/cluster_listener"
+	"google.golang.org/grpc"
+	"sync"
+	"time"
 )
 
 type VastoClient struct {
@@ -97,7 +97,7 @@ func (c *VastoClient) CreateCluster(keyspace, dataCenter string, clusterSize, re
 
 }
 
-func (c *VastoClient) DeleteCluster(keyspace, dataCenter string) (error) {
+func (c *VastoClient) DeleteCluster(keyspace, dataCenter string) error {
 
 	resp, err := c.MasterClient.DeleteCluster(
 		c.ctx,
@@ -118,7 +118,7 @@ func (c *VastoClient) DeleteCluster(keyspace, dataCenter string) (error) {
 
 }
 
-func (c *VastoClient) ResizeCluster(keyspace, dataCenter string, newClusterSize int) (error) {
+func (c *VastoClient) ResizeCluster(keyspace, dataCenter string, newClusterSize int) error {
 
 	resp, err := c.MasterClient.ResizeCluster(
 		c.ctx,
@@ -140,7 +140,7 @@ func (c *VastoClient) ResizeCluster(keyspace, dataCenter string, newClusterSize 
 
 }
 
-func (c *VastoClient) ReplaceNode(keyspace, dataCenter string, nodeId uint32, newAddress string) (error) {
+func (c *VastoClient) ReplaceNode(keyspace, dataCenter string, nodeId uint32, newAddress string) error {
 
 	resp, err := c.MasterClient.ReplaceNode(
 		c.ctx,

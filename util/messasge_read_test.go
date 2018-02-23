@@ -1,12 +1,12 @@
 package util
 
 import (
-	"testing"
-	"math/rand"
 	"bytes"
+	"encoding/binary"
 	"github.com/magiconair/properties/assert"
 	"io"
-	"encoding/binary"
+	"math/rand"
+	"testing"
 )
 
 func TestReadWriteMessage(t *testing.T) {

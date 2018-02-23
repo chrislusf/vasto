@@ -2,10 +2,10 @@ package rocks
 
 import (
 	"fmt"
-	"testing"
-	"time"
 	"github.com/chrislusf/glog"
 	"log"
+	"testing"
+	"time"
 )
 
 func TestAddNormal(t *testing.T) {

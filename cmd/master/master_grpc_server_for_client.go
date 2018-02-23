@@ -4,11 +4,11 @@ import (
 	"io"
 
 	"fmt"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc/peer"
 	"net"
 	"strings"
-	"github.com/chrislusf/glog"
 )
 
 func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServer) error {

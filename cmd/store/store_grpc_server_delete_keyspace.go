@@ -2,10 +2,10 @@ package store
 
 import (
 	"fmt"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"golang.org/x/net/context"
 	"os"
-	"github.com/chrislusf/glog"
 )
 
 // DeleteKeyspace

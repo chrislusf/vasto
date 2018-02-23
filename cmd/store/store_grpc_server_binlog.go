@@ -2,12 +2,12 @@ package store
 
 import (
 	"fmt"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/dgryski/go-jump"
 	"golang.org/x/net/context"
 	"io"
 	"time"
-	"github.com/chrislusf/glog"
 )
 
 // TailBinlog sends all data if PullUpdateRequest's TargetClusterSize==0,

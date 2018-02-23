@@ -1,4 +1,4 @@
-package client
+package vs
 
 import (
 	"github.com/chrislusf/vasto/pb"
@@ -26,7 +26,7 @@ func (c *ClusterClient) BatchGet(keys []*KeyObject, options ...topology.AccessOp
 
 	outputChan := make(chan *answer, len(keys))
 	go func() {
-		err = c.batchProcess(requests, options, func(responses [] *pb.Response, err error) error {
+		err = c.batchProcess(requests, options, func(responses []*pb.Response, err error) error {
 			if err != nil {
 				outputChan <- &answer{err: err}
 				return nil

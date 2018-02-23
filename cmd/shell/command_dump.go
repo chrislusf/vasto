@@ -5,11 +5,11 @@ import (
 	"io"
 
 	"context"
-	"github.com/chrislusf/vasto/client"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/vs"
 	"google.golang.org/grpc"
 	"sync/atomic"
-	"github.com/chrislusf/glog"
 )
 
 func init() {
@@ -27,7 +27,7 @@ func (c *CommandDump) Help() string {
 	return "keys|key_value"
 }
 
-func (c *CommandDump) Do(vastoClient *client.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) (doError error) {
+func (c *CommandDump) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) (doError error) {
 
 	isKeysOnly := true
 	if len(args) > 0 && args[0] == "key_value" {

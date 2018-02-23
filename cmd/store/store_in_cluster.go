@@ -2,11 +2,11 @@ package store
 
 import (
 	"fmt"
-	"io/ioutil"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
-	"github.com/chrislusf/glog"
+	"io/ioutil"
 )
 
 const (

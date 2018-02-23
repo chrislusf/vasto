@@ -1,8 +1,8 @@
 package shell
 
 import (
+	"github.com/chrislusf/vasto/vs"
 	"io"
-	"github.com/chrislusf/vasto/client"
 )
 
 func init() {
@@ -20,7 +20,7 @@ func (c *CommandClusterUse) Help() string {
 	return "keyspace <keysapce>"
 }
 
-func (c *CommandClusterUse) Do(vastoClient *client.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) (err error) {
+func (c *CommandClusterUse) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) (err error) {
 
 	if len(args) != 2 {
 		return InvalidArguments

@@ -2,12 +2,12 @@ package cluster_listener
 
 import (
 	"fmt"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
 	"gopkg.in/fatih/pool.v2"
 	"net"
 	"time"
-	"github.com/chrislusf/glog"
 )
 
 /*

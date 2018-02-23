@@ -3,9 +3,9 @@ package store
 import (
 	"time"
 
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
-	"github.com/chrislusf/glog"
 )
 
 func (ss *storeServer) processMerge(shard *shard, mergeRequest *pb.MergeRequest) *pb.WriteResponse {

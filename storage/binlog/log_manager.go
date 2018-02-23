@@ -2,14 +2,14 @@ package binlog
 
 import (
 	"fmt"
+	"github.com/chrislusf/glog"
+	"github.com/chrislusf/vasto/pb"
 	"io/ioutil"
+	"math"
 	"path"
 	"strconv"
 	"strings"
 	"sync"
-	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/glog"
-	"math"
 )
 
 type LogManager struct {

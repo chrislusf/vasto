@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chrislusf/vasto/client"
+	"github.com/chrislusf/vasto/vs"
 	"github.com/gosuri/uiprogress"
 )
 
@@ -55,16 +55,16 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 				return fmt.Sprintf("%.2f ops/sec", float64(b.Current())/b.TimeElapsed().Seconds())
 			})
 
-			b.startThreadsWithClient(ctx, *option.Tests, func(hist *Histogram, c *client.ClusterClient, start, stop, batchSize int) {
-				b.execute(hist, c, start, stop, batchSize, func(c *client.ClusterClient, i int) error {
+			b.startThreadsWithClient(ctx, *option.Tests, func(hist *Histogram, c *vs.ClusterClient, start, stop, batchSize int) {
+				b.execute(hist, c, start, stop, batchSize, func(c *vs.ClusterClient, i int) error {
 
-					var rows []*client.Row
+					var rows []*vs.KeyBytesValue
 
 					for t := 0; t < batchSize; t++ {
 						key := []byte(fmt.Sprintf("k%d", i+t))
 						value := []byte(fmt.Sprintf("v%d", i+t))
 
-						row := client.NewRow(key, value)
+						row := vs.NewKeyBytesValue(key, value)
 
 						rows = append(rows, row)
 
@@ -88,12 +88,12 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 				return fmt.Sprintf("%.2f ops/sec", float64(b.Current())/b.TimeElapsed().Seconds())
 			})
 
-			b.startThreadsWithClient(ctx, *option.Tests, func(hist *Histogram, c *client.ClusterClient, start, stop, batchSize int) {
-				b.execute(hist, c, start, stop, batchSize, func(c *client.ClusterClient, i int) error {
+			b.startThreadsWithClient(ctx, *option.Tests, func(hist *Histogram, c *vs.ClusterClient, start, stop, batchSize int) {
+				b.execute(hist, c, start, stop, batchSize, func(c *vs.ClusterClient, i int) error {
 
 					if batchSize == 1 {
 
-						key := client.Key([]byte(fmt.Sprintf("k%d", i)))
+						key := vs.Key([]byte(fmt.Sprintf("k%d", i)))
 						value := []byte(fmt.Sprintf("v%d", i))
 
 						data, err := c.Get(key)
@@ -113,10 +113,10 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 
 					}
 
-					var keys []*client.KeyObject
+					var keys []*vs.KeyObject
 					for t := 0; t < batchSize; t++ {
 						key := []byte(fmt.Sprintf("k%d", i+t))
-						keys = append(keys, client.Key(key))
+						keys = append(keys, vs.Key(key))
 					}
 
 					data, err := c.BatchGet(keys)
@@ -151,12 +151,12 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 
 }
 
-func (b *benchmarker) startThreadsWithClient(ctx context.Context, name string, fn func(hist *Histogram, c *client.ClusterClient, start, stop, batchSize int)) {
+func (b *benchmarker) startThreadsWithClient(ctx context.Context, name string, fn func(hist *Histogram, c *vs.ClusterClient, start, stop, batchSize int)) {
 
 	requestCountEachClient := int(*b.option.RequestCount / *b.option.ClientCount)
 
 	b.startThreads(name, requestCountEachClient, int(*b.option.RequestCountStart), func(hist *Histogram, start, stop, batchSize int) {
-		vc := client.NewClient(ctx, "benchmarker", *b.option.Master, *b.option.DataCenter)
+		vc := vs.NewClient(ctx, "benchmarker", *b.option.Master, *b.option.DataCenter)
 		if *b.option.DisableUnixSocket {
 			vc.ClusterListener.SetUnixSocket(false)
 		}
@@ -165,7 +165,7 @@ func (b *benchmarker) startThreadsWithClient(ctx context.Context, name string, f
 
 }
 
-func (b *benchmarker) execute(hist *Histogram, c *client.ClusterClient, start, stop, batchSize int, fn func(c *client.ClusterClient, i int) error) error {
+func (b *benchmarker) execute(hist *Histogram, c *vs.ClusterClient, start, stop, batchSize int, fn func(c *vs.ClusterClient, i int) error) error {
 
 	for i := start; i < stop; i += batchSize {
 		start := time.Now()

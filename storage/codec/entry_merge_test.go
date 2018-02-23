@@ -1,12 +1,12 @@
 package codec
 
 import (
-	"testing"
-	"github.com/chrislusf/vasto/pb"
 	"fmt"
+	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/util"
-	"time"
 	"github.com/magiconair/properties/assert"
+	"testing"
+	"time"
 )
 
 func TestMergeFloat64(t *testing.T) {

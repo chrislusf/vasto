@@ -2,7 +2,7 @@ package shell
 
 import (
 	"context"
-	"github.com/chrislusf/vasto/client"
+	"github.com/chrislusf/vasto/vs"
 )
 
 type ShellOption struct {
@@ -15,16 +15,16 @@ type ShellOption struct {
 type shell struct {
 	option *ShellOption
 
-	vastoClient *client.VastoClient
+	vastoClient *vs.VastoClient
 }
 
 func RunShell(option *ShellOption) {
 	var b = &shell{
 		option:      option,
-		vastoClient: client.NewClient(context.Background(), "", *option.Master, *option.DataCenter),
+		vastoClient: vs.NewClient(context.Background(), "", *option.Master, *option.DataCenter),
 	}
 
-	if *option.Keyspace != ""{
+	if *option.Keyspace != "" {
 		b.vastoClient.GetClusterClient(*option.Keyspace)
 	}
 

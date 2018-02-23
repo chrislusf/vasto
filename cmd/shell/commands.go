@@ -2,7 +2,7 @@ package shell
 
 import (
 	"errors"
-	"github.com/chrislusf/vasto/client"
+	"github.com/chrislusf/vasto/vs"
 	"io"
 )
 
@@ -10,13 +10,13 @@ type CommandEnv struct {
 	env           map[string]string
 	keyspace      string
 	dataCenter    string
-	clusterClient *client.ClusterClient
+	clusterClient *vs.ClusterClient
 }
 
 type Command interface {
 	Name() string
 	Help() string
-	Do(*client.VastoClient, []string, *CommandEnv, io.Writer) error
+	Do(*vs.VastoClient, []string, *CommandEnv, io.Writer) error
 }
 
 var (

@@ -3,12 +3,12 @@ package master
 import (
 	"context"
 	"fmt"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc"
 	"math"
 	"sort"
 	"sync"
-	"github.com/chrislusf/glog"
 )
 
 // allocateServers

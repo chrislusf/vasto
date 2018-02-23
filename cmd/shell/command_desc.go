@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/client"
+	"github.com/chrislusf/vasto/vs"
 )
 
 func init() {
@@ -24,7 +24,7 @@ func (c *CommandDesc) Help() string {
 	return "keyspaces|datacenters|<keyspace> <data center>"
 }
 
-func (c *CommandDesc) Do(vastoClient *client.VastoClient, args []string, commandEnv *CommandEnv, out io.Writer) error {
+func (c *CommandDesc) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, out io.Writer) error {
 
 	param := "keyspaces"
 	if len(args) > 0 {

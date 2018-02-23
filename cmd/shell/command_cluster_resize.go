@@ -4,7 +4,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/chrislusf/vasto/client"
+	"github.com/chrislusf/vasto/vs"
 )
 
 func init() {
@@ -22,7 +22,7 @@ func (c *CommandResizeCluster) Help() string {
 	return "<keyspace> <data_center> <new_cluster_size>"
 }
 
-func (c *CommandResizeCluster) Do(vastoClient *client.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) (err error) {
+func (c *CommandResizeCluster) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) (err error) {
 
 	if len(args) != 3 {
 		return InvalidArguments

@@ -1,10 +1,10 @@
-package client
+package vs
 
 import (
-	"github.com/chrislusf/vasto/topology/cluster_listener"
-	"github.com/chrislusf/vasto/topology"
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/topology"
+	"github.com/chrislusf/vasto/topology/cluster_listener"
 	"sync"
 )
 
@@ -59,7 +59,7 @@ func (c *ClusterClient) sendRequestsToOneShard(requests []*pb.Request, options [
 func (c *ClusterClient) batchProcess(
 	requests []*pb.Request,
 	options []topology.AccessOption,
-	processResultFunc func([] *pb.Response, error) error,
+	processResultFunc func([]*pb.Response, error) error,
 ) error {
 
 	cluster, err := c.GetCluster()

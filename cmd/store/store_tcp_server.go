@@ -7,10 +7,10 @@ import (
 	"net"
 	"time"
 
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/util"
 	"github.com/golang/protobuf/proto"
-	"github.com/chrislusf/glog"
 )
 
 // Run starts the heartbeating to master and starts accepting requests.

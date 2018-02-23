@@ -4,12 +4,12 @@ import (
 	"time"
 
 	"context"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
 	"gopkg.in/fatih/pool.v2"
 	"sync"
-	"github.com/chrislusf/glog"
 )
 
 type keyspace_name string

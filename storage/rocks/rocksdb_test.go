@@ -3,10 +3,10 @@ package rocks
 import (
 	"bytes"
 	"fmt"
+	"github.com/chrislusf/vasto/pb"
 	"math/rand"
 	"testing"
 	"time"
-	"github.com/chrislusf/vasto/pb"
 )
 
 func TestPutGet(t *testing.T) {

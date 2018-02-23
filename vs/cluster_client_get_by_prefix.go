@@ -1,4 +1,4 @@
-package client
+package vs
 
 import (
 	"github.com/chrislusf/vasto/pb"
@@ -6,7 +6,7 @@ import (
 )
 
 // GetByPrefix list the entries keyed with the same prefix
-// partitionKey: limit the prefix query to one specific shard. If nil, broadcast the query to the whole cluster.
+// partitionKey: limit the prefix query to one specific shard.
 // prefix: the entries should have a key with this prefix
 // limit: number of entries to return
 // lastSeenKey: the last key seen during pagination
@@ -18,11 +18,20 @@ func (c *ClusterClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, l
 		LastSeenKey: lastSeenKey,
 	}
 
-	if partitionKey != nil {
+	shardId, _ := c.ClusterListener.GetShardId(c.keyspace, partitionKey)
+	return c.prefixQueryToSingleShard(shardId, prefixRequest, options)
+}
 
-		shardId, _ := c.ClusterListener.GetShardId(c.keyspace, partitionKey)
+// CollectByPrefix collects entries keyed by the prefix from all partitions
+// prefix: the entries should have a key with this prefix
+// limit: number of entries to return
+// lastSeenKey: the last key seen during pagination
+func (c *ClusterClient) CollectByPrefix(prefix []byte, limit uint32, lastSeenKey []byte, options ...topology.AccessOption) ([]*pb.KeyTypeValue, error) {
 
-		return c.prefixQueryToSingleShard(shardId, prefixRequest, options)
+	prefixRequest := &pb.GetByPrefixRequest{
+		Prefix:      prefix,
+		Limit:       limit,
+		LastSeenKey: lastSeenKey,
 	}
 
 	return c.broadcastEachShard(prefixRequest, options)

@@ -3,14 +3,14 @@ package gateway
 import (
 	"bufio"
 	"fmt"
-	"github.com/chrislusf/vasto/client"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/util"
+	"github.com/chrislusf/vasto/vs"
 	"github.com/golang/protobuf/proto"
 	"io"
 	"net"
 	"time"
-	"github.com/chrislusf/glog"
 )
 
 // Run starts the heartbeating to master and starts accepting requests.
@@ -95,7 +95,7 @@ func (ms *gatewayServer) handleRequest(reader io.Reader, writer io.Writer) error
 
 func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 	if command.GetGet() != nil {
-		key := client.Key(command.Get.Key)
+		key := vs.Key(command.Get.Key)
 		key.SetPartitionHash(command.Get.PartitionHash)
 		if value, err := ms.vastoClient.GetClusterClient(*ms.option.Keyspace).Get(key); err != nil {
 			return &pb.Response{
@@ -115,7 +115,7 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 			}
 		}
 	} else if command.GetPut() != nil {
-		key := client.Key(command.Get.Key)
+		key := vs.Key(command.Get.Key)
 		key.SetPartitionHash(command.Get.PartitionHash)
 		value := command.Put.Value
 
@@ -131,7 +131,7 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 			Write: resp,
 		}
 	} else if command.GetDelete() != nil {
-		key := client.Key(command.Delete.Key)
+		key := vs.Key(command.Delete.Key)
 
 		resp := &pb.WriteResponse{
 			Ok: true,

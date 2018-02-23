@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"context"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
 	"google.golang.org/grpc"
-	"github.com/chrislusf/glog"
 )
 
 const (

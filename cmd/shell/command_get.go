@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/chrislusf/vasto/client"
+	"github.com/chrislusf/vasto/vs"
 )
 
 func init() {
@@ -22,7 +22,7 @@ func (c *CommandGet) Help() string {
 	return "<key>"
 }
 
-func (c *CommandGet) Do(vastoClient *client.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {
+func (c *CommandGet) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {
 	options, err := parseEnv(commandEnv.env)
 	if err != nil {
 		return err
@@ -33,7 +33,7 @@ func (c *CommandGet) Do(vastoClient *client.VastoClient, args []string, commandE
 
 	// fmt.Printf("env: %+v\n", env)
 	if len(args) == 1 {
-		key := client.Key([]byte(args[0]))
+		key := vs.Key([]byte(args[0]))
 
 		value, err := commandEnv.clusterClient.Get(key, options...)
 
@@ -43,9 +43,9 @@ func (c *CommandGet) Do(vastoClient *client.VastoClient, args []string, commandE
 
 		return err
 	} else {
-		var keys []*client.KeyObject
+		var keys []*vs.KeyObject
 		for _, arg := range args {
-			keys = append(keys, client.Key([]byte(arg)))
+			keys = append(keys, vs.Key([]byte(arg)))
 		}
 		keyValues, err := commandEnv.clusterClient.BatchGet(keys, options...)
 		if err != nil {

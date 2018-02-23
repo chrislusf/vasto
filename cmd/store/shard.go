@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/binlog"
 	"github.com/chrislusf/vasto/storage/rocks"
@@ -12,7 +13,6 @@ import (
 	"google.golang.org/grpc"
 	"sync"
 	"time"
-	"github.com/chrislusf/glog"
 )
 
 type shard_id int

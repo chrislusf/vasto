@@ -4,8 +4,8 @@ import (
 	"io"
 
 	"fmt"
-	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/glog"
+	"github.com/chrislusf/vasto/pb"
 )
 
 func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer) error {

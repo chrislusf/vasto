@@ -1,8 +1,8 @@
 package rocks
 
 import (
-	"github.com/dgryski/go-jump"
 	"github.com/chrislusf/vasto/storage/codec"
+	"github.com/dgryski/go-jump"
 	"time"
 )
 

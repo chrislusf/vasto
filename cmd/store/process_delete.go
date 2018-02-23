@@ -1,9 +1,9 @@
 package store
 
 import (
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"time"
-	"github.com/chrislusf/glog"
 )
 
 func (ss *storeServer) processDelete(shard *shard, deleteRequest *pb.DeleteRequest) *pb.WriteResponse {

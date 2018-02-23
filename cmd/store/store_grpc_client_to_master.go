@@ -3,13 +3,13 @@ package store
 import (
 	"context"
 	"fmt"
+	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/util"
 	"google.golang.org/grpc"
 	"io"
 	"strings"
 	"time"
-	"github.com/chrislusf/glog"
 )
 
 func (ss *storeServer) keepConnectedToMasterServer(ctx context.Context) {

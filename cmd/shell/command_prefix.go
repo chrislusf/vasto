@@ -5,7 +5,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/chrislusf/vasto/client"
+	"github.com/chrislusf/vasto/vs"
 )
 
 func init() {
@@ -23,7 +23,7 @@ func (c *CommandPrefix) Help() string {
 	return "<prefix> [<limit> <lastSeenKey>], prefix should also be the partition key"
 }
 
-func (c *CommandPrefix) Do(vastoClient *client.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {
+func (c *CommandPrefix) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {
 	options, err := parseEnv(commandEnv.env)
 	if err != nil {
 		return err
