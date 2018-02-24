@@ -227,7 +227,9 @@ func (cluster *Cluster) GetNode(shardId int, options ...AccessOption) (*pb.Clust
 	replica := 0
 	shards := cluster.getShards(shardId)
 	for _, option := range options {
-		_, replica = option(shardId, cluster.expectedSize)
+		if option != nil {
+			_, replica = option(shardId, cluster.expectedSize)
+		}
 	}
 	if replica < 0 || replica >= len(shards) {
 		return nil, 0, false
