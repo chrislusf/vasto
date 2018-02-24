@@ -32,7 +32,7 @@ func (s *shell) runShell() {
 		keyspace: *s.option.Keyspace,
 	}
 	if commandEnv.keyspace != "" {
-		commandEnv.clusterClient = s.vastoClient.GetClusterClient(commandEnv.keyspace)
+		commandEnv.clusterClient = s.vastoClient.NewClusterClient(commandEnv.keyspace)
 	}
 
 	for {

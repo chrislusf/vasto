@@ -9,8 +9,6 @@ import (
 )
 
 type ClusterClient struct {
-	Master          string
-	DataCenter      string
 	keyspace        string
 	ClusterListener *cluster_listener.ClusterListener
 	accessOption    topology.AccessOption

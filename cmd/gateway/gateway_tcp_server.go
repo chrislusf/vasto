@@ -97,7 +97,7 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 	if command.GetGet() != nil {
 		key := vs.Key(command.Get.Key)
 		key.SetPartitionHash(command.Get.PartitionHash)
-		if value, dt, err := ms.vastoClient.GetClusterClient(*ms.option.Keyspace).Get(key); err != nil {
+		if value, dt, err := ms.vastoClient.NewClusterClient(*ms.option.Keyspace).Get(key); err != nil {
 			return &pb.Response{
 				Get: &pb.GetResponse{
 					Status: err.Error(),
@@ -124,7 +124,7 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 		resp := &pb.WriteResponse{
 			Ok: true,
 		}
-		err := ms.vastoClient.GetClusterClient(*ms.option.Keyspace).Put(key, value)
+		err := ms.vastoClient.NewClusterClient(*ms.option.Keyspace).Put(key, value)
 		if err != nil {
 			resp.Ok = false
 			resp.Status = err.Error()
@@ -138,7 +138,7 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 		resp := &pb.WriteResponse{
 			Ok: true,
 		}
-		err := ms.vastoClient.GetClusterClient(*ms.option.Keyspace).Delete(key)
+		err := ms.vastoClient.NewClusterClient(*ms.option.Keyspace).Delete(key)
 		if err != nil {
 			resp.Ok = false
 			resp.Status = err.Error()
@@ -152,7 +152,7 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 		lastSeenKey := command.GetByPrefix.LastSeenKey
 
 		resp := &pb.GetByPrefixResponse{}
-		keyValues, err := ms.vastoClient.GetClusterClient(*ms.option.Keyspace).GetByPrefix(nil, prefix, limit, lastSeenKey)
+		keyValues, err := ms.vastoClient.NewClusterClient(*ms.option.Keyspace).GetByPrefix(nil, prefix, limit, lastSeenKey)
 		if err != nil {
 			resp.Ok = false
 			resp.Status = err.Error()

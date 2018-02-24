@@ -21,15 +21,15 @@ func TestOpen(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	c := vs.NewClient(context.Background(), "[testing]", fmt.Sprintf("localhost:%d", masterPort), "dc1")
+	c := vs.NewVastoClient(context.Background(), "[testing]", fmt.Sprintf("localhost:%d", masterPort), "dc1")
 
 	c.CreateCluster("ks1", "dc1", 1, 1)
 
 	log.Println("created keyspace ks1")
 
-	ks := c.GetClusterClient("ks1")
+	ks := c.NewClusterClient("ks1")
 
-	log.Println("GetClusterClient ks1")
+	log.Println("NewClusterClient ks1")
 
 	ks.BatchPut([]*vs.KeyValue{
 		vs.NewKeyValue([]byte("x1"), []byte("y2")),

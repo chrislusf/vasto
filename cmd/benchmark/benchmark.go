@@ -156,11 +156,11 @@ func (b *benchmarker) startThreadsWithClient(ctx context.Context, name string, f
 	requestCountEachClient := int(*b.option.RequestCount / *b.option.ClientCount)
 
 	b.startThreads(name, requestCountEachClient, int(*b.option.RequestCountStart), func(hist *Histogram, start, stop, batchSize int) {
-		vc := vs.NewClient(ctx, "benchmarker", *b.option.Master, *b.option.DataCenter)
+		vc := vs.NewVastoClient(ctx, "benchmarker", *b.option.Master, *b.option.DataCenter)
 		if *b.option.DisableUnixSocket {
 			vc.ClusterListener.SetUnixSocket(false)
 		}
-		fn(hist, vc.GetClusterClient(*b.option.Keyspace), start, stop, batchSize)
+		fn(hist, vc.NewClusterClient(*b.option.Keyspace), start, stop, batchSize)
 	})
 
 }

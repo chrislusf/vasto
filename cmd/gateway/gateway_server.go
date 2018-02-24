@@ -29,7 +29,7 @@ func RunGateway(option *GatewayOption) {
 
 	var gs = &gatewayServer{
 		option:      option,
-		vastoClient: vs.NewClient(context.Background(), "gateway", *option.Master, *option.DataCenter),
+		vastoClient: vs.NewVastoClient(context.Background(), "gateway", *option.Master, *option.DataCenter),
 	}
 
 	if *option.TcpAddress != "" {
@@ -54,7 +54,7 @@ func RunGateway(option *GatewayOption) {
 		go gs.serveTcp(unixSocketListener)
 	}
 
-	gs.vastoClient.GetClusterClient(*option.Keyspace)
+	gs.vastoClient.NewClusterClient(*option.Keyspace)
 
 	glog.V(0).Infof("Vasto gateway ready\n")
 	select {}

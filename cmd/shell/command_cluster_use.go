@@ -29,7 +29,7 @@ func (c *CommandClusterUse) Do(vastoClient *vs.VastoClient, args []string, comma
 	commandEnv.keyspace = args[1]
 
 	if commandEnv.keyspace != "" {
-		commandEnv.clusterClient = vastoClient.GetClusterClient(commandEnv.keyspace)
+		commandEnv.clusterClient = vastoClient.NewClusterClient(commandEnv.keyspace)
 	}
 
 	return nil
