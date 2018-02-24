@@ -97,7 +97,7 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 	if command.GetGet() != nil {
 		key := vs.Key(command.Get.Key)
 		key.SetPartitionHash(command.Get.PartitionHash)
-		if value, err := ms.vastoClient.GetClusterClient(*ms.option.Keyspace).Get(key); err != nil {
+		if value, dt, err := ms.vastoClient.GetClusterClient(*ms.option.Keyspace).Get(key); err != nil {
 			return &pb.Response{
 				Get: &pb.GetResponse{
 					Status: err.Error(),
@@ -110,8 +110,8 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 					KeyValue: &pb.KeyTypeValue{
 						Key:           key.GetKey(),
 						PartitionHash: key.GetPartitionHash(),
-						// TODO set DataType
-						Value: value,
+						DataType:      dt,
+						Value:         value,
 					},
 				},
 			}
@@ -157,7 +157,14 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 			resp.Ok = false
 			resp.Status = err.Error()
 		} else {
-			resp.KeyValues = keyValues
+			for _, keyValue := range keyValues {
+				resp.KeyValues = append(resp.KeyValues, &pb.KeyTypeValue{
+					Key:           keyValue.GetKey(),
+					PartitionHash: keyValue.GetPartitionHash(),
+					DataType:      pb.OpAndDataType(keyValue.GetValueType()),
+					Value:         keyValue.GetValue(),
+				})
+			}
 		}
 		return &pb.Response{
 			GetByPrefix: resp,

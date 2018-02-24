@@ -6,6 +6,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 )
 
+// Delete deletes one entry by the key.
 func (c *ClusterClient) Delete(key *KeyObject) error {
 
 	request := &pb.Request{
@@ -16,7 +17,7 @@ func (c *ClusterClient) Delete(key *KeyObject) error {
 	}
 
 	var response *pb.Response
-	err := c.batchProcess([]*pb.Request{request}, func(responses []*pb.Response, err error) error {
+	err := c.BatchProcess([]*pb.Request{request}, func(responses []*pb.Response, err error) error {
 		if err != nil {
 			return err
 		}

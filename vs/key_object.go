@@ -4,6 +4,9 @@ import (
 	"github.com/chrislusf/vasto/util"
 )
 
+// KeyObject locates a entry, usually by a []byte as a key.
+// Additionally, there could be multiple store partitions. A partition key or partition hash can be used to locate
+// the store partitions. Prefix queries can be fairly fast if the entries shares the same partition.
 type KeyObject struct {
 	key           []byte
 	partitionHash uint64

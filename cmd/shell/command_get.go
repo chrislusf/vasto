@@ -5,6 +5,8 @@ import (
 	"io"
 
 	"github.com/chrislusf/vasto/vs"
+	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/util"
 )
 
 func init() {
@@ -31,10 +33,15 @@ func (c *CommandGet) Do(vastoClient *vs.VastoClient, args []string, commandEnv *
 	if len(args) == 1 {
 		key := vs.Key([]byte(args[0]))
 
-		value, err := commandEnv.clusterClient.Get(key)
+		value, dt, err := commandEnv.clusterClient.Get(key)
 
 		if err == nil {
-			fmt.Fprintf(writer, "%s\n", string(value))
+			switch dt {
+			case pb.OpAndDataType_FLOAT64:
+				fmt.Fprintf(writer, "%f\n", util.BytesToFloat64(value))
+			default:
+				fmt.Fprintf(writer, "%s\n", string(value))
+			}
 		}
 
 		return err
@@ -51,7 +58,7 @@ func (c *CommandGet) Do(vastoClient *vs.VastoClient, args []string, commandEnv *
 			if keyValue == nil {
 				continue
 			}
-			fmt.Fprintf(writer, "%s : %s\n", string(keyValue.Key), string(keyValue.Value))
+			fmt.Fprintf(writer, "%s : %s\n", string(keyValue.GetKey()), string(keyValue.GetValue()))
 		}
 		return nil
 	}

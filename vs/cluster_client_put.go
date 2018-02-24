@@ -4,6 +4,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 )
 
+// Put puts one key value pair to one partition
 func (c *ClusterClient) Put(key *KeyObject, value []byte) error {
 
 	var requests []*pb.Request
@@ -18,7 +19,7 @@ func (c *ClusterClient) Put(key *KeyObject, value []byte) error {
 	}
 	requests = append(requests, request)
 
-	return c.batchProcess(requests, func(responses []*pb.Response, err error) error {
+	return c.BatchProcess(requests, func(responses []*pb.Response, err error) error {
 		return err
 	})
 }
@@ -36,11 +37,12 @@ func (c *ClusterClient) Append(key *KeyObject, value []byte) error {
 	}
 	requests = append(requests, request)
 
-	return c.batchProcess(requests, func(responses []*pb.Response, err error) error {
+	return c.BatchProcess(requests, func(responses []*pb.Response, err error) error {
 		return err
 	})
 }
 
+// BatchPut puts the key value pairs to different partitions
 func (c *ClusterClient) BatchPut(rows []*KeyValue) error {
 
 	var requests []*pb.Request
@@ -57,7 +59,7 @@ func (c *ClusterClient) BatchPut(rows []*KeyValue) error {
 		requests = append(requests, request)
 	}
 
-	return c.batchProcess(requests, func(responses []*pb.Response, err error) error {
+	return c.BatchProcess(requests, func(responses []*pb.Response, err error) error {
 		return err
 	})
 }

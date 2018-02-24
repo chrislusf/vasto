@@ -6,6 +6,8 @@ import (
 	"github.com/chrislusf/vasto/util"
 )
 
+// GetFloat64 get the float64 value by the key
+// The value could have been set by PutFloat64, AddFloat64, PutMaxFloat64, or PutMinFloat64.
 func (c *ClusterClient) GetFloat64(key *KeyObject) (float64, error) {
 
 	request := &pb.Request{
@@ -16,7 +18,7 @@ func (c *ClusterClient) GetFloat64(key *KeyObject) (float64, error) {
 	}
 
 	var response *pb.Response
-	err := c.batchProcess([]*pb.Request{request}, func(responses []*pb.Response, err error) error {
+	err := c.BatchProcess([]*pb.Request{request}, func(responses []*pb.Response, err error) error {
 		if err != nil {
 			return err
 		}
@@ -48,6 +50,27 @@ func (c *ClusterClient) GetFloat64(key *KeyObject) (float64, error) {
 
 }
 
+// PutFloat64 sets a float64 value to the key
+func (c *ClusterClient) PutFloat64(key *KeyObject, value float64) error {
+
+	var requests []*pb.Request
+	request := &pb.Request{
+		Put: &pb.PutRequest{
+			Key:           key.GetKey(),
+			PartitionHash: key.GetPartitionHash(),
+			TtlSecond:     0,
+			OpAndDataType: pb.OpAndDataType_FLOAT64,
+			Value:         util.Float64ToBytes(value),
+		},
+	}
+	requests = append(requests, request)
+
+	return c.BatchProcess(requests, func(responses []*pb.Response, err error) error {
+		return err
+	})
+}
+
+// AddFloat64 adds a float64 value to the key
 func (c *ClusterClient) AddFloat64(key *KeyObject, value float64) error {
 
 	var requests []*pb.Request
@@ -61,7 +84,7 @@ func (c *ClusterClient) AddFloat64(key *KeyObject, value float64) error {
 	}
 	requests = append(requests, request)
 
-	return c.batchProcess(requests, func(responses []*pb.Response, err error) error {
+	return c.BatchProcess(requests, func(responses []*pb.Response, err error) error {
 		return err
 	})
 }
@@ -81,7 +104,7 @@ func (c *ClusterClient) PutMaxFloat64(key *KeyObject, value float64) error {
 	}
 	requests = append(requests, request)
 
-	return c.batchProcess(requests, func(responses []*pb.Response, err error) error {
+	return c.BatchProcess(requests, func(responses []*pb.Response, err error) error {
 		return err
 	})
 }
@@ -101,7 +124,7 @@ func (c *ClusterClient) PutMinFloat64(key *KeyObject, value float64) error {
 	}
 	requests = append(requests, request)
 
-	return c.batchProcess(requests, func(responses []*pb.Response, err error) error {
+	return c.BatchProcess(requests, func(responses []*pb.Response, err error) error {
 		return err
 	})
 }

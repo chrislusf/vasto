@@ -5,10 +5,11 @@ import (
 )
 
 type answer struct {
-	keyvalues []*KeyValue
+	keyValues []*KeyValue
 	err       error
 }
 
+// BatchGet gets the key value pairs from different partitions by the keys
 func (c *ClusterClient) BatchGet(keys []*KeyObject) (ret []*KeyValue, err error) {
 
 	var requests []*pb.Request
@@ -25,7 +26,7 @@ func (c *ClusterClient) BatchGet(keys []*KeyObject) (ret []*KeyValue, err error)
 
 	outputChan := make(chan *answer, len(keys))
 	go func() {
-		err = c.batchProcess(requests, func(responses []*pb.Response, err error) error {
+		err = c.BatchProcess(requests, func(responses []*pb.Response, err error) error {
 			if err != nil {
 				outputChan <- &answer{err: err}
 				return nil
@@ -36,7 +37,7 @@ func (c *ClusterClient) BatchGet(keys []*KeyObject) (ret []*KeyValue, err error)
 				output = append(output, kv)
 			}
 
-			outputChan <- &answer{keyvalues: output}
+			outputChan <- &answer{keyValues: output}
 
 			return nil
 		})
@@ -47,7 +48,7 @@ func (c *ClusterClient) BatchGet(keys []*KeyObject) (ret []*KeyValue, err error)
 		if ans.err != nil {
 			return nil, ans.err
 		}
-		ret = append(ret, ans.keyvalues...)
+		ret = append(ret, ans.keyValues...)
 	}
 
 	return ret, err

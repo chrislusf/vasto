@@ -96,7 +96,7 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 						key := vs.Key([]byte(fmt.Sprintf("k%d", i)))
 						value := []byte(fmt.Sprintf("v%d", i))
 
-						data, err := c.Get(key)
+						data, _, err := c.Get(key)
 
 						if err != nil {
 							log.Printf("read %s: %v", string(key.GetKey()), err)
@@ -129,12 +129,12 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 						if kv == nil {
 							continue
 						}
-						if len(kv.Key) <= 1 || len(kv.Value) <= 1 {
-							log.Printf("read strange kv %s:%s", string(kv.Key), string(kv.Value))
+						if len(kv.GetKey()) <= 1 || len(kv.GetValue()) <= 1 {
+							log.Printf("read strange kv %s:%s", string(kv.GetKey()), string(kv.GetValue()))
 							continue
 						}
-						if bytes.Compare(kv.Key[1:], kv.Value[1:]) != 0 {
-							log.Printf("read unexpected %s:%s", string(kv.Key), string(kv.Value))
+						if bytes.Compare(kv.GetKey()[1:], kv.GetValue()[1:]) != 0 {
+							log.Printf("read unexpected %s:%s", string(kv.GetKey()), string(kv.GetValue()))
 							return nil
 						}
 						bar.Incr()

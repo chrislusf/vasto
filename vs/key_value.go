@@ -40,6 +40,10 @@ func (kv *KeyValue) GetFloat64() float64 {
 	return 0
 }
 
+func (kv *KeyValue) GetValueType() byte {
+	return kv.valueType
+}
+
 func fromPbKeyTypeValue(kv *pb.KeyTypeValue) *KeyValue {
 	r := &KeyValue{
 		KeyObject: Key(kv.Key),

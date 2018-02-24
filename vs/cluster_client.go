@@ -28,7 +28,7 @@ func (c *ClusterClient) SetAccessOption(accessOption topology.AccessOption) {
 	c.accessOption = accessOption
 }
 
-// sendRequestsToOneShard send the requests to one shard
+// sendRequestsToOneShard send the requests to one partition
 // assuming the requests going to the same shard
 func (c *ClusterClient) sendRequestsToOneShard(requests []*pb.Request) (results []*pb.Response, err error) {
 
@@ -60,8 +60,9 @@ func (c *ClusterClient) sendRequestsToOneShard(requests []*pb.Request) (results 
 
 }
 
-// send requests to the cluster's different shards
-func (c *ClusterClient) batchProcess(
+// BatchProcess devides requests, groups them by the destination, and sends to the partitions by batch.
+// Expert usage expected.
+func (c *ClusterClient) BatchProcess(
 	requests []*pb.Request,
 	processResultFunc func([]*pb.Response, error) error,
 ) error {

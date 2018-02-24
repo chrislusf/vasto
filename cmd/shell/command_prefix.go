@@ -49,7 +49,7 @@ func (c *CommandPrefix) Do(vastoClient *vs.VastoClient, args []string, commandEn
 		return err
 	}
 	for _, keyValue := range keyValues {
-		fmt.Fprintf(writer, "%s : %s\n", string(keyValue.Key), string(keyValue.Value))
+		fmt.Fprintf(writer, "%s : %s\n", string(keyValue.GetKey()), string(keyValue.GetValue()))
 	}
 	return nil
 }
