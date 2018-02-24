@@ -40,7 +40,7 @@ func NewVastoClient(ctx context.Context, clientName, master, dataCenter string) 
 	return c
 }
 
-// NewClusterClient create a lightweight thread-safe client to access a specific cluster
+// NewClusterClient create a lightweight client to access a specific cluster
 // in a specific data center.
 func (c *VastoClient) NewClusterClient(keyspace string) (clusterClient *ClusterClient) {
 	c.ClusterListener.AddNewKeyspace(keyspace, 0, 0)
