@@ -4,10 +4,9 @@ import (
 	"fmt"
 
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/topology"
 )
 
-func (c *ClusterClient) Delete(key *KeyObject, options ...topology.AccessOption) error {
+func (c *ClusterClient) Delete(key *KeyObject) error {
 
 	request := &pb.Request{
 		Delete: &pb.DeleteRequest{
@@ -17,7 +16,7 @@ func (c *ClusterClient) Delete(key *KeyObject, options ...topology.AccessOption)
 	}
 
 	var response *pb.Response
-	err := c.batchProcess([]*pb.Request{request}, options, func(responses []*pb.Response, err error) error {
+	err := c.batchProcess([]*pb.Request{request}, func(responses []*pb.Response, err error) error {
 		if err != nil {
 			return err
 		}

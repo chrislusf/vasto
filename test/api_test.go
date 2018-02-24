@@ -31,10 +31,10 @@ func TestOpen(t *testing.T) {
 
 	log.Println("GetClusterClient ks1")
 
-	ks.BatchPut([]*vs.KeyBytesValue{
-		vs.NewKeyBytesValue([]byte("x1"), []byte("y2")),
-		vs.NewKeyBytesValue([]byte("x2"), []byte("y2")),
-		vs.NewKeyBytesValue([]byte("x3"), []byte("y3")),
+	ks.BatchPut([]*vs.KeyValue{
+		vs.NewKeyValue([]byte("x1"), []byte("y2")),
+		vs.NewKeyValue([]byte("x2"), []byte("y2")),
+		vs.NewKeyValue([]byte("x3"), []byte("y3")),
 	})
 
 	data, err := ks.Get(vs.Key([]byte("x2")))
@@ -61,17 +61,17 @@ func TestOpen(t *testing.T) {
 
 	t.Run("max", func(t *testing.T) {
 		k := vs.Key([]byte("max1"))
-		ks.MaxFloat64(k, 1)
+		ks.PutMaxFloat64(k, 1)
 		x, _ := ks.GetFloat64(k)
 		if x != 1 {
 			t.Errorf("get max float64: %f, expecting: %v", x, 1)
 		}
-		ks.MaxFloat64(k, 100)
+		ks.PutMaxFloat64(k, 100)
 		x, _ = ks.GetFloat64(k)
 		if x != 100 {
 			t.Errorf("get max float64: %f, expecting: %v", x, 100)
 		}
-		ks.MaxFloat64(k, 50)
+		ks.PutMaxFloat64(k, 50)
 		x, _ = ks.GetFloat64(k)
 		if x != 100 {
 			t.Errorf("get max float64: %f, expecting: %v", x, 100)
@@ -80,17 +80,17 @@ func TestOpen(t *testing.T) {
 
 	t.Run("min", func(t *testing.T) {
 		k := vs.Key([]byte("min1"))
-		ks.MinFloat64(k, 50)
+		ks.PutMinFloat64(k, 50)
 		x, _ := ks.GetFloat64(k)
 		if x != 50 {
 			t.Errorf("get min float64: %f, expecting: %v", x, 50)
 		}
-		ks.MinFloat64(k, 100)
+		ks.PutMinFloat64(k, 100)
 		x, _ = ks.GetFloat64(k)
 		if x != 50 {
 			t.Errorf("get min float64: %f, expecting: %v", x, 50)
 		}
-		ks.MinFloat64(k, 1)
+		ks.PutMinFloat64(k, 1)
 		x, _ = ks.GetFloat64(k)
 		if x != 1 {
 			t.Errorf("get min float64: %f, expecting: %v", x, 1)

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/topology"
 )
 
 var (
@@ -13,7 +12,7 @@ var (
 	WrongDataFormatError = errors.New("wrong data format")
 )
 
-func (c *ClusterClient) Get(key *KeyObject, options ...topology.AccessOption) ([]byte, error) {
+func (c *ClusterClient) Get(key *KeyObject) ([]byte, error) {
 
 	request := &pb.Request{
 		Get: &pb.GetRequest{
@@ -23,7 +22,7 @@ func (c *ClusterClient) Get(key *KeyObject, options ...topology.AccessOption) ([
 	}
 
 	var response *pb.Response
-	err := c.batchProcess([]*pb.Request{request}, options, func(responses []*pb.Response, err error) error {
+	err := c.batchProcess([]*pb.Request{request}, func(responses []*pb.Response, err error) error {
 		if err != nil {
 			return err
 		}

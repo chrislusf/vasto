@@ -58,13 +58,13 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 			b.startThreadsWithClient(ctx, *option.Tests, func(hist *Histogram, c *vs.ClusterClient, start, stop, batchSize int) {
 				b.execute(hist, c, start, stop, batchSize, func(c *vs.ClusterClient, i int) error {
 
-					var rows []*vs.KeyBytesValue
+					var rows []*vs.KeyValue
 
 					for t := 0; t < batchSize; t++ {
 						key := []byte(fmt.Sprintf("k%d", i+t))
 						value := []byte(fmt.Sprintf("v%d", i+t))
 
-						row := vs.NewKeyBytesValue(key, value)
+						row := vs.NewKeyValue(key, value)
 
 						rows = append(rows, row)
 
@@ -73,7 +73,7 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 
 					err := c.BatchPut(rows)
 					if err != nil {
-						log.Printf("write %d rows, started with %v:  %v", len(rows), string(rows[0].Key.GetKey()), err)
+						log.Printf("write %d rows, started with %v:  %v", len(rows), string(rows[0].KeyObject.GetKey()), err)
 					}
 					return err
 				})

@@ -1,6 +1,8 @@
 package vs
 
-import "github.com/chrislusf/vasto/util"
+import (
+	"github.com/chrislusf/vasto/util"
+)
 
 type KeyObject struct {
 	key           []byte
@@ -30,17 +32,4 @@ func (k *KeyObject) GetKey() []byte {
 
 func (k *KeyObject) GetPartitionHash() uint64 {
 	return k.partitionHash
-}
-
-type KeyBytesValue struct {
-	Key   *KeyObject
-	Value []byte
-}
-
-func NewKeyBytesValue(key, value []byte) *KeyBytesValue {
-	r := &KeyBytesValue{
-		Key:   Key(key),
-		Value: value,
-	}
-	return r
 }

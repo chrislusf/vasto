@@ -23,10 +23,6 @@ func (c *CommandGet) Help() string {
 }
 
 func (c *CommandGet) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {
-	options, err := parseEnv(commandEnv.env)
-	if err != nil {
-		return err
-	}
 	if commandEnv.clusterClient == nil {
 		return NoKeyspaceSelected
 	}
@@ -35,7 +31,7 @@ func (c *CommandGet) Do(vastoClient *vs.VastoClient, args []string, commandEnv *
 	if len(args) == 1 {
 		key := vs.Key([]byte(args[0]))
 
-		value, err := commandEnv.clusterClient.Get(key, options...)
+		value, err := commandEnv.clusterClient.Get(key)
 
 		if err == nil {
 			fmt.Fprintf(writer, "%s\n", string(value))
@@ -47,7 +43,7 @@ func (c *CommandGet) Do(vastoClient *vs.VastoClient, args []string, commandEnv *
 		for _, arg := range args {
 			keys = append(keys, vs.Key([]byte(arg)))
 		}
-		keyValues, err := commandEnv.clusterClient.BatchGet(keys, options...)
+		keyValues, err := commandEnv.clusterClient.BatchGet(keys)
 		if err != nil {
 			return err
 		}

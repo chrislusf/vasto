@@ -195,8 +195,9 @@ message Empty {
 
 message KeyTypeValue {
     bytes key = 1;
-    OpAndDataType data_type = 2;
-    bytes value = 3;
+    uint64 partition_hash = 2;
+    OpAndDataType data_type = 3;
+    bytes value = 4;
 }
 
 //////////////////////////////////////////////////

@@ -3,11 +3,10 @@ package vs
 import (
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
 )
 
-func (c *ClusterClient) GetFloat64(key *KeyObject, options ...topology.AccessOption) (float64, error) {
+func (c *ClusterClient) GetFloat64(key *KeyObject) (float64, error) {
 
 	request := &pb.Request{
 		Get: &pb.GetRequest{
@@ -17,7 +16,7 @@ func (c *ClusterClient) GetFloat64(key *KeyObject, options ...topology.AccessOpt
 	}
 
 	var response *pb.Response
-	err := c.batchProcess([]*pb.Request{request}, options, func(responses []*pb.Response, err error) error {
+	err := c.batchProcess([]*pb.Request{request}, func(responses []*pb.Response, err error) error {
 		if err != nil {
 			return err
 		}
@@ -49,7 +48,7 @@ func (c *ClusterClient) GetFloat64(key *KeyObject, options ...topology.AccessOpt
 
 }
 
-func (c *ClusterClient) AddFloat64(key *KeyObject, value float64, options ...topology.AccessOption) error {
+func (c *ClusterClient) AddFloat64(key *KeyObject, value float64) error {
 
 	var requests []*pb.Request
 	request := &pb.Request{
@@ -62,14 +61,14 @@ func (c *ClusterClient) AddFloat64(key *KeyObject, value float64, options ...top
 	}
 	requests = append(requests, request)
 
-	return c.batchProcess(requests, options, func(responses []*pb.Response, err error) error {
+	return c.batchProcess(requests, func(responses []*pb.Response, err error) error {
 		return err
 	})
 }
 
-// Max sets a value to the key, and when getting the key, the maximum value of all previous keys
+// PutMaxFloat64 sets a float64 value to the key, and when getting by the key, the maximum value of all previous values
 // will be returned.
-func (c *ClusterClient) MaxFloat64(key *KeyObject, value float64, options ...topology.AccessOption) error {
+func (c *ClusterClient) PutMaxFloat64(key *KeyObject, value float64) error {
 
 	var requests []*pb.Request
 	request := &pb.Request{
@@ -82,14 +81,14 @@ func (c *ClusterClient) MaxFloat64(key *KeyObject, value float64, options ...top
 	}
 	requests = append(requests, request)
 
-	return c.batchProcess(requests, options, func(responses []*pb.Response, err error) error {
+	return c.batchProcess(requests, func(responses []*pb.Response, err error) error {
 		return err
 	})
 }
 
-// Min sets a value to the key, and when getting the key, the mininum value of all previous keys
+// PutMinFloat64 sets a float64 value to the key, and when getting by the key, the mininum value of all previous values
 // will be returned.
-func (c *ClusterClient) MinFloat64(key *KeyObject, value float64, options ...topology.AccessOption) error {
+func (c *ClusterClient) PutMinFloat64(key *KeyObject, value float64) error {
 
 	var requests []*pb.Request
 	request := &pb.Request{
@@ -102,7 +101,7 @@ func (c *ClusterClient) MinFloat64(key *KeyObject, value float64, options ...top
 	}
 	requests = append(requests, request)
 
-	return c.batchProcess(requests, options, func(responses []*pb.Response, err error) error {
+	return c.batchProcess(requests, func(responses []*pb.Response, err error) error {
 		return err
 	})
 }

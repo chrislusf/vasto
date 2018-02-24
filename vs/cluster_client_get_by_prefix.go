@@ -2,7 +2,6 @@ package vs
 
 import (
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/topology"
 )
 
 // GetByPrefix list the entries keyed with the same prefix
@@ -10,7 +9,7 @@ import (
 // prefix: the entries should have a key with this prefix
 // limit: number of entries to return
 // lastSeenKey: the last key seen during pagination
-func (c *ClusterClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, lastSeenKey []byte, options ...topology.AccessOption) ([]*pb.KeyTypeValue, error) {
+func (c *ClusterClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, lastSeenKey []byte) ([]*KeyValue, error) {
 
 	prefixRequest := &pb.GetByPrefixRequest{
 		Prefix:      prefix,
@@ -19,14 +18,14 @@ func (c *ClusterClient) GetByPrefix(partitionKey, prefix []byte, limit uint32, l
 	}
 
 	shardId, _ := c.ClusterListener.GetShardId(c.keyspace, partitionKey)
-	return c.prefixQueryToSingleShard(shardId, prefixRequest, options)
+	return c.prefixQueryToSingleShard(shardId, prefixRequest)
 }
 
 // CollectByPrefix collects entries keyed by the prefix from all partitions
 // prefix: the entries should have a key with this prefix
 // limit: number of entries to return
 // lastSeenKey: the last key seen during pagination
-func (c *ClusterClient) CollectByPrefix(prefix []byte, limit uint32, lastSeenKey []byte, options ...topology.AccessOption) ([]*pb.KeyTypeValue, error) {
+func (c *ClusterClient) CollectByPrefix(prefix []byte, limit uint32, lastSeenKey []byte) ([]*KeyValue, error) {
 
 	prefixRequest := &pb.GetByPrefixRequest{
 		Prefix:      prefix,
@@ -34,27 +33,27 @@ func (c *ClusterClient) CollectByPrefix(prefix []byte, limit uint32, lastSeenKey
 		LastSeenKey: lastSeenKey,
 	}
 
-	return c.broadcastEachShard(prefixRequest, options)
+	return c.broadcastEachShard(prefixRequest)
 }
 
-func (c *ClusterClient) broadcastEachShard(prefixRequest *pb.GetByPrefixRequest, options []topology.AccessOption) (results []*pb.KeyTypeValue, broadcastErr error) {
+func (c *ClusterClient) broadcastEachShard(prefixRequest *pb.GetByPrefixRequest) (results []*KeyValue, broadcastErr error) {
 	cluster, err := c.GetCluster()
 	if err != nil {
 		return nil, err
 	}
 
-	chans := make([]chan *pb.KeyTypeValue, cluster.ExpectedSize())
+	chans := make([]chan *KeyValue, 16*cluster.ExpectedSize())
 
 	for i := 0; i < cluster.ExpectedSize(); i++ {
 
 		shardId := i
-		chans[shardId] = make(chan *pb.KeyTypeValue)
+		chans[shardId] = make(chan *KeyValue)
 
 		go func() {
 
 			defer close(chans[shardId])
 
-			keyValues, err := c.prefixQueryToSingleShard(shardId, prefixRequest, options)
+			keyValues, err := c.prefixQueryToSingleShard(shardId, prefixRequest)
 
 			if err != nil {
 				broadcastErr = err
@@ -69,19 +68,22 @@ func (c *ClusterClient) broadcastEachShard(prefixRequest *pb.GetByPrefixRequest,
 
 	}
 
-	return pb.LimitedMergeSorted(chans, int(prefixRequest.Limit)), broadcastErr
+	return limitedMergeSorted(chans, int(prefixRequest.Limit)), broadcastErr
 
 }
 
-func (c *ClusterClient) prefixQueryToSingleShard(shardId int, prefixRequest *pb.GetByPrefixRequest, options []topology.AccessOption) (results []*pb.KeyTypeValue, err error) {
+func (c *ClusterClient) prefixQueryToSingleShard(shardId int, prefixRequest *pb.GetByPrefixRequest) (results []*KeyValue, err error) {
 
 	responses, err := c.sendRequestsToOneShard([]*pb.Request{{
 		ShardId:     uint32(shardId),
 		GetByPrefix: prefixRequest,
-	}}, options)
+	}})
 
 	if len(responses) == 1 {
-		results = responses[0].GetByPrefix.KeyValues
+		for _, keyValue := range responses[0].GetByPrefix.KeyValues {
+			kv := fromPbKeyTypeValue(keyValue)
+			results = append(results, kv)
+		}
 	}
 
 	return

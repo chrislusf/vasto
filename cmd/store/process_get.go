@@ -27,9 +27,10 @@ func (ss *storeServer) processGet(shard *shard, getRequest *pb.GetRequest) *pb.G
 		return &pb.GetResponse{
 			Ok: true,
 			KeyValue: &pb.KeyTypeValue{
-				Key:      key,
-				DataType: pb.OpAndDataType(entry.OpAndDataType),
-				Value:    entry.Value,
+				Key:           key,
+				PartitionHash: entry.PartitionHash,
+				DataType:      pb.OpAndDataType(entry.OpAndDataType),
+				Value:         entry.Value,
 			},
 		}
 	}

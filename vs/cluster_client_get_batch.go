@@ -2,15 +2,14 @@ package vs
 
 import (
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/topology"
 )
 
 type answer struct {
-	keyvalues []*pb.KeyTypeValue
+	keyvalues []*KeyValue
 	err       error
 }
 
-func (c *ClusterClient) BatchGet(keys []*KeyObject, options ...topology.AccessOption) (ret []*pb.KeyTypeValue, err error) {
+func (c *ClusterClient) BatchGet(keys []*KeyObject) (ret []*KeyValue, err error) {
 
 	var requests []*pb.Request
 
@@ -26,14 +25,15 @@ func (c *ClusterClient) BatchGet(keys []*KeyObject, options ...topology.AccessOp
 
 	outputChan := make(chan *answer, len(keys))
 	go func() {
-		err = c.batchProcess(requests, options, func(responses []*pb.Response, err error) error {
+		err = c.batchProcess(requests, func(responses []*pb.Response, err error) error {
 			if err != nil {
 				outputChan <- &answer{err: err}
 				return nil
 			}
-			var output []*pb.KeyTypeValue
+			var output []*KeyValue
 			for _, response := range responses {
-				output = append(output, response.Get.KeyValue)
+				kv := fromPbKeyTypeValue(response.Get.KeyValue)
+				output = append(output, kv)
 			}
 
 			outputChan <- &answer{keyvalues: output}

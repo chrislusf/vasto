@@ -108,7 +108,9 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 				Get: &pb.GetResponse{
 					Ok: true,
 					KeyValue: &pb.KeyTypeValue{
-						Key:   key.GetKey(),
+						Key:           key.GetKey(),
+						PartitionHash: key.GetPartitionHash(),
+						// TODO set DataType
 						Value: value,
 					},
 				},

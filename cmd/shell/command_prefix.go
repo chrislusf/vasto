@@ -24,10 +24,7 @@ func (c *CommandPrefix) Help() string {
 }
 
 func (c *CommandPrefix) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {
-	options, err := parseEnv(commandEnv.env)
-	if err != nil {
-		return err
-	}
+
 	if commandEnv.clusterClient == nil {
 		return NoKeyspaceSelected
 	}
@@ -46,7 +43,7 @@ func (c *CommandPrefix) Do(vastoClient *vs.VastoClient, args []string, commandEn
 		lastSeenKey = []byte(args[2])
 	}
 
-	keyValues, err := commandEnv.clusterClient.GetByPrefix(nil, prefix, limit, lastSeenKey, options...)
+	keyValues, err := commandEnv.clusterClient.GetByPrefix(nil, prefix, limit, lastSeenKey)
 
 	if err != nil {
 		return err

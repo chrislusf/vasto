@@ -22,18 +22,13 @@ func (c *CommandDelete) Help() string {
 }
 
 func (c *CommandDelete) Do(vastoClient *VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {
-	options, err := parseEnv(commandEnv.env)
-	if err != nil {
-		return err
-	}
-
 	if commandEnv.clusterClient == nil {
 		return NoKeyspaceSelected
 	}
 
 	key := Key([]byte(args[0]))
 
-	err = commandEnv.clusterClient.Delete(key, options...)
+	err := commandEnv.clusterClient.Delete(key)
 
 	return err
 }

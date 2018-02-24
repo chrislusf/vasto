@@ -1,4 +1,4 @@
-package pb
+package vs
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 
 // An typeItem is something we manage in a priority queue.
 type typeItem struct {
-	*KeyTypeValue
+	*KeyValue
 	chanIndex int
 }
 
@@ -17,7 +17,7 @@ type pqKeyTypeValue []*typeItem
 func (pq pqKeyTypeValue) Len() int { return len(pq) }
 
 func (pq pqKeyTypeValue) Less(i, j int) bool {
-	return bytes.Compare(pq[i].Key, pq[j].Key) < 0
+	return bytes.Compare(pq[i].KeyObject.key, pq[j].KeyObject.key) < 0
 }
 
 func (pq pqKeyTypeValue) Swap(i, j int) {
@@ -33,11 +33,11 @@ func (pq *pqKeyTypeValue) Pop() interface{} {
 	old := *pq
 	n := len(old)
 	typeItem := old[n-1]
-	*pq = old[0 : n-1]
+	*pq = old[0: n-1]
 	return typeItem
 }
 
-func LimitedMergeSorted(chans []chan *KeyTypeValue, limit int) (results []*KeyTypeValue) {
+func limitedMergeSorted(chans []chan *KeyValue, limit int) (results []*KeyValue) {
 
 	pq := make(pqKeyTypeValue, 0, len(chans))
 
@@ -48,8 +48,8 @@ func LimitedMergeSorted(chans []chan *KeyTypeValue, limit int) (results []*KeyTy
 		keyValue := <-chans[i]
 		if keyValue != nil {
 			pq = append(pq, &typeItem{
-				KeyTypeValue: keyValue,
-				chanIndex:    i,
+				KeyValue:  keyValue,
+				chanIndex: i,
 			})
 		}
 	}
@@ -59,12 +59,12 @@ func LimitedMergeSorted(chans []chan *KeyTypeValue, limit int) (results []*KeyTy
 		limit--
 
 		t := heap.Pop(&pq).(*typeItem)
-		results = append(results, t.KeyTypeValue)
+		results = append(results, t.KeyValue)
 		newT, hasMore := <-chans[t.chanIndex]
 		if hasMore {
 			heap.Push(&pq, &typeItem{
-				KeyTypeValue: newT,
-				chanIndex:    t.chanIndex,
+				KeyValue:  newT,
+				chanIndex: t.chanIndex,
 			})
 			heap.Fix(&pq, len(pq)-1)
 		}

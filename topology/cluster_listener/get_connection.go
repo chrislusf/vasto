@@ -15,7 +15,7 @@ import (
  * If a shard has a candidate, use the candidate.
  */
 
-func (clusterListener *ClusterListener) GetConnectionByShardId(keyspace string, shardId int, options ...topology.AccessOption) (net.Conn, int, error) {
+func (clusterListener *ClusterListener) GetConnectionByShardId(keyspace string, shardId int, option topology.AccessOption) (net.Conn, int, error) {
 
 	r, found := clusterListener.GetCluster(keyspace)
 	if !found {
@@ -23,7 +23,7 @@ func (clusterListener *ClusterListener) GetConnectionByShardId(keyspace string, 
 	}
 
 	// find one shard
-	n, replica, ok := r.GetNode(shardId, options...)
+	n, replica, ok := r.GetNode(shardId, option)
 	if !ok {
 		return nil, 0, fmt.Errorf("shardId %d not found", shardId)
 	}

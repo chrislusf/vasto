@@ -13,6 +13,7 @@ type ClusterClient struct {
 	DataCenter      string
 	keyspace        string
 	ClusterListener *cluster_listener.ClusterListener
+	accessOption    topology.AccessOption
 }
 
 func (c *ClusterClient) GetCluster() (*topology.Cluster, error) {
@@ -23,9 +24,13 @@ func (c *ClusterClient) GetCluster() (*topology.Cluster, error) {
 	return cluster, nil
 }
 
+func (c *ClusterClient) SetAccessOption(accessOption topology.AccessOption) {
+	c.accessOption = accessOption
+}
+
 // sendRequestsToOneShard send the requests to one shard
 // assuming the requests going to the same shard
-func (c *ClusterClient) sendRequestsToOneShard(requests []*pb.Request, options []topology.AccessOption) (results []*pb.Response, err error) {
+func (c *ClusterClient) sendRequestsToOneShard(requests []*pb.Request) (results []*pb.Response, err error) {
 
 	if len(requests) == 0 {
 		return nil, nil
@@ -33,7 +38,7 @@ func (c *ClusterClient) sendRequestsToOneShard(requests []*pb.Request, options [
 
 	shardId := requests[0].ShardId
 
-	conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, int(shardId), options...)
+	conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, int(shardId), c.accessOption)
 
 	if err != nil {
 		return nil, err
@@ -58,7 +63,6 @@ func (c *ClusterClient) sendRequestsToOneShard(requests []*pb.Request, options [
 // send requests to the cluster's different shards
 func (c *ClusterClient) batchProcess(
 	requests []*pb.Request,
-	options []topology.AccessOption,
 	processResultFunc func([]*pb.Response, error) error,
 ) error {
 
@@ -75,7 +79,7 @@ func (c *ClusterClient) batchProcess(
 
 	err = mapEachShard(shardIdToRequests, func(shardId uint32, requests []*pb.Request) error {
 
-		responses, err := c.sendRequestsToOneShard(requests, options)
+		responses, err := c.sendRequestsToOneShard(requests)
 
 		if err != nil {
 			return fmt.Errorf("shard %d process error: %v", shardId, err)

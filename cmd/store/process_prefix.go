@@ -21,9 +21,10 @@ func (ss *storeServer) processPrefix(shard *shard, prefixRequest *pb.GetByPrefix
 				t := make([]byte, len(key))
 				copy(t, key)
 				keyValues = append(keyValues, &pb.KeyTypeValue{
-					Key:      t,
-					DataType: pb.OpAndDataType(entry.OpAndDataType),
-					Value:    entry.Value,
+					Key:           t,
+					PartitionHash: entry.PartitionHash,
+					DataType:      pb.OpAndDataType(entry.OpAndDataType),
+					Value:         entry.Value,
 				})
 			}
 			return true

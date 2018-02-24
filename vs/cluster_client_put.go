@@ -2,10 +2,9 @@ package vs
 
 import (
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/topology"
 )
 
-func (c *ClusterClient) Put(key *KeyObject, value []byte, options ...topology.AccessOption) error {
+func (c *ClusterClient) Put(key *KeyObject, value []byte) error {
 
 	var requests []*pb.Request
 	request := &pb.Request{
@@ -19,12 +18,12 @@ func (c *ClusterClient) Put(key *KeyObject, value []byte, options ...topology.Ac
 	}
 	requests = append(requests, request)
 
-	return c.batchProcess(requests, options, func(responses []*pb.Response, err error) error {
+	return c.batchProcess(requests, func(responses []*pb.Response, err error) error {
 		return err
 	})
 }
 
-func (c *ClusterClient) Append(key *KeyObject, value []byte, options ...topology.AccessOption) error {
+func (c *ClusterClient) Append(key *KeyObject, value []byte) error {
 
 	var requests []*pb.Request
 	request := &pb.Request{
@@ -37,28 +36,28 @@ func (c *ClusterClient) Append(key *KeyObject, value []byte, options ...topology
 	}
 	requests = append(requests, request)
 
-	return c.batchProcess(requests, options, func(responses []*pb.Response, err error) error {
+	return c.batchProcess(requests, func(responses []*pb.Response, err error) error {
 		return err
 	})
 }
 
-func (c *ClusterClient) BatchPut(rows []*KeyBytesValue, options ...topology.AccessOption) error {
+func (c *ClusterClient) BatchPut(rows []*KeyValue) error {
 
 	var requests []*pb.Request
 	for _, row := range rows {
 		request := &pb.Request{
 			Put: &pb.PutRequest{
-				Key:           row.Key.GetKey(),
-				PartitionHash: row.Key.GetPartitionHash(),
+				Key:           row.KeyObject.GetKey(),
+				PartitionHash: row.KeyObject.GetPartitionHash(),
 				TtlSecond:     0,
 				OpAndDataType: pb.OpAndDataType_BYTES,
-				Value:         row.Value,
+				Value:         row.GetValue(),
 			},
 		}
 		requests = append(requests, request)
 	}
 
-	return c.batchProcess(requests, options, func(responses []*pb.Response, err error) error {
+	return c.batchProcess(requests, func(responses []*pb.Response, err error) error {
 		return err
 	})
 }
