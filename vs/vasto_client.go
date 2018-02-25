@@ -41,7 +41,7 @@ func NewVastoClient(ctx context.Context, clientName, master, dataCenter string) 
 }
 
 // NewClusterClient create a lightweight client to access a specific cluster
-// in a specific data center.
+// in a specific data center. The call will block if the keyspace is not created in this data center.
 func (c *VastoClient) NewClusterClient(keyspace string) (clusterClient *ClusterClient) {
 	c.ClusterListener.AddNewKeyspace(keyspace, 0, 0)
 	for !c.ClusterListener.HasConnectedKeyspace(keyspace) {
@@ -52,6 +52,7 @@ func (c *VastoClient) NewClusterClient(keyspace string) (clusterClient *ClusterC
 		keyspace:        keyspace,
 		ClusterListener: c.ClusterListener,
 	}
+
 }
 
 func (c *VastoClient) CreateCluster(keyspace, dataCenter string, clusterSize, replicationFactor int) (*pb.Cluster, error) {

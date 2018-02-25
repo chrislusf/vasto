@@ -161,7 +161,7 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 				resp.KeyValues = append(resp.KeyValues, &pb.KeyTypeValue{
 					Key:           keyValue.GetKey(),
 					PartitionHash: keyValue.GetPartitionHash(),
-					DataType:      pb.OpAndDataType(keyValue.GetValueType()),
+					DataType:      keyValue.GetValueType(),
 					Value:         keyValue.GetValue(),
 				})
 			}
