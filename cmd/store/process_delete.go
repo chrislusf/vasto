@@ -17,7 +17,11 @@ func (ss *storeServer) processDelete(shard *shard, deleteRequest *pb.DeleteReque
 		resp.Ok = false
 		resp.Status = err.Error()
 	} else {
-		shard.logDelete(deleteRequest, uint64(time.Now().UnixNano()))
+		nowInNano := deleteRequest.UpdatedAtNs
+		if nowInNano == 0 {
+			nowInNano = uint64(time.Now().UnixNano())
+		}
+		shard.logDelete(deleteRequest, nowInNano)
 	}
 	return resp
 

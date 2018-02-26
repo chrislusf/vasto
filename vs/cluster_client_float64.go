@@ -58,6 +58,7 @@ func (c *ClusterClient) PutFloat64(key *KeyObject, value float64) error {
 		Put: &pb.PutRequest{
 			Key:           key.GetKey(),
 			PartitionHash: key.GetPartitionHash(),
+			UpdatedAtNs:   c.UpdatedAtNs,
 			TtlSecond:     c.TtlSecond,
 			OpAndDataType: pb.OpAndDataType_FLOAT64,
 			Value:         util.Float64ToBytes(value),
@@ -78,6 +79,7 @@ func (c *ClusterClient) AddFloat64(key *KeyObject, value float64) error {
 		Merge: &pb.MergeRequest{
 			Key:           key.GetKey(),
 			PartitionHash: key.GetPartitionHash(),
+			UpdatedAtNs:   c.UpdatedAtNs,
 			OpAndDataType: pb.OpAndDataType_FLOAT64,
 			Value:         util.Float64ToBytes(value),
 		},
@@ -98,6 +100,7 @@ func (c *ClusterClient) PutMaxFloat64(key *KeyObject, value float64) error {
 		Merge: &pb.MergeRequest{
 			Key:           key.GetKey(),
 			PartitionHash: key.GetPartitionHash(),
+			UpdatedAtNs:   c.UpdatedAtNs,
 			OpAndDataType: pb.OpAndDataType_MAX_FLOAT64,
 			Value:         util.Float64ToBytes(value),
 		},
@@ -118,6 +121,7 @@ func (c *ClusterClient) PutMinFloat64(key *KeyObject, value float64) error {
 		Merge: &pb.MergeRequest{
 			Key:           key.GetKey(),
 			PartitionHash: key.GetPartitionHash(),
+			UpdatedAtNs:   c.UpdatedAtNs,
 			OpAndDataType: pb.OpAndDataType_MIN_FLOAT64,
 			Value:         util.Float64ToBytes(value),
 		},

@@ -11,7 +11,10 @@ import (
 func (ss *storeServer) processMerge(shard *shard, mergeRequest *pb.MergeRequest) *pb.WriteResponse {
 
 	key := mergeRequest.Key
-	nowInNano := uint64(time.Now().UnixNano())
+	nowInNano := mergeRequest.UpdatedAtNs
+	if nowInNano == 0 {
+		nowInNano = uint64(time.Now().UnixNano())
+	}
 	entry := codec.NewMergeEntry(mergeRequest, nowInNano)
 
 	resp := &pb.WriteResponse{

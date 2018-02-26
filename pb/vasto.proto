@@ -231,16 +231,18 @@ enum OpAndDataType {
 message PutRequest {
     bytes key = 1;
     uint64 partition_hash = 2;
-    uint32 ttl_second = 3;
-    OpAndDataType op_and_data_type = 4;
-    bytes value = 5;
+    uint64 updated_at_ns = 3;
+    uint32 ttl_second = 4;
+    OpAndDataType op_and_data_type = 5;
+    bytes value = 6;
 }
 
 message MergeRequest {
     bytes key = 1;
     uint64 partition_hash = 2;
-    OpAndDataType op_and_data_type = 3;
-    bytes value = 4;
+    uint64 updated_at_ns = 3;
+    OpAndDataType op_and_data_type = 4;
+    bytes value = 5;
 }
 
 message WriteResponse {
@@ -251,6 +253,7 @@ message WriteResponse {
 message DeleteRequest {
     bytes key = 1;
     uint64 partition_hash = 2;
+    uint64 updated_at_ns = 3;
 }
 
 message GetRequest {

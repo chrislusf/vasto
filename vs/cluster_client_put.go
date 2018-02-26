@@ -12,6 +12,7 @@ func (c *ClusterClient) Put(key *KeyObject, value []byte) error {
 		Put: &pb.PutRequest{
 			Key:           key.GetKey(),
 			PartitionHash: key.GetPartitionHash(),
+			UpdatedAtNs:   c.UpdatedAtNs,
 			TtlSecond:     c.TtlSecond,
 			OpAndDataType: pb.OpAndDataType_BYTES,
 			Value:         value,
@@ -31,6 +32,7 @@ func (c *ClusterClient) Append(key *KeyObject, value []byte) error {
 		Merge: &pb.MergeRequest{
 			Key:           key.GetKey(),
 			PartitionHash: key.GetPartitionHash(),
+			UpdatedAtNs:   c.UpdatedAtNs,
 			OpAndDataType: pb.OpAndDataType_BYTES,
 			Value:         value,
 		},
@@ -51,6 +53,7 @@ func (c *ClusterClient) BatchPut(rows []*KeyValue) error {
 			Put: &pb.PutRequest{
 				Key:           row.KeyObject.GetKey(),
 				PartitionHash: row.KeyObject.GetPartitionHash(),
+				UpdatedAtNs:   c.UpdatedAtNs,
 				TtlSecond:     c.TtlSecond,
 				OpAndDataType: pb.OpAndDataType_BYTES,
 				Value:         row.GetValue(),

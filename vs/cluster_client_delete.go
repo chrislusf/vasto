@@ -13,6 +13,7 @@ func (c *ClusterClient) Delete(key *KeyObject) error {
 		Delete: &pb.DeleteRequest{
 			Key:           key.GetKey(),
 			PartitionHash: key.GetPartitionHash(),
+			UpdatedAtNs: c.UpdatedAtNs,
 		},
 	}
 

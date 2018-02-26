@@ -57,10 +57,8 @@ func (c *ClusterClient) sendRequestsToOneShard(requests []*pb.Request) (results 
 
 // BatchProcess devides requests, groups them by the destination, and sends to the partitions by batch.
 // Expert usage expected.
-func (c *ClusterClient) BatchProcess(
-	requests []*pb.Request,
-	processResultFunc func([]*pb.Response, error) error,
-) error {
+func (c *ClusterClient) BatchProcess(requests []*pb.Request,
+	processResultFunc func([]*pb.Response, error) error) error {
 
 	cluster, err := c.GetCluster()
 	if err != nil {
