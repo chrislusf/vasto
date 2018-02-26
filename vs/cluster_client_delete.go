@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/chrislusf/vasto/pb"
+	"github.com/kataras/iris/errors"
 )
 
 // Delete deletes one entry by the key.
@@ -17,7 +18,6 @@ func (c *ClusterClient) Delete(key *KeyObject) error {
 		},
 	}
 
-	var response *pb.Response
 	err := c.BatchProcess([]*pb.Request{request}, func(responses []*pb.Response, err error) error {
 		if err != nil {
 			return err
@@ -25,7 +25,10 @@ func (c *ClusterClient) Delete(key *KeyObject) error {
 		if len(responses) == 0 {
 			return NotFoundError
 		}
-		response = responses[0]
+		response := responses[0]
+		if !response.Write.Ok {
+			return errors.New(response.Write.Status)
+		}
 		return nil
 	})
 

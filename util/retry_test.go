@@ -12,7 +12,8 @@ func TestRetryForever(t *testing.T) {
 	var err error
 
 	expiredAt := time.Now().Add(2 * time.Second)
-	ctx, _ := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel1 := context.WithTimeout(context.Background(), time.Second)
+	defer cancel1()
 
 	RetryForever(ctx, "test1", func() error {
 		if time.Now().Before(expiredAt) {
@@ -29,7 +30,8 @@ func TestRetryForever(t *testing.T) {
 	}
 
 	expiredAt = time.Now().Add(500 * time.Millisecond)
-	ctx, _ = context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel2 := context.WithTimeout(context.Background(), time.Second)
+	defer cancel2()
 	RetryForever(ctx, "test2", func() error {
 		if time.Now().Before(expiredAt) {
 			err = io.EOF

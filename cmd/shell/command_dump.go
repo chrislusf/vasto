@@ -97,7 +97,7 @@ func (c *CommandDump) Do(vastoClient *vs.VastoClient, args []string, commandEnv 
 
 				}
 			}
-			return nil
+
 		})
 
 	}

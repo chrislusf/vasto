@@ -129,9 +129,4 @@ func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcCon
 
 	}
 
-	if saveFollowProgress {
-		s.saveProgress(node.StoreResource.GetAdminAddress(), shard_id(sourceShardId), nextSegment, nextOffset)
-	}
-
-	return nil
 }

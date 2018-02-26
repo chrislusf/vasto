@@ -108,8 +108,6 @@ func (ss *storeServer) registerAtMasterServer() error {
 		ss.processStoreMessage(msg)
 	}
 
-	return err
-
 }
 
 func (ss *storeServer) sendShardInfoToMaster(ShardInfo *pb.ShardInfo, status pb.ShardInfo_Status) {

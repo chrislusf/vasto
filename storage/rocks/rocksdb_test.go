@@ -86,7 +86,7 @@ func TestPut10Million(t *testing.T) {
 	acc := 0
 	it := db.db.NewIterator(db.ro)
 	it.SeekToFirst()
-	for it = it; it.Valid(); it.Next() {
+	for ; it.Valid(); it.Next() {
 		acc++
 	}
 	if err := it.Err(); err != nil {

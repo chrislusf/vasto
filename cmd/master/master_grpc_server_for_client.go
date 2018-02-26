@@ -100,6 +100,4 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 		}
 	}
 
-	glog.V(1).Infof("for stopped: %v", clientWatchedKeyspaceAndDataCenters)
-	return nil
 }

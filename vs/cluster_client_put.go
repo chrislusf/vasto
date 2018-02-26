@@ -2,6 +2,7 @@ package vs
 
 import (
 	"github.com/chrislusf/vasto/pb"
+	"errors"
 )
 
 // Put puts one key value pair to one partition
@@ -41,7 +42,17 @@ func (c *ClusterClient) Append(key *KeyObject, value []byte) error {
 	requests = append(requests, request)
 
 	return c.BatchProcess(requests, func(responses []*pb.Response, err error) error {
-		return err
+		if err != nil {
+			return err
+		}
+		if len(responses) == 0 {
+			return NotFoundError
+		}
+		response := responses[0]
+		if !response.Write.Ok {
+			return errors.New(response.Write.Status)
+		}
+		return nil
 	})
 }
 
