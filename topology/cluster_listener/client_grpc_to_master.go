@@ -26,7 +26,7 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 
 	// TODO possible goroutine leaks if retry happens
 	go func() {
-		for keyspace, _ := range clusterListener.clusters {
+		for keyspace := range clusterListener.clusters {
 			// glog.V(2).Infof("%s register cluster keyspace(%v) datacenter(%v)", clusterListener.clientName, keyspace, dataCenter)
 			if err := registerForClusterAtMaster(stream, string(keyspace), dataCenter, false, clusterListener.clientName); err != nil {
 				// glog.V(2).Infof("%s register cluster keyspace(%v) datacenter(%v): %v", clusterListener.clientName, keyspace, dataCenter, err)

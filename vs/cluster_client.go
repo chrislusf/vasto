@@ -16,7 +16,7 @@ type ClusterClient struct {
 }
 
 // Clone creates a new instance of ClusterClient, mostly to adjust the write config and access config.
-func (c *ClusterClient) Clone() (*ClusterClient) {
+func (c *ClusterClient) Clone() *ClusterClient {
 	return &ClusterClient{
 		keyspace:        c.keyspace,
 		ClusterListener: c.ClusterListener,

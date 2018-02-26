@@ -161,7 +161,7 @@ func (m *LogManager) GetSegmentRange() (earlistSegment, latestSegment uint32) {
 
 	earlistSegment = uint32(math.MaxInt32)
 
-	for k, _ := range m.files {
+	for k := range m.files {
 		if k <= earlistSegment {
 			earlistSegment = k
 		}

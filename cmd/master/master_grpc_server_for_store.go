@@ -56,7 +56,7 @@ func (ms *masterServer) notifyUpdate(shardInfo *pb.ShardInfo, storeResource *pb.
 		keyspace_name(shardInfo.KeyspaceName),
 		data_center_name(storeResource.DataCenter),
 		[]*pb.ClusterNode{
-			&pb.ClusterNode{
+			{
 				StoreResource: storeResource,
 				ShardInfo:     shardInfo,
 			},
@@ -71,7 +71,7 @@ func (ms *masterServer) notifyDeletion(shardInfo *pb.ShardInfo, storeResource *p
 		keyspace_name(shardInfo.KeyspaceName),
 		data_center_name(storeResource.DataCenter),
 		[]*pb.ClusterNode{
-			&pb.ClusterNode{
+			{
 				StoreResource: storeResource,
 				ShardInfo:     shardInfo,
 			},
@@ -86,7 +86,7 @@ func (ms *masterServer) notifyPromotion(shardInfo *pb.ShardInfo, storeResource *
 		keyspace_name(shardInfo.KeyspaceName),
 		data_center_name(storeResource.DataCenter),
 		[]*pb.ClusterNode{
-			&pb.ClusterNode{
+			{
 				StoreResource: storeResource,
 				ShardInfo:     shardInfo,
 			},

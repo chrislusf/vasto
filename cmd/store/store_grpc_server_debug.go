@@ -43,7 +43,7 @@ func (ss *storeServer) debug() {
 		for _, shard := range shards {
 			shard.followProcessesLock.Lock()
 			fmt.Printf("    * %v with %d followings\n", shard.String(), len(shard.followProcesses))
-			for k, _ := range shard.followProcesses {
+			for k := range shard.followProcesses {
 				fmt.Printf("        ~ %d.%d\n", k.ServerId, k.ShardId)
 			}
 			shard.followProcessesLock.Unlock()
