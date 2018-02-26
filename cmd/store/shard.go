@@ -15,8 +15,8 @@ import (
 	"time"
 )
 
-type VastoShardId int
-type VastoServerId int
+type VastoShardId int  // shard id in vasto
+type VastoServerId int // server id in vasto
 
 type shard struct {
 	keyspace            string

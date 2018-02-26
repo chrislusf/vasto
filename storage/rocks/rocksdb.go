@@ -24,7 +24,7 @@ type Rocks struct {
 }
 
 var (
-	ErrorShutdownInProgress = errors.New("shutdown in progress")
+	ErrorShutdownInProgress = errors.New("shutdown in progress") // error if shut down in progress
 )
 
 // NewDb creates a local rocksdb instance

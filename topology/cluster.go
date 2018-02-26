@@ -187,7 +187,7 @@ func (cluster *Cluster) ExpectedSize() int {
 	return cluster.expectedSize
 }
 
-// ExpectedSize returns the replication factor of the cluster
+// ReplicationFactor returns the replication factor of the cluster
 func (cluster *Cluster) ReplicationFactor() int {
 	return cluster.replicationFactor
 }

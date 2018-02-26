@@ -68,48 +68,48 @@ func BootstrapPlanWithTopoChange(req *BootstrapRequest) (plan *BootstrapPlan) {
 		// moving out, nothing to do
 		return
 
-	} else {
-		// shrinking cluster
-		if req.ServerId >= req.ToClusterSize {
-			// if retiring servers, nothing to bootstrap
-			return
-		}
-		if req.ShardId >= req.ToClusterSize {
-			// if retiring shards, nothing to bootstrap
-			return
-		}
-		if IsShardInLocal(req.ShardId, req.ServerId, req.ToClusterSize, req.ReplicationFactor) {
-			// local in new cluster
-			if !IsShardInLocal(req.ShardId, req.ServerId, req.FromClusterSize, req.ReplicationFactor) {
-				// the shard does not exist before the new cluster, need to copy existing one, and follow the to-be-retired shards with a filter
-				plan.BootstrapSource = PartitionShards(req.ServerId, req.ShardId, req.FromClusterSize, req.ReplicationFactor)
-				plan.PickBestBootstrapSource = true
-				for i := req.ToClusterSize; i < req.FromClusterSize; i++ {
-					plan.TransitionalFollowSource = append(plan.TransitionalFollowSource, ClusterShard{
-						ShardId:  i,
-						ServerId: i,
-					})
-				}
-				return
-			}
+	}
+	// shrinking cluster
+	if req.ServerId >= req.ToClusterSize {
+		// if retiring servers, nothing to bootstrap
+		return
+	}
+	if req.ShardId >= req.ToClusterSize {
+		// if retiring shards, nothing to bootstrap
+		return
+	}
 
-			// already exists, in both new and old cluster
-			// add copying from the retiring servers
+	if IsShardInLocal(req.ShardId, req.ServerId, req.ToClusterSize, req.ReplicationFactor) {
+		// local in new cluster
+		if !IsShardInLocal(req.ShardId, req.ServerId, req.FromClusterSize, req.ReplicationFactor) {
+			// the shard does not exist before the new cluster, need to copy existing one, and follow the to-be-retired shards with a filter
+			plan.BootstrapSource = PartitionShards(req.ServerId, req.ShardId, req.FromClusterSize, req.ReplicationFactor)
+			plan.PickBestBootstrapSource = true
 			for i := req.ToClusterSize; i < req.FromClusterSize; i++ {
-				plan.BootstrapSource = append(plan.BootstrapSource, ClusterShard{
+				plan.TransitionalFollowSource = append(plan.TransitionalFollowSource, ClusterShard{
 					ShardId:  i,
 					ServerId: i,
 				})
 			}
-			plan.TransitionalFollowSource = plan.BootstrapSource
 			return
-
 		}
-		// not local in new cluster
-		// moving out, nothing to do
+
+		// already exists, in both new and old cluster
+		// add copying from the retiring servers
+		for i := req.ToClusterSize; i < req.FromClusterSize; i++ {
+			plan.BootstrapSource = append(plan.BootstrapSource, ClusterShard{
+				ShardId:  i,
+				ServerId: i,
+			})
+		}
+		plan.TransitionalFollowSource = plan.BootstrapSource
 		return
 
 	}
+	// not local in new cluster
+	// moving out, nothing to do
+	return
+
 }
 
 func (plan *BootstrapPlan) String() string {

@@ -46,23 +46,23 @@ var kBucketLimit = [kNumBuckets]float64{
 }
 
 type histogram struct {
-	min_         float64
-	max_         float64
-	num_         float64
-	sum_         float64
-	sum_squares_ float64
+	min        float64
+	max        float64
+	num        float64
+	sum        float64
+	sumSquares float64
 
-	buckets_ [kNumBuckets]float64
+	buckets [kNumBuckets]float64
 }
 
 func (h *histogram) Clear() {
-	h.min_ = kBucketLimit[kNumBuckets-1]
-	h.max_ = 0
-	h.num_ = 0
-	h.sum_ = 0
-	h.sum_squares_ = 0
+	h.min = kBucketLimit[kNumBuckets-1]
+	h.max = 0
+	h.num = 0
+	h.sum = 0
+	h.sumSquares = 0
 	for i := 0; i < kNumBuckets; i++ {
-		h.buckets_[i] = 0
+		h.buckets[i] = 0
 	}
 }
 
@@ -72,30 +72,30 @@ func (h *histogram) Add(value float64) {
 	for b < kNumBuckets-1 && kBucketLimit[b] <= value {
 		b++
 	}
-	h.buckets_[b] += 1.0
-	if h.min_ > value {
-		h.min_ = value
+	h.buckets[b] += 1.0
+	if h.min > value {
+		h.min = value
 	}
-	if h.max_ < value {
-		h.max_ = value
+	if h.max < value {
+		h.max = value
 	}
-	h.num_++
-	h.sum_ += value
-	h.sum_squares_ += (value * value)
+	h.num++
+	h.sum += value
+	h.sumSquares += (value * value)
 }
 
 func (h *histogram) Merge(other *histogram) {
-	if other.min_ < h.min_ {
-		h.min_ = other.min_
+	if other.min < h.min {
+		h.min = other.min
 	}
-	if other.max_ > h.max_ {
-		h.max_ = other.max_
+	if other.max > h.max {
+		h.max = other.max
 	}
-	h.num_ += other.num_
-	h.sum_ += other.sum_
-	h.sum_squares_ += other.sum_squares_
+	h.num += other.num
+	h.sum += other.sum
+	h.sumSquares += other.sumSquares
 	for b := 0; b < kNumBuckets; b++ {
-		h.buckets_[b] += other.buckets_[b]
+		h.buckets[b] += other.buckets[b]
 	}
 }
 
@@ -104,83 +104,83 @@ func (h *histogram) Median() float64 {
 }
 
 func (h *histogram) Percentile(p float64) float64 {
-	var threshold = h.num_ * (p / 100.0)
-	var sum float64 = 0
+	var threshold = h.num * (p / 100.0)
+	var sum float64
 	for b := 0; b < kNumBuckets; b++ {
-		sum += h.buckets_[b]
+		sum += h.buckets[b]
 		if sum >= threshold {
 			// Scale linearly within this bucket
-			var left_point float64
+			var leftPoint float64
 			if b != 0 {
-				left_point = kBucketLimit[b-1]
+				leftPoint = kBucketLimit[b-1]
 			}
 
-			var right_point = kBucketLimit[b]
-			var left_sum = sum - h.buckets_[b]
-			var right_sum = sum
-			var pos = (threshold - left_sum) / (right_sum - left_sum)
-			var r = left_point + (right_point-left_point)*pos
-			if r < h.min_ {
-				r = h.min_
+			var rightPoint = kBucketLimit[b]
+			var leftSum = sum - h.buckets[b]
+			var rightSum = sum
+			var pos = (threshold - leftSum) / (rightSum - leftSum)
+			var r = leftPoint + (rightPoint-leftPoint)*pos
+			if r < h.min {
+				r = h.min
 			}
-			if r > h.max_ {
-				r = h.max_
+			if r > h.max {
+				r = h.max
 			}
 			return r
 		}
 	}
-	return h.max_
+	return h.max
 }
 
 func (h *histogram) Average() float64 {
-	if h.num_ == 0.0 {
+	if h.num == 0.0 {
 		return 0
 	}
-	return h.sum_ / h.num_
+	return h.sum / h.num
 }
 
 func (h *histogram) StandardDeviation() float64 {
-	if h.num_ == 0.0 {
+	if h.num == 0.0 {
 		return 0
 	}
-	var variance = (h.sum_squares_*h.num_ - h.sum_*h.sum_) / (h.num_ * h.num_)
+	var variance = (h.sumSquares*h.num - h.sum*h.sum) / (h.num * h.num)
 	return math.Sqrt(variance)
 }
 
 func (h *histogram) ToString() string {
 	var s bytes.Buffer
 	s.WriteString(fmt.Sprintf("Count: %.0f  Average: %.4f  StdDev: %.2f\n",
-		h.num_, h.Average(), h.StandardDeviation()))
+		h.num, h.Average(), h.StandardDeviation()))
 
 	var minRes float64
-	if h.num_ != 0.0 {
-		minRes = h.min_
+	if h.num != 0.0 {
+		minRes = h.min
 	}
 	s.WriteString(fmt.Sprintf("Min: %.4f  Median: %.4f  Max: %.4f\n",
-		minRes, h.Median(), h.max_))
+		minRes, h.Median(), h.max))
 	s.WriteString("------------------------------------------------------\n")
 
-	var mult = 100.0 / h.num_
+	var mult = 100.0 / h.num
 	var sum float64
 	for b := 0; b < kNumBuckets; b++ {
-		if h.buckets_[b] <= 0.0 {
+		if h.buckets[b] <= 0.0 {
 			continue
 		}
-		sum += h.buckets_[b]
+		sum += h.buckets[b]
 		var leftRes float64
 		if b != 0 {
 			leftRes = kBucketLimit[b-1]
 		}
 
 		s.WriteString(fmt.Sprintf("[ %7.0f, %7.0f ) %7.0f %7.3f%% %7.3f%% ",
-			leftRes,            // left
-			kBucketLimit[b],    // right
-			h.buckets_[b],      // count
-			mult*h.buckets_[b], // percentage
+			leftRes,           // left
+			kBucketLimit[b],   // right
+			h.buckets[b],      // count
+			mult*h.buckets[b], // percentage
 			mult*sum))
 
 		// Add hash marks based on percentage; 20 marks for 100%.
-		var marks = int(20*(h.buckets_[b]/h.num_) + 0.5)
+		var marks = int(20*(h.buckets[b]/h.num) + 0.5)
 		for i := 0; i < marks; i++ {
 			s.WriteByte('#')
 		}

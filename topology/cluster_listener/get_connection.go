@@ -53,17 +53,15 @@ func (clusterListener *ClusterListener) GetConnectionByShardId(keyspace string, 
 		return nil, fmt.Errorf("GetConnection shard %d %s %+v", shardId, n.StoreResource.Address, err)
 	}
 
-	if clusterListener.verbose {
-		if replica > 0 {
-			glog.V(2).Infof("connecting to server %d at %s replica=%d", shardId, n.StoreResource.Address, replica)
-		}
+	if replica > 0 {
+		glog.V(2).Infof("connecting to server %d at %s replica=%d", shardId, n.StoreResource.Address, replica)
 	}
 
 	return conn, nil
 
 }
 
-// GetShardId returns the shard id and partition hash based on teh partition key
+// GetShardId returns the shard id and partition hash based on the partition key
 func (clusterListener *ClusterListener) GetShardId(keyspace string, partitionKey []byte) (shardId int, partitionHash uint64) {
 	partitionHash = util.Hash(partitionKey)
 	r, found := clusterListener.GetCluster(keyspace)

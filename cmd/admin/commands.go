@@ -16,4 +16,4 @@ type command interface {
 
 var commands = []command{}
 
-var invalidArguments = errors.New("invalid arguments")
+var errInvalidArguments = errors.New("invalid arguments")

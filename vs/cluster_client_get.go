@@ -8,8 +8,10 @@ import (
 )
 
 var (
-	ErrorNotFound        = errors.New("not found")         // ErrorNotFound error when no matching records are found
-	ErrorWrongDataFormat = errors.New("wrong data format") // ErrorWrongDataFormat error when data type is unexpected
+	// ErrorNotFound error when no matching records are found
+	ErrorNotFound = errors.New("not found")
+	// ErrorWrongDataFormat error when data type is unexpected
+	ErrorWrongDataFormat = errors.New("wrong data format")
 )
 
 // Get gets the value bytes by the key

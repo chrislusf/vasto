@@ -107,7 +107,6 @@ var (
 		Master:     shell.Flag("master", "master address").Default("localhost:8278").String(),
 		DataCenter: shell.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
 		Keyspace:   shell.Flag("keyspace", "keyspace name").Default("").String(),
-		Verbose:    shell.Flag("verbose", "verbose log of cluster topology changes").Default("false").Bool(),
 	}
 
 	admin       = app.Command("admin", "Manage FixedCluster Size")

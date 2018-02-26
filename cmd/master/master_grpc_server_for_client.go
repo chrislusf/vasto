@@ -32,8 +32,8 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 	// clean up if disconnects
 	clientWatchedKeyspaceAndDataCenters := make(map[string]string)
 	defer func() {
-		for k_dc, clientName := range clientWatchedKeyspaceAndDataCenters {
-			t := strings.Split(k_dc, ",")
+		for ksAndDc, clientName := range clientWatchedKeyspaceAndDataCenters {
+			t := strings.Split(ksAndDc, ",")
 			keyspace, dc := keyspaceName(t[0]), datacenterName(t[1])
 			ms.clientChans.removeClient(keyspace, dc, serverAddress)
 			ms.OnClientDisconnectEvent(dc, keyspace, serverAddress, clientName)

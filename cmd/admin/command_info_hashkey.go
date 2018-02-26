@@ -33,7 +33,7 @@ func (c *commandInfo) Do(args []string, out io.Writer) (err error) {
 
 	if args[0] == "hashkey" {
 		if len(args) != 3 {
-			return invalidArguments
+			return errInvalidArguments
 		}
 		clusterSize, err := strconv.ParseUint(args[2], 10, 64)
 		if err != nil {

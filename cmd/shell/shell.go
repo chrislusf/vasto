@@ -10,7 +10,6 @@ type ShellOption struct {
 	Master     *string
 	DataCenter *string
 	Keyspace   *string
-	Verbose    *bool
 }
 
 type shell struct {
@@ -30,10 +29,7 @@ func RunShell(option *ShellOption) {
 		b.vastoClient.NewClusterClient(*option.Keyspace)
 	}
 
-	if *option.Verbose {
-		// b.vastoClient.ClusterListener.RegisterShardEventProcessor(b)
-		b.vastoClient.ClusterListener.SetVerboseLog(true)
-	}
+	b.vastoClient.ClusterListener.RegisterShardEventProcessor(b)
 
 	b.runShell()
 

@@ -26,7 +26,6 @@ type ClusterListener struct {
 	keyspaceFollowMessageChan chan keyspaceFollowMessage
 	dataCenter                string
 	shardEventProcessors      []ShardEventProcessor
-	verbose                   bool
 	clientName                string
 	connPools                 map[string]pool.Pool
 	connPoolLock              sync.Mutex
@@ -79,7 +78,7 @@ func (clusterListener *ClusterListener) GetCluster(keyspace string) (r *topology
 	return
 }
 
-// GetCluster gets or creates the cluster of the keyspace in local data center.
+// GetOrSetCluster gets or creates the cluster of the keyspace in local data center.
 func (clusterListener *ClusterListener) GetOrSetCluster(keyspace string, clusterSize int, replicationFactor int) *topology.Cluster {
 	clusterListener.Lock()
 	t, ok := clusterListener.clusters[keyspaceName(keyspace)]
@@ -171,17 +170,13 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 
 }
 
-func (clusterListener *ClusterListener) SetVerboseLog(verbose bool) {
-	clusterListener.verbose = verbose
-}
-
 // SetUnixSocket whether or not use unix socket if available. Default to true.
 // When client or gateway is on the same machine as the store server, using unix socket can avoid some network cost.
 func (clusterListener *ClusterListener) SetUnixSocket(useUnixSocket bool) {
 	clusterListener.disableUnixSocket = !useUnixSocket
 }
 
-// HasConnectedKeyspace checks whether the listener has the infomation of the keyspace or not.
+// HasConnectedKeyspace checks whether the listener has the information of the keyspace or not.
 func (clusterListener *ClusterListener) HasConnectedKeyspace(keyspace string) bool {
 	cluster, found := clusterListener.GetCluster(keyspace)
 	if !found {
