@@ -27,7 +27,7 @@ import (
 	sh "github.com/chrislusf/vasto/cmd/shell"
 	s "github.com/chrislusf/vasto/cmd/store"
 	"github.com/chrislusf/vasto/util"
-	"github.com/chrislusf/vasto/util/on_interrupt"
+	"github.com/chrislusf/vasto/util/interrupt"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"os/user"
 	"strings"
@@ -132,7 +132,7 @@ func main() {
 		}
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
-		on_interrupt.OnInterrupt(func() {
+		interrupt.OnInterrupt(func() {
 			pprof.StopCPUProfile()
 		}, func() {
 			pprof.StopCPUProfile()

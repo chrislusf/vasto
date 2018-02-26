@@ -1,6 +1,6 @@
 // +build linux
 
-package on_interrupt
+package interrupt
 
 import (
 	"os"

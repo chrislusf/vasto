@@ -1,7 +1,7 @@
 // +build darwin freebsd netbsd openbsd
 // +build !plan9,!windows,!linux
 
-package on_interrupt
+package interrupt
 
 import (
 	"os"

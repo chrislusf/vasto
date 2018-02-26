@@ -6,7 +6,7 @@ import (
 
 	"context"
 	"github.com/chrislusf/glog"
-	"github.com/chrislusf/vasto/util/on_interrupt"
+	"github.com/chrislusf/vasto/util/interrupt"
 	"github.com/chrislusf/vasto/vs"
 	"os"
 )
@@ -50,7 +50,7 @@ func RunGateway(option *GatewayOption) {
 			glog.Fatal(err)
 		}
 		glog.V(0).Infof("Vasto gateway listens on socket %s", *option.UnixSocket)
-		on_interrupt.OnInterrupt(func() {
+		interrupt.OnInterrupt(func() {
 			os.Remove(*option.UnixSocket)
 		}, nil)
 		go gs.serveTcp(unixSocketListener)

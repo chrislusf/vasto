@@ -11,7 +11,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology/cluster_listener"
 	"github.com/chrislusf/vasto/util"
-	"github.com/chrislusf/vasto/util/on_interrupt"
+	"github.com/chrislusf/vasto/util/interrupt"
 	"github.com/tidwall/evio"
 	"sync"
 )
@@ -167,7 +167,7 @@ func RunStore(option *StoreOption) {
 					glog.Fatal(err)
 				}
 				glog.V(2).Infof("listens on socket %s", unixSocket)
-				on_interrupt.OnInterrupt(func() {
+				interrupt.OnInterrupt(func() {
 					os.Remove(unixSocket)
 				}, nil)
 				defer os.Remove(unixSocket)

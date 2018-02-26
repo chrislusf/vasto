@@ -1,6 +1,6 @@
 // +build windows
 
-package on_interrupt
+package interrupt
 
 import (
 	"os"
