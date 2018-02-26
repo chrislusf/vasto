@@ -1,4 +1,4 @@
-package cluster_listener
+package clusterlistener
 
 import (
 	"github.com/chrislusf/vasto/pb"

@@ -6,7 +6,7 @@ import (
 	"github.com/chrislusf/vasto/topology"
 )
 
-// the following functions implements cluster_listener.ShardEventProcessor
+// the following functions implements clusterlistener.ShardEventProcessor
 
 func (s *shard) OnShardCreateEvent(cluster *topology.Cluster, resource *pb.StoreResource, shardInfo *pb.ShardInfo) {
 

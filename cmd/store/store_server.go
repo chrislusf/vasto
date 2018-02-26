@@ -9,7 +9,7 @@ import (
 	"encoding/binary"
 	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/topology/cluster_listener"
+	"github.com/chrislusf/vasto/topology/clusterlistener"
 	"github.com/chrislusf/vasto/util"
 	"github.com/chrislusf/vasto/util/interrupt"
 	"github.com/tidwall/evio"
@@ -40,7 +40,7 @@ func (o *StoreOption) GetAdminPort() int32 {
 
 type storeServer struct {
 	option              *StoreOption
-	clusterListener     *cluster_listener.ClusterListener
+	clusterListener     *clusterlistener.ClusterListener
 	ShardInfoChan       chan *pb.ShardInfo
 	statusInCluster     map[string]*pb.LocalShardsInCluster // saved to disk
 	statusInClusterLock sync.RWMutex
@@ -55,7 +55,7 @@ func RunStore(option *StoreOption) {
 	storeName := fmt.Sprintf("[store@%s:%d]", *option.ListenHost, *option.TcpPort)
 
 	ctx := context.Background()
-	clusterListener := cluster_listener.NewClusterListener(*option.DataCenter, storeName)
+	clusterListener := clusterlistener.NewClusterListener(*option.DataCenter, storeName)
 
 	var ss = &storeServer{
 		option:          option,
@@ -67,7 +67,7 @@ func RunStore(option *StoreOption) {
 	}
 	go ss.startPeriodTasks()
 
-	// ss.clusterListener.RegisterShardEventProcessor(&cluster_listener.ClusterEventLogger{})
+	// ss.clusterListener.RegisterShardEventProcessor(&clusterlistener.ClusterEventLogger{})
 
 	if err := ss.listExistingClusters(); err != nil {
 		glog.Fatalf("%s load existing cluster files: %v", ss.storeName, err)

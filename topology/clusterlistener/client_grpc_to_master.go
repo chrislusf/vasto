@@ -1,4 +1,4 @@
-package cluster_listener
+package clusterlistener
 
 import (
 	"context"

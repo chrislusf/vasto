@@ -8,7 +8,7 @@ import (
 	"github.com/chrislusf/vasto/storage/binlog"
 	"github.com/chrislusf/vasto/storage/rocks"
 	"github.com/chrislusf/vasto/topology"
-	"github.com/chrislusf/vasto/topology/cluster_listener"
+	"github.com/chrislusf/vasto/topology/clusterlistener"
 	"github.com/chrislusf/vasto/util"
 	"google.golang.org/grpc"
 	"sync"
@@ -28,7 +28,7 @@ type shard struct {
 	db                  *rocks.Rocks
 	lm                  *binlog.LogManager
 	cluster             *topology.Cluster
-	clusterListener     *cluster_listener.ClusterListener
+	clusterListener     *clusterlistener.ClusterListener
 	nodeFinishChan      chan bool
 	cancelFunc          context.CancelFunc
 	isShutdown          bool
@@ -46,7 +46,7 @@ func (s *shard) String() string {
 }
 
 func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.Cluster,
-	clusterListener *cluster_listener.ClusterListener,
+	clusterListener *clusterlistener.ClusterListener,
 	replicationFactor int, logFileSizeMb int, logFileCount int) *shard {
 
 	ctx, cancelFunc := context.WithCancel(context.Background())

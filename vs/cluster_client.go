@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/topology"
-	"github.com/chrislusf/vasto/topology/cluster_listener"
+	"github.com/chrislusf/vasto/topology/clusterlistener"
 	"sync"
 )
 
 // ClusterClient is used to access the keyspace in current data center.
 type ClusterClient struct {
 	keyspace        string
-	ClusterListener *cluster_listener.ClusterListener
+	ClusterListener *clusterlistener.ClusterListener
 	WriteConfig
 	AccessConfig
 }

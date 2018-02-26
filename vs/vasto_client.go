@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/topology/cluster_listener"
+	"github.com/chrislusf/vasto/topology/clusterlistener"
 	"google.golang.org/grpc"
 	"time"
 )
@@ -16,7 +16,7 @@ type VastoClient struct {
 	Master          string
 	DataCenter      string
 	ClientName      string
-	ClusterListener *cluster_listener.ClusterListener
+	ClusterListener *clusterlistener.ClusterListener
 	MasterClient    pb.VastoMasterClient
 }
 
@@ -24,12 +24,12 @@ type VastoClient struct {
 func NewVastoClient(ctx context.Context, clientName, master, dataCenter string) *VastoClient {
 	c := &VastoClient{
 		ctx:             ctx,
-		ClusterListener: cluster_listener.NewClusterListener(dataCenter, clientName),
+		ClusterListener: clusterlistener.NewClusterListener(dataCenter, clientName),
 		Master:          master,
 		ClientName:      clientName,
 		DataCenter:      dataCenter,
 	}
-	// c.ClusterListener.RegisterShardEventProcessor(&cluster_listener.ClusterEventLogger{Prefix: clientName + " "})
+	// c.ClusterListener.RegisterShardEventProcessor(&clusterlistener.ClusterEventLogger{Prefix: clientName + " "})
 	c.ClusterListener.StartListener(ctx, c.Master, c.DataCenter)
 
 	conn, err := grpc.Dial(c.Master, grpc.WithInsecure())
