@@ -1,10 +1,10 @@
 package vs
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/chrislusf/vasto/pb"
-	"github.com/kataras/iris/errors"
 )
 
 // Delete deletes one entry by the key.
