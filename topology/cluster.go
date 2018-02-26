@@ -223,19 +223,13 @@ func (cluster *Cluster) CurrentSize() int {
 	return 0
 }
 
-func (cluster *Cluster) GetNode(shardId int, options ...AccessOption) (*pb.ClusterNode, int, bool) {
-	replica := 0
+func (cluster *Cluster) GetNode(shardId int, replica int) (*pb.ClusterNode, bool) {
 	shards := cluster.getShards(shardId)
-	for _, option := range options {
-		if option != nil {
-			_, replica = option(shardId, cluster.expectedSize)
-		}
-	}
-	if replica < 0 || replica >= len(shards) {
-		return nil, 0, false
+	if replica >= len(shards) {
+		return nil, false
 	}
 
-	return shards[replica], replica, true
+	return shards[replica], true
 }
 
 func (cluster *Cluster) getShards(shardId int) LogicalShardGroup {

@@ -3,7 +3,6 @@ package cluster_listener
 import (
 	"fmt"
 	"github.com/chrislusf/glog"
-	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
 	"gopkg.in/fatih/pool.v2"
 	"net"
@@ -15,17 +14,17 @@ import (
  * If a shard has a candidate, use the candidate.
  */
 
-func (clusterListener *ClusterListener) GetConnectionByShardId(keyspace string, shardId int, option topology.AccessOption) (net.Conn, int, error) {
+func (clusterListener *ClusterListener) GetConnectionByShardId(keyspace string, shardId int, replica int) (net.Conn, error) {
 
 	r, found := clusterListener.GetCluster(keyspace)
 	if !found {
-		return nil, 0, fmt.Errorf("no keyspace %s", keyspace)
+		return nil, fmt.Errorf("no keyspace %s", keyspace)
 	}
 
 	// find one shard
-	n, replica, ok := r.GetNode(shardId, option)
+	n, ok := r.GetNode(shardId, replica)
 	if !ok {
-		return nil, 0, fmt.Errorf("shardId %d not found", shardId)
+		return nil, fmt.Errorf("shardId %d not found", shardId)
 	}
 
 	clusterListener.connPoolLock.Lock()
@@ -55,7 +54,7 @@ func (clusterListener *ClusterListener) GetConnectionByShardId(keyspace string, 
 
 	conn, err := connPool.Get()
 	if err != nil {
-		return nil, 0, fmt.Errorf("GetConnection shard %d %s %+v", shardId, n.StoreResource.Address, err)
+		return nil, fmt.Errorf("GetConnection shard %d %s %+v", shardId, n.StoreResource.Address, err)
 	}
 
 	if clusterListener.verbose {
@@ -64,7 +63,7 @@ func (clusterListener *ClusterListener) GetConnectionByShardId(keyspace string, 
 		}
 	}
 
-	return conn, replica, nil
+	return conn, nil
 
 }
 

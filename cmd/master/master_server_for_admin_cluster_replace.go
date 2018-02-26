@@ -37,7 +37,7 @@ func (ms *masterServer) ReplaceNode(ctx context.Context, req *pb.ReplaceNodeRequ
 		return
 	}
 
-	oldServerNode, _, found := cluster.GetNode(int(req.NodeId))
+	oldServerNode, found := cluster.GetNode(int(req.NodeId), 0)
 	if !found {
 		resp.Error = fmt.Sprintf("no server %v found", req.NodeId)
 		return
@@ -147,7 +147,7 @@ func (ms *masterServer) adjustAndBroadcastShardStatus(ctx context.Context, req *
 	}
 
 	for i := 0; i < cluster.ExpectedSize(); i++ {
-		n, _, found := cluster.GetNode(i)
+		n, found := cluster.GetNode(i, 0)
 		if !found {
 			continue
 		}
@@ -155,7 +155,7 @@ func (ms *masterServer) adjustAndBroadcastShardStatus(ctx context.Context, req *
 			continue
 		}
 
-		candidate, _, found := candidateCluster.GetNode(i)
+		candidate, found := candidateCluster.GetNode(i, 0)
 		if !found {
 			return fmt.Errorf("candidate server for keyspace %s server %s does not exist", req.Keyspace, n.StoreResource.GetAddress())
 		}

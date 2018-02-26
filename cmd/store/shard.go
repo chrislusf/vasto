@@ -102,7 +102,7 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 
 	if len(existingPrimaryShards) == 0 {
 		for i := 0; i < s.cluster.ExpectedSize(); i++ {
-			if n, _, ok := s.cluster.GetNode(i); ok {
+			if n, ok := s.cluster.GetNode(i, 0); ok {
 				existingPrimaryShards = append(existingPrimaryShards, n)
 			}
 		}

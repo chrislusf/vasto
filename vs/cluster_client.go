@@ -11,7 +11,8 @@ import (
 type ClusterClient struct {
 	keyspace        string
 	ClusterListener *cluster_listener.ClusterListener
-	accessOption    topology.AccessOption
+	WriteConfig
+	AccessConfig
 }
 
 func (c *ClusterClient) GetCluster() (*topology.Cluster, error) {
@@ -20,10 +21,6 @@ func (c *ClusterClient) GetCluster() (*topology.Cluster, error) {
 		return nil, fmt.Errorf("no keyspace %s", c.keyspace)
 	}
 	return cluster, nil
-}
-
-func (c *ClusterClient) SetAccessOption(accessOption topology.AccessOption) {
-	c.accessOption = accessOption
 }
 
 // sendRequestsToOneShard send the requests to one partition
@@ -36,7 +33,7 @@ func (c *ClusterClient) sendRequestsToOneShard(requests []*pb.Request) (results 
 
 	shardId := requests[0].ShardId
 
-	conn, _, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, int(shardId), c.accessOption)
+	conn, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, int(shardId), c.Replica)
 
 	if err != nil {
 		return nil, err

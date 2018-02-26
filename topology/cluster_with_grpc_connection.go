@@ -9,7 +9,7 @@ import (
 
 func (cluster *Cluster) WithConnection(name string, serverId int, fn func(*pb.ClusterNode, *grpc.ClientConn) error) error {
 
-	node, _, ok := cluster.GetNode(serverId)
+	node, ok := cluster.GetNode(serverId, 0)
 
 	if !ok {
 		glog.Errorf("cluster misses server %d: %+v", serverId, cluster.String())

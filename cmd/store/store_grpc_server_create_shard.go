@@ -37,7 +37,7 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 	var existingPrimaryShards []*pb.ClusterNode
 	if cluster, found := ss.clusterListener.GetCluster(keyspace); found {
 		for i := 0; i < cluster.ExpectedSize(); i++ {
-			if n, _, ok := cluster.GetNode(i); ok {
+			if n, ok := cluster.GetNode(i, 0); ok {
 				existingPrimaryShards = append(existingPrimaryShards, n)
 			} else {
 				glog.Errorf("missing server %d", i)

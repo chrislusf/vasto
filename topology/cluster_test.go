@@ -16,10 +16,9 @@ func TestClusterOperations(t *testing.T) {
 
 	ring3.Debug("test ")
 
-	node, replica, found := ring3.GetNode(1, NewAccessOption(1))
+	node, found := ring3.GetNode(1, 1)
 
 	assert.Equal(t, found, true, "found node")
-	assert.Equal(t, replica, 1, "replica")
 	assert.Equal(t, node.ShardInfo.ShardId, uint32(1), "shard id")
 	assert.Equal(t, ring3.ExpectedSize(), 3, "expected cluster size")
 	assert.Equal(t, ring3.ReplicationFactor(), 2, "expected ReplicationFactor")
@@ -45,7 +44,7 @@ func TestReplaceShard(t *testing.T) {
 
 	x := 5
 
-	node, _, _ := ring3.GetNode(1)
+	node, _ := ring3.GetNode(1, 0)
 	assert.Equal(t, node.StoreResource.Address, "localhost:7001", "original server address")
 
 	store := &pb.StoreResource{
@@ -67,7 +66,7 @@ func TestReplaceShard(t *testing.T) {
 
 	assert.Equal(t, isReplaced, true, "replace shard")
 
-	node, _, _ = ring3.GetNode(1)
+	node, _ = ring3.GetNode(1, 0)
 
 	assert.Equal(t, node.StoreResource.Address, store.Address, "replaced server address")
 
@@ -79,7 +78,7 @@ func TestRemoveShard(t *testing.T) {
 
 	x := 1
 
-	node, _, _ := ring3.GetNode(1)
+	node, _ := ring3.GetNode(1, 0)
 	assert.Equal(t, node.StoreResource.Address, "localhost:7001", "original server address")
 
 	store := &pb.StoreResource{

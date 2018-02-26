@@ -58,7 +58,7 @@ func (c *ClusterClient) PutFloat64(key *KeyObject, value float64) error {
 		Put: &pb.PutRequest{
 			Key:           key.GetKey(),
 			PartitionHash: key.GetPartitionHash(),
-			TtlSecond:     0,
+			TtlSecond:     c.TtlSecond,
 			OpAndDataType: pb.OpAndDataType_FLOAT64,
 			Value:         util.Float64ToBytes(value),
 		},

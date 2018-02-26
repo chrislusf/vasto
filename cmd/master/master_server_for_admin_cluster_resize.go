@@ -48,7 +48,7 @@ func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest
 
 	var existingServers, newServers []*pb.StoreResource
 	for i := 0; i < cluster.ExpectedSize(); i++ {
-		if node, _, found := cluster.GetNode(i); found {
+		if node, found := cluster.GetNode(i, 0); found {
 			existingServers = append(existingServers, node.StoreResource)
 		}
 	}
@@ -108,7 +108,7 @@ func allocateServers(cluster *topology.Cluster, dc *dataCenter, serverCount int,
 		func(resource *pb.StoreResource) bool {
 
 			for i := 0; i < cluster.ExpectedSize(); i++ {
-				if node, _, found := cluster.GetNode(i); found {
+				if node, found := cluster.GetNode(i, 0); found {
 					if node.StoreResource.GetAddress() == resource.GetAddress() {
 						return false
 					}
@@ -233,7 +233,7 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 
 	// notify clients of shards on to-be-cleanup servers, if shrinking
 	for i := newClusterSize; i < oldClusterSize; i++ {
-		if node, _, found := cluster.GetNode(i); found {
+		if node, found := cluster.GetNode(i, 0); found {
 			store := node.StoreResource
 			for _, shardInfo := range cluster.RemoveStore(store) {
 				shardInfo.IsPermanentDelete = true

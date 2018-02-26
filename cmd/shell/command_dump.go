@@ -49,7 +49,7 @@ func (c *CommandDump) Do(vastoClient *vs.VastoClient, args []string, commandEnv 
 
 	for i := 0; i < cluster.ExpectedSize(); i++ {
 
-		_, _, ok := cluster.GetNode(i)
+		_, ok := cluster.GetNode(i, 0)
 		if !ok {
 			continue
 		}

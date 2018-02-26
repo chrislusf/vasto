@@ -17,7 +17,7 @@ func (s *shard) isBootstrapNeeded(ctx context.Context, bootstrapOption *topology
 	maxSegment := uint32(0)
 	checkedServerCount := 0
 	for _, peer := range peerShards {
-		_, _, ok := s.cluster.GetNode(peer.ServerId)
+		_, ok := s.cluster.GetNode(peer.ServerId, 0)
 		if !ok {
 			continue
 		}

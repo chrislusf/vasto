@@ -75,15 +75,12 @@ func (s *shell) runShell() {
 			} else {
 				for _, c := range commands {
 					if c.Name() == cmd {
-						option, err := parseEnv(commandEnv.env)
+						err := parseEnv(commandEnv.clusterClient, commandEnv.env)
 						if err != nil {
 							fmt.Println()
 							fmt.Printf("\t%s %v \n", c.Name(), err)
 							fmt.Println()
 							continue
-						}
-						if commandEnv.clusterClient != nil {
-							commandEnv.clusterClient.SetAccessOption(option)
 						}
 						if err := c.Do(s.vastoClient, args, commandEnv, os.Stderr); err != nil {
 							fmt.Fprintf(os.Stderr, "error: %v\n", err)

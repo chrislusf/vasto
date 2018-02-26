@@ -27,7 +27,7 @@ func (ms *masterServer) DeleteCluster(ctx context.Context, req *pb.DeleteCluster
 
 	var servers []*pb.StoreResource
 	for i := 0; i < cluster.ExpectedSize(); i++ {
-		server, _, found := cluster.GetNode(i)
+		server, found := cluster.GetNode(i, 0)
 		if !found {
 			continue
 		}
