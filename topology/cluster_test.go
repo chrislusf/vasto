@@ -120,7 +120,7 @@ func TestRemoveStore(t *testing.T) {
 
 	x := 1
 
-	node, _, _ := ring3.GetNode(1)
+	node, _ := ring3.GetNode(1, 0)
 	assert.Equal(t, node.StoreResource.Address, "localhost:7001", "original server address")
 
 	store := &pb.StoreResource{
