@@ -1,6 +1,7 @@
 # Vasto
 
 [![Build Status](https://travis-ci.org/chrislusf/vasto.svg?branch=master)](https://travis-ci.org/chrislusf/vasto)
+[![GoDoc](https://godoc.org/github.com/chrislusf/vasto/vs?status.svg)](https://godoc.org/github.com/chrislusf/vasto/vs)
 [![Go Report Card](https://goreportcard.com/badge/github.com/chrislusf/vasto)](https://goreportcard.com/report/github.com/chrislusf/vasto)
 [![codecov](https://codecov.io/gh/chrislusf/vasto/branch/master/graph/badge.svg)](https://codecov.io/gh/chrislusf/vasto)
 
