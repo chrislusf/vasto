@@ -15,10 +15,10 @@ import (
 	"time"
 )
 
-// shard id in vasto
+// VastoShardId shard id in vasto
 type VastoShardId int
 
-// server id in vasto
+// VastoServerId server id in vasto
 type VastoServerId int
 
 type shard struct {

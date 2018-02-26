@@ -24,7 +24,7 @@ type Rocks struct {
 }
 
 var (
-	// error if shut down in progress
+	// ErrorShutdownInProgress error if shut down in progress
 	ErrorShutdownInProgress = errors.New("shutdown in progress")
 )
 
