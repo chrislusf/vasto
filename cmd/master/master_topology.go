@@ -61,12 +61,12 @@ func newMasterTopology() *masterTopology {
 	}
 }
 
-func (ks *keyspaces) getOrCreateKeyspace(keyspaceName string) *keyspace {
+func (ks *keyspaces) getOrCreateKeyspace(ksName string) *keyspace {
 	ks.Lock()
-	k, hasData := ks.keyspaces[keyspaceName(keyspaceName)]
+	k, hasData := ks.keyspaces[keyspaceName(ksName)]
 	if !hasData {
 		k = &keyspace{
-			name:     keyspaceName(keyspaceName),
+			name:     keyspaceName(ksName),
 			clusters: make(map[datacenterName]*topology.Cluster),
 		}
 		ks.keyspaces[k.name] = k
@@ -75,16 +75,16 @@ func (ks *keyspaces) getOrCreateKeyspace(keyspaceName string) *keyspace {
 	return k
 }
 
-func (ks *keyspaces) getKeyspace(keyspaceName string) (k *keyspace, found bool) {
+func (ks *keyspaces) getKeyspace(ksName string) (k *keyspace, found bool) {
 	ks.RLock()
-	k, found = ks.keyspaces[keyspaceName(keyspaceName)]
+	k, found = ks.keyspaces[keyspaceName(ksName)]
 	ks.RUnlock()
 	return
 }
 
-func (ks *keyspaces) removeKeyspace(keyspaceName string) {
+func (ks *keyspaces) removeKeyspace(ksName string) {
 	ks.Lock()
-	delete(ks.keyspaces, keyspaceName(keyspaceName))
+	delete(ks.keyspaces, keyspaceName(ksName))
 	ks.Unlock()
 }
 
