@@ -15,7 +15,7 @@ func TestGetUnixSocketFile(t *testing.T) {
 		t.Errorf("unexpected %v", sock)
 	}
 
-	sock, exists = GetUnixSocketFile("localhost:8080")
+	sock, _ = GetUnixSocketFile("localhost:8080")
 
 	dir := os.TempDir()
 	if strings.HasSuffix(dir, "/") {

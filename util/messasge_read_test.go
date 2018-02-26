@@ -36,7 +36,7 @@ func TestReadWriteMessage(t *testing.T) {
 	assert.Equal(t, len(out), 0, "zero length message")
 
 	binary.Write(&buf, binary.LittleEndian, int32(1))
-	out, err = ReadMessage(&buf)
+	_, err = ReadMessage(&buf)
 	assert.Equal(t, err != nil, true, "wrong length message")
 
 }
