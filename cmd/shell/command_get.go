@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/chrislusf/vasto/vs"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/util"
+	"github.com/chrislusf/vasto/vs"
 )
 
 func init() {
