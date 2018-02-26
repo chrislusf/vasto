@@ -58,67 +58,7 @@ func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcCon
 		// glog.V(2).Infof("%s follow 0 entry: %d", s, len(changes.Entries))
 
 		for _, entry := range changes.Entries {
-
-			// process merges
-			if entry.GetMerge() != nil {
-				merge := entry.GetMerge()
-				key := merge.Key
-				t := codec.NewMergeEntry(merge, entry.UpdatedAtNs)
-
-				s.db.Merge(key, t.ToBytes())
-				continue
-			}
-
-			// check local entry
-			b, err := s.db.Get(entry.GetKey())
-			if err != nil {
-				glog.Errorf("%s get %v: %v", s, string(entry.GetKey()), err)
-				continue
-			}
-
-			// process deletes
-			if entry.GetDelete() != nil {
-				if err == nil && len(b) > 0 {
-					row := codec.FromBytes(b)
-					if row.IsExpired() {
-						continue
-					}
-					if row.UpdatedAtNs > entry.UpdatedAtNs {
-						continue
-					}
-					s.db.Delete(entry.GetKey())
-				}
-				continue
-			}
-
-			// process puts
-			if entry.GetPut() != nil {
-				put := entry.GetPut()
-				key := put.Key
-				t := codec.NewPutEntry(put, entry.UpdatedAtNs)
-
-				if len(b) == 0 {
-					// no existing data found
-					s.db.Put(key, t.ToBytes())
-					continue
-				}
-				row := codec.FromBytes(b)
-				if row.IsExpired() {
-					if !t.IsExpired() {
-						glog.V(3).Infof("%s follow 3 entry: %v", s, string(key))
-						s.db.Put(key, t.ToBytes())
-						continue
-					}
-				} else {
-					if row.UpdatedAtNs > entry.UpdatedAtNs {
-						continue
-					}
-					s.db.Put(key, t.ToBytes())
-					continue
-				}
-				// glog.V(2).Infof("%s follow 4 entry: %v", s, string(entry.Key))
-			}
-
+			s.processEntry(entry)
 		}
 
 		// set the nextSegment and nextOffset
@@ -129,4 +69,66 @@ func (s *shard) followChanges(ctx context.Context, node *pb.ClusterNode, grpcCon
 
 	}
 
+}
+
+func (s *shard) processEntry(entry *pb.LogEntry) {
+	// process merges
+	if entry.GetMerge() != nil {
+		merge := entry.GetMerge()
+		key := merge.Key
+		t := codec.NewMergeEntry(merge, entry.UpdatedAtNs)
+
+		s.db.Merge(key, t.ToBytes())
+		return
+	}
+
+	// check local entry
+	b, err := s.db.Get(entry.GetKey())
+	if err != nil {
+		glog.Errorf("%s get %v: %v", s, string(entry.GetKey()), err)
+		return
+	}
+
+	// process deletes
+	if entry.GetDelete() != nil {
+		if err == nil && len(b) > 0 {
+			row := codec.FromBytes(b)
+			if row.IsExpired() {
+				return
+			}
+			if row.UpdatedAtNs > entry.UpdatedAtNs {
+				return
+			}
+			s.db.Delete(entry.GetKey())
+		}
+		return
+	}
+
+	// process puts
+	if entry.GetPut() != nil {
+		put := entry.GetPut()
+		key := put.Key
+		t := codec.NewPutEntry(put, entry.UpdatedAtNs)
+
+		if len(b) == 0 {
+			// no existing data found
+			s.db.Put(key, t.ToBytes())
+			return
+		}
+		row := codec.FromBytes(b)
+		if row.IsExpired() {
+			if !t.IsExpired() {
+				glog.V(3).Infof("%s follow 3 entry: %v", s, string(key))
+				s.db.Put(key, t.ToBytes())
+				return
+			}
+		} else {
+			if row.UpdatedAtNs > entry.UpdatedAtNs {
+				return
+			}
+			s.db.Put(key, t.ToBytes())
+			return
+		}
+		// glog.V(2).Infof("%s follow 4 entry: %v", s, string(entry.Key))
+	}
 }
