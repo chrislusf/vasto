@@ -25,6 +25,7 @@ func (c *ClusterClient) Put(key *KeyObject, value []byte) error {
 	})
 }
 
+// Append appends []byte to existing value
 func (c *ClusterClient) Append(key *KeyObject, value []byte) error {
 
 	var requests []*pb.Request

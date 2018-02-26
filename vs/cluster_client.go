@@ -15,6 +15,17 @@ type ClusterClient struct {
 	AccessConfig
 }
 
+// Clone creates a new instance of ClusterClient, mostly to adjust the write config and access config.
+func (c *ClusterClient) Clone() (*ClusterClient) {
+	return &ClusterClient{
+		keyspace:        c.keyspace,
+		ClusterListener: c.ClusterListener,
+		WriteConfig:     c.WriteConfig,
+		AccessConfig:    c.AccessConfig,
+	}
+}
+
+// GetCluster get access to topology.Cluster for cluster topology information.
 func (c *ClusterClient) GetCluster() (*topology.Cluster, error) {
 	cluster, found := c.ClusterListener.GetCluster(c.keyspace)
 	if !found {
