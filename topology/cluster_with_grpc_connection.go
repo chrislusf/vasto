@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc"
 )
 
+// WithConnection dials a connection to a server in the cluster by serverId
 func (cluster *Cluster) WithConnection(name string, serverId int, fn func(*pb.ClusterNode, *grpc.ClientConn) error) error {
 
 	node, ok := cluster.GetNode(serverId, 0)
@@ -19,9 +20,11 @@ func (cluster *Cluster) WithConnection(name string, serverId int, fn func(*pb.Cl
 	return doWithConnect(name, node, serverId, fn)
 }
 
-type PrimaryShards []*pb.ClusterNode
+// VastoNodes are the servers in a cluster
+type VastoNodes []*pb.ClusterNode
 
-func (nodes PrimaryShards) WithConnection(name string, serverId int, fn func(*pb.ClusterNode, *grpc.ClientConn) error) error {
+// WithConnection dials a connection to a server of the cluster nodes by serverId
+func (nodes VastoNodes) WithConnection(name string, serverId int, fn func(*pb.ClusterNode, *grpc.ClientConn) error) error {
 
 	if serverId < 0 || serverId >= len(nodes) {
 		return fmt.Errorf("server %d not found in %d servers: %+v", serverId, len(nodes), nodes)

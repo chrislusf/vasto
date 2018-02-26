@@ -4,6 +4,7 @@ import (
 	"github.com/chrislusf/glog"
 )
 
+// GetPartitionHash returns the partition hash of Get, Put, Delete, and Merge requests
 func (r *Request) GetPartitionHash() uint64 {
 	if r.Get != nil {
 		return r.Get.PartitionHash

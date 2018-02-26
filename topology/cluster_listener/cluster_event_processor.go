@@ -6,6 +6,7 @@ import (
 	"github.com/chrislusf/vasto/topology"
 )
 
+// ShardEventProcessor processes shard topology change events
 type ShardEventProcessor interface {
 	OnShardCreateEvent(cluster *topology.Cluster, resource *pb.StoreResource, ShardInfo *pb.ShardInfo)
 	OnShardUpdateEvent(cluster *topology.Cluster, resource *pb.StoreResource, ShardInfo *pb.ShardInfo, oldShardInfo *pb.ShardInfo)
@@ -14,6 +15,7 @@ type ShardEventProcessor interface {
 	// OnShardResizeEvent(resource *pb.StoreResource, status *pb.ShardInfo)
 }
 
+// RegisterShardEventProcessor registers a ShardEventProcessor
 func (clusterListener *ClusterListener) RegisterShardEventProcessor(shardEventProcess ShardEventProcessor) {
 
 	glog.V(2).Infof("RegisterShardEventProcessor: %+v", shardEventProcess)
@@ -31,6 +33,7 @@ func (clusterListener *ClusterListener) RegisterShardEventProcessor(shardEventPr
 	clusterListener.shardEventProcessors = append(clusterListener.shardEventProcessors, shardEventProcess)
 }
 
+// UnregisterShardEventProcessor unregisters a ShardEventProcessor
 func (clusterListener *ClusterListener) UnregisterShardEventProcessor(shardEventProcess ShardEventProcessor) {
 
 	glog.V(2).Infof("UnregisterShardEventProcessor: %+v", shardEventProcess)

@@ -27,10 +27,10 @@ func (c *commandCreateKeyspace) Help() string {
 func (c *commandCreateKeyspace) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) (err error) {
 
 	if len(args) != 5 {
-		return invalidArguments
+		return errInvalidArguments
 	}
 	if args[0] != "cluster" {
-		return invalidArguments
+		return errInvalidArguments
 	}
 
 	keyspace, dc := args[1], args[2]
@@ -38,22 +38,22 @@ func (c *commandCreateKeyspace) Do(vastoClient *vs.VastoClient, args []string, c
 	clusterSize, err := strconv.ParseUint(args[3], 10, 64)
 	if err != nil {
 		println("can not parse server count", args[3])
-		return invalidArguments
+		return errInvalidArguments
 	}
 	replicationFactor, err := strconv.ParseUint(args[4], 10, 64)
 	if err != nil {
 		println("can not parse replication factor", args[4])
-		return invalidArguments
+		return errInvalidArguments
 	}
 
 	if replicationFactor == 0 {
 		println("replication factor", replicationFactor, "should be greater than 0")
-		return invalidArguments
+		return errInvalidArguments
 	}
 
 	if replicationFactor > clusterSize {
 		println("replication factor", replicationFactor, "should not be bigger than cluster size", clusterSize)
-		return invalidArguments
+		return errInvalidArguments
 	}
 
 	cluster, err := vastoClient.CreateCluster(keyspace, dc, int(clusterSize), int(replicationFactor))

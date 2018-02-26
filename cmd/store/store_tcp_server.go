@@ -103,7 +103,7 @@ func (ss *storeServer) handleInputOutput(input []byte) (output []byte, err error
 
 func (ss *storeServer) processRequest(keyspace string, command *pb.Request) *pb.Response {
 
-	shard, found := ss.keyspaceShards.getShard(keyspace, shard_id(command.ShardId))
+	shard, found := ss.keyspaceShards.getShard(keyspace, VastoShardId(command.ShardId))
 
 	if !found {
 		if command.GetGet() != nil {

@@ -5,6 +5,7 @@ import (
 	"github.com/chrislusf/vasto/vs"
 )
 
+// ShellOption has options to run the shell
 type ShellOption struct {
 	Master     *string
 	DataCenter *string
@@ -18,6 +19,7 @@ type shell struct {
 	vastoClient *vs.VastoClient
 }
 
+// RunShell starts a shell process
 func RunShell(option *ShellOption) {
 	var b = &shell{
 		option:      option,

@@ -59,7 +59,7 @@ func (s *administer) runAdmin() {
 						err := c.Do(args, os.Stderr)
 						if err != nil {
 							fmt.Printf("%v\n", err)
-							if err == InvalidArguments {
+							if err == invalidArguments {
 								fmt.Println()
 								fmt.Printf("\t%s %s \n", c.Name(), c.Help())
 								fmt.Println()

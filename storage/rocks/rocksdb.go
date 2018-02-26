@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// Rocks has options to run a local rocksdb instance
 type Rocks struct {
 	path             string
 	db               *gorocksdb.DB
@@ -23,9 +24,10 @@ type Rocks struct {
 }
 
 var (
-	ERR_SHUTDOWN = errors.New("shutdown in progress")
+	ErrorShutdownInProgress = errors.New("shutdown in progress")
 )
 
+// NewDb creates a local rocksdb instance
 func NewDb(path string, mergeOperator gorocksdb.MergeOperator) *Rocks {
 	r := &Rocks{
 		compactionFilter: &shardingCompactionFilter{},
@@ -57,53 +59,59 @@ func (d *Rocks) setup(path string, mergeOperator gorocksdb.MergeOperator) {
 	d.ro = gorocksdb.NewDefaultReadOptions()
 }
 
+// Put puts to local rocksdb
 func (d *Rocks) Put(key []byte, msg []byte) (err error) {
 	// println("put", string(key), "value", string(msg))
 	if newClientCounter := atomic.AddInt32(&d.clientCounter, 1); newClientCounter > 0 {
 		err = d.db.Put(d.wo, key, msg)
 	} else {
-		err = ERR_SHUTDOWN
+		err = ErrorShutdownInProgress
 	}
 	atomic.AddInt32(&d.clientCounter, -1)
 	return
 }
 
+// Merge merges to local rocksdb
 func (d *Rocks) Merge(key []byte, msg []byte) (err error) {
 	// println("merge", string(key), "value", string(msg))
 	if newClientCounter := atomic.AddInt32(&d.clientCounter, 1); newClientCounter > 0 {
 		err = d.db.Merge(d.wo, key, msg)
 	} else {
-		err = ERR_SHUTDOWN
+		err = ErrorShutdownInProgress
 	}
 	atomic.AddInt32(&d.clientCounter, -1)
 	return
 }
 
+// Get gets from local rocksdb
 func (d *Rocks) Get(key []byte) (data []byte, err error) {
 	if newClientCounter := atomic.AddInt32(&d.clientCounter, 1); newClientCounter > 0 {
 		data, err = d.db.GetBytes(d.ro, key)
 	} else {
-		err = ERR_SHUTDOWN
+		err = ErrorShutdownInProgress
 	}
 	atomic.AddInt32(&d.clientCounter, -1)
 	return
 }
 
+// Delete deletes from local rocksdb
 func (d *Rocks) Delete(k []byte) (err error) {
 	// println("del", string(k))
 	if newClientCounter := atomic.AddInt32(&d.clientCounter, 1); newClientCounter > 0 {
 		err = d.db.Delete(d.wo, k)
 	} else {
-		err = ERR_SHUTDOWN
+		err = ErrorShutdownInProgress
 	}
 	atomic.AddInt32(&d.clientCounter, -1)
 	return
 }
 
+// Destroy removes all data for the local rocksdb
 func (d *Rocks) Destroy() {
 	os.RemoveAll(d.path)
 }
 
+// Close shuts down local rocksdb
 func (d *Rocks) Close() {
 	for {
 		swapped := atomic.CompareAndSwapInt32(&d.clientCounter, 0, -100)
@@ -120,13 +128,15 @@ func (d *Rocks) Close() {
 	glog.V(1).Infof("closed db %s", d.path)
 }
 
-func (d *Rocks) Size() (sum uint64) {
-	for _, lifeFileMetadata := range d.db.GetLiveFilesMetaData() {
-		sum += uint64(lifeFileMetadata.Size)
+// LiveFilesSize returns the size of live files
+func (d *Rocks) LiveFilesSize() (sum uint64) {
+	for _, liveFileMetadata := range d.db.GetLiveFilesMetaData() {
+		sum += uint64(liveFileMetadata.Size)
 	}
 	return sum
 }
 
+// GetLiveFilesMetaData returns the list of meta data of the live files
 func (d *Rocks) GetLiveFilesMetaData() []gorocksdb.LiveFileMetadata {
 	return d.db.GetLiveFilesMetaData()
 }

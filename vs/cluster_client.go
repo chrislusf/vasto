@@ -8,6 +8,7 @@ import (
 	"sync"
 )
 
+// ClusterClient is used to access the keyspace in current data center.
 type ClusterClient struct {
 	keyspace        string
 	ClusterListener *cluster_listener.ClusterListener

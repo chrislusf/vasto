@@ -23,7 +23,7 @@ func (c *ClusterClient) Delete(key *KeyObject) error {
 			return err
 		}
 		if len(responses) == 0 {
-			return NotFoundError
+			return ErrorNotFound
 		}
 		response := responses[0]
 		if !response.Write.Ok {

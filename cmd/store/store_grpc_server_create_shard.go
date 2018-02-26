@@ -78,7 +78,7 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 			}
 		}
 
-		shard, foundShard := ss.keyspaceShards.getShard(keyspace, shard_id(clusterShard.ShardId))
+		shard, foundShard := ss.keyspaceShards.getShard(keyspace, VastoShardId(clusterShard.ShardId))
 		if !foundShard {
 			glog.V(1).Infof("%s creating new shard %s", ss.storeName, shardInfo.IdentifierOnThisServer())
 			var shardCreationError error
@@ -111,23 +111,24 @@ func (ss *storeServer) createShards(keyspace string, serverId int, clusterSize, 
 
 func (ss *storeServer) startExistingNodes(keyspaceName string, storeStatus *pb.LocalShardsInCluster) error {
 	for _, shardInfo := range storeStatus.ShardMap {
-		if shard, shardOpenError := ss.openShard(shardInfo); shardOpenError != nil {
+		shard, shardOpenError := ss.openShard(shardInfo)
+		if shardOpenError != nil {
 			return fmt.Errorf("%s open %s: %v", ss.storeName, shardInfo.IdentifierOnThisServer(), shardOpenError)
-		} else {
+		}
 
-			for fileId, meta := range shard.db.GetLiveFilesMetaData() {
-				glog.V(1).Infof("%s %d name:%s, level:%d size:%d SmallestKey:%s LargestKey:%s", ss.storeName, fileId, meta.Name, meta.Level, meta.Size, string(meta.SmallestKey), string(meta.LargestKey))
-				if meta.Level >= 6 {
-					shard.hasBackfilled = true
-				}
-			}
-
-			if err := shard.startWithBootstrapPlan(&topology.BootstrapPlan{
-				ToClusterSize: int(shardInfo.ClusterSize),
-			}, ss.selfAdminAddress(), nil); err != nil {
-				return fmt.Errorf("%s bootstrap shard %v : %v", ss.storeName, shardInfo.IdentifierOnThisServer(), err)
+		for fileId, meta := range shard.db.GetLiveFilesMetaData() {
+			glog.V(1).Infof("%s %d name:%s, level:%d size:%d SmallestKey:%s LargestKey:%s", ss.storeName, fileId, meta.Name, meta.Level, meta.Size, string(meta.SmallestKey), string(meta.LargestKey))
+			if meta.Level >= 6 {
+				shard.hasBackfilled = true
 			}
 		}
+
+		if err := shard.startWithBootstrapPlan(&topology.BootstrapPlan{
+			ToClusterSize: int(shardInfo.ClusterSize),
+		}, ss.selfAdminAddress(), nil); err != nil {
+			return fmt.Errorf("%s bootstrap shard %v : %v", ss.storeName, shardInfo.IdentifierOnThisServer(), err)
+		}
+
 	}
 	return nil
 }

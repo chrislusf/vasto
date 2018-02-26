@@ -10,6 +10,7 @@ import (
 	"sort"
 )
 
+// Cluster manages one cluster topology
 type Cluster struct {
 	keyspace          string
 	dataCenter        string
@@ -19,6 +20,7 @@ type Cluster struct {
 	nextCluster       *Cluster
 }
 
+// LogicalShardGroup is a list of shards with the same shard id
 type LogicalShardGroup []*pb.ClusterNode
 
 func (shards LogicalShardGroup) String() string {
@@ -36,6 +38,8 @@ func (shards LogicalShardGroup) String() string {
 	return buf.String()
 }
 
+// SetShard sets the tuple of server and shardInfo to the cluster.
+// It returns the previous shardInfo if found.
 func (cluster *Cluster) SetShard(store *pb.StoreResource, shard *pb.ShardInfo) (oldShardInfo *pb.ShardInfo) {
 	shardId := int(shard.ShardId)
 	if len(cluster.logicalShards) < shardId+1 {
@@ -66,6 +70,8 @@ func (cluster *Cluster) SetShard(store *pb.StoreResource, shard *pb.ShardInfo) (
 	return
 }
 
+// ReplaceShard ReplaceShard the shardInfo on the server in the cluster.
+// It returns true if the operation is successful.
 func (cluster *Cluster) ReplaceShard(newStore *pb.StoreResource, shard *pb.ShardInfo) (isReplaced bool) {
 	shardId := int(shard.ShardId)
 	if len(cluster.logicalShards) < shardId+1 {
@@ -121,6 +127,8 @@ func (cluster *Cluster) RemoveShard(store *pb.StoreResource, shard *pb.ShardInfo
 	return !cluster.isStoreInUse(store) && !cluster.GetNextCluster().isStoreInUse(store)
 }
 
+// RemoveStore removes the server from the cluster.
+// It returns the shards which were on the server.
 func (cluster *Cluster) RemoveStore(store *pb.StoreResource) (removedShards []*pb.ShardInfo) {
 	for shardId, shardGroup := range cluster.logicalShards {
 		for i := 0; i < len(shardGroup); i++ {
@@ -169,19 +177,22 @@ func sortedShards(shards LogicalShardGroup, clusterSize int) LogicalShardGroup {
 	return shards
 }
 
-// calculates a Jump hash for the keyHash provided
+// FindShardId calculates a Jump hash for the keyHash provided
 func (cluster *Cluster) FindShardId(keyHash uint64) int {
 	return int(jump.Hash(keyHash, cluster.expectedSize))
 }
 
+// ExpectedSize returns the expected size of the cluster
 func (cluster *Cluster) ExpectedSize() int {
 	return cluster.expectedSize
 }
 
+// ExpectedSize returns the replication factor of the cluster
 func (cluster *Cluster) ReplicationFactor() int {
 	return cluster.replicationFactor
 }
 
+// SetExpectedSize sets the expected size of the cluster
 func (cluster *Cluster) SetExpectedSize(expectedSize int) {
 	if expectedSize > 0 {
 		cluster.expectedSize = expectedSize
@@ -194,25 +205,30 @@ func (cluster *Cluster) SetExpectedSize(expectedSize int) {
 	}
 }
 
+// SetNextCluster creates a new cluster and sets the size and replication factor
 func (cluster *Cluster) SetNextCluster(expectedSize int, replicationFactor int) *Cluster {
 	cluster.nextCluster = NewCluster(cluster.keyspace, cluster.dataCenter, expectedSize, replicationFactor)
 	return cluster.nextCluster
 }
 
+// GetNextCluster returns the next cluster
 func (cluster *Cluster) GetNextCluster() *Cluster {
 	return cluster.nextCluster
 }
 
+// RemoveNextCluster clears the pointer to the next cluster
 func (cluster *Cluster) RemoveNextCluster() {
 	cluster.nextCluster = nil
 }
 
+// SetReplicationFactor sets the replication factor of the cluster
 func (cluster *Cluster) SetReplicationFactor(replicationFactor int) {
 	if replicationFactor > 0 {
 		cluster.replicationFactor = replicationFactor
 	}
 }
 
+// CurrentSize returns the cluster current size
 func (cluster *Cluster) CurrentSize() int {
 	for i := len(cluster.logicalShards); i > 0; i-- {
 		if len(cluster.logicalShards[i-1]) == 0 {
@@ -223,6 +239,8 @@ func (cluster *Cluster) CurrentSize() int {
 	return 0
 }
 
+// GetNode returns the server having the shard.
+// replica denotes the shard replica.
 func (cluster *Cluster) GetNode(shardId int, replica int) (*pb.ClusterNode, bool) {
 	shards := cluster.getShards(shardId)
 	if replica >= len(shards) {
@@ -239,6 +257,7 @@ func (cluster *Cluster) getShards(shardId int) LogicalShardGroup {
 	return cluster.logicalShards[shardId]
 }
 
+// GetAllShards returns a list of all logic shard groups.
 func (cluster *Cluster) GetAllShards() []LogicalShardGroup {
 	return cluster.logicalShards
 }
@@ -274,6 +293,7 @@ func (cluster *Cluster) String() string {
 	return output.String()
 }
 
+// Debug prints out the detailed info of the cluster.
 func (cluster *Cluster) Debug(prefix string) {
 	for _, shardGroup := range cluster.GetAllShards() {
 		for _, shard := range shardGroup {

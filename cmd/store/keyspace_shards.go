@@ -5,27 +5,27 @@ import (
 	"sync"
 )
 
-type keyspace_name string
+type keyspaceName string
 
 type keyspaceShards struct {
-	keyspaceToShards map[keyspace_name][]*shard
+	keyspaceToShards map[keyspaceName][]*shard
 	sync.RWMutex
 }
 
 func newKeyspaceShards() *keyspaceShards {
 	return &keyspaceShards{
-		keyspaceToShards: make(map[keyspace_name][]*shard),
+		keyspaceToShards: make(map[keyspaceName][]*shard),
 	}
 }
 
-func (ks *keyspaceShards) getShards(keyspaceName string) (shards []*shard, found bool) {
+func (ks *keyspaceShards) getShards(ksName string) (shards []*shard, found bool) {
 	ks.RLock()
-	shards, found = ks.keyspaceToShards[keyspace_name(keyspaceName)]
+	shards, found = ks.keyspaceToShards[keyspaceName(ksName)]
 	ks.RUnlock()
 	return
 }
 
-func (ks *keyspaceShards) getShard(keyspaceName string, shardId shard_id) (shard *shard, found bool) {
+func (ks *keyspaceShards) getShard(keyspaceName string, shardId VastoShardId) (shard *shard, found bool) {
 	shards, hasShards := ks.getShards(keyspaceName)
 	if !hasShards {
 		return
@@ -39,10 +39,10 @@ func (ks *keyspaceShards) getShard(keyspaceName string, shardId shard_id) (shard
 	return
 }
 
-func (ks *keyspaceShards) addShards(keyspaceName string, nodes ...*shard) {
+func (ks *keyspaceShards) addShards(ksName string, nodes ...*shard) {
 	ks.Lock()
-	shards := ks.keyspaceToShards[keyspace_name(keyspaceName)]
-	if _, found := ks.keyspaceToShards[keyspace_name(keyspaceName)]; found {
+	shards := ks.keyspaceToShards[keyspaceName(ksName)]
+	if _, found := ks.keyspaceToShards[keyspaceName(ksName)]; found {
 		shards = append(shards, nodes...)
 	} else {
 		shards = nodes
@@ -59,20 +59,20 @@ func (ks *keyspaceShards) addShards(keyspaceName string, nodes ...*shard) {
 		}
 		return x < y
 	})
-	ks.keyspaceToShards[keyspace_name(keyspaceName)] = shards
+	ks.keyspaceToShards[keyspaceName(ksName)] = shards
 	ks.Unlock()
 }
 
-func (ks *keyspaceShards) deleteKeyspace(keyspaceName string) {
+func (ks *keyspaceShards) deleteKeyspace(ksName string) {
 	ks.Lock()
-	delete(ks.keyspaceToShards, keyspace_name(keyspaceName))
+	delete(ks.keyspaceToShards, keyspaceName(ksName))
 	ks.Unlock()
 }
 
 func (ks *keyspaceShards) removeShard(node *shard) {
 	ks.Lock()
 
-	shards := ks.keyspaceToShards[keyspace_name(node.keyspace)]
+	shards := ks.keyspaceToShards[keyspaceName(node.keyspace)]
 	var t []*shard
 	for _, shard := range shards {
 		if shard.id != node.id {
@@ -80,6 +80,6 @@ func (ks *keyspaceShards) removeShard(node *shard) {
 		}
 	}
 
-	ks.keyspaceToShards[keyspace_name(node.keyspace)] = t
+	ks.keyspaceToShards[keyspaceName(node.keyspace)] = t
 	ks.Unlock()
 }

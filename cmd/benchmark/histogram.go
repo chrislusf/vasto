@@ -45,7 +45,7 @@ var kBucketLimit = [kNumBuckets]float64{
 	1e200,
 }
 
-type Histogram struct {
+type histogram struct {
 	min_         float64
 	max_         float64
 	num_         float64
@@ -55,7 +55,7 @@ type Histogram struct {
 	buckets_ [kNumBuckets]float64
 }
 
-func (h *Histogram) Clear() {
+func (h *histogram) Clear() {
 	h.min_ = kBucketLimit[kNumBuckets-1]
 	h.max_ = 0
 	h.num_ = 0
@@ -66,7 +66,7 @@ func (h *Histogram) Clear() {
 	}
 }
 
-func (h *Histogram) Add(value float64) {
+func (h *histogram) Add(value float64) {
 	// Linear search is fast enough for our usage in db_bench
 	var b = 0
 	for b < kNumBuckets-1 && kBucketLimit[b] <= value {
@@ -84,7 +84,7 @@ func (h *Histogram) Add(value float64) {
 	h.sum_squares_ += (value * value)
 }
 
-func (h *Histogram) Merge(other *Histogram) {
+func (h *histogram) Merge(other *histogram) {
 	if other.min_ < h.min_ {
 		h.min_ = other.min_
 	}
@@ -99,11 +99,11 @@ func (h *Histogram) Merge(other *Histogram) {
 	}
 }
 
-func (h *Histogram) Median() float64 {
+func (h *histogram) Median() float64 {
 	return h.Percentile(50.0)
 }
 
-func (h *Histogram) Percentile(p float64) float64 {
+func (h *histogram) Percentile(p float64) float64 {
 	var threshold = h.num_ * (p / 100.0)
 	var sum float64 = 0
 	for b := 0; b < kNumBuckets; b++ {
@@ -132,14 +132,14 @@ func (h *Histogram) Percentile(p float64) float64 {
 	return h.max_
 }
 
-func (h *Histogram) Average() float64 {
+func (h *histogram) Average() float64 {
 	if h.num_ == 0.0 {
 		return 0
 	}
 	return h.sum_ / h.num_
 }
 
-func (h *Histogram) StandardDeviation() float64 {
+func (h *histogram) StandardDeviation() float64 {
 	if h.num_ == 0.0 {
 		return 0
 	}
@@ -147,7 +147,7 @@ func (h *Histogram) StandardDeviation() float64 {
 	return math.Sqrt(variance)
 }
 
-func (h *Histogram) ToString() string {
+func (h *histogram) ToString() string {
 	var s bytes.Buffer
 	s.WriteString(fmt.Sprintf("Count: %.0f  Average: %.4f  StdDev: %.2f\n",
 		h.num_, h.Average(), h.StandardDeviation()))

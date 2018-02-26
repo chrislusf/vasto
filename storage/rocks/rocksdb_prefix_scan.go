@@ -3,6 +3,7 @@ package rocks
 import (
 	"bytes"
 
+	"fmt"
 	"github.com/chrislusf/gorocksdb"
 	"sync/atomic"
 )
@@ -12,7 +13,7 @@ import (
 func (d *Rocks) PrefixScan(prefix, lastKey []byte, limit int, fn func(key, value []byte) bool) error {
 	if newClientCounter := atomic.AddInt32(&d.clientCounter, 1); newClientCounter <= 0 {
 		atomic.AddInt32(&d.clientCounter, -1)
-		return ERR_SHUTDOWN
+		return ErrorShutdownInProgress
 	}
 
 	opts := gorocksdb.NewDefaultReadOptions()
@@ -74,7 +75,7 @@ func (d *Rocks) enumerate(iter *gorocksdb.Iterator, prefix, lastKey []byte, limi
 	}
 
 	if err := iter.Err(); err != nil {
-		return err
+		return fmt.Errorf("prefix scan iterator: %v", err)
 	}
 	return nil
 }

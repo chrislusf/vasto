@@ -16,6 +16,7 @@ import (
 	"sync"
 )
 
+// StoreOption has options to run a data store
 type StoreOption struct {
 	Dir               *string
 	Host              *string
@@ -32,6 +33,7 @@ type StoreOption struct {
 	DisableUseEventIo *bool
 }
 
+// GetAdminPort returns the admin port of the store, which is the data port plus 10000
 func (o *StoreOption) GetAdminPort() int32 {
 	return *o.TcpPort + 10000
 }
@@ -42,17 +44,18 @@ type storeServer struct {
 	ShardInfoChan       chan *pb.ShardInfo
 	statusInCluster     map[string]*pb.LocalShardsInCluster // saved to disk
 	statusInClusterLock sync.RWMutex
-	periodTasks         []PeriodicTask
+	periodTasks         []periodicTask
 	keyspaceShards      *keyspaceShards
 	storeName           string
 }
 
+// RunStore starts a store process
 func RunStore(option *StoreOption) {
 
 	storeName := fmt.Sprintf("[store@%s:%d]", *option.ListenHost, *option.TcpPort)
 
 	ctx := context.Background()
-	clusterListener := cluster_listener.NewClusterClient(*option.DataCenter, storeName)
+	clusterListener := cluster_listener.NewClusterListener(*option.DataCenter, storeName)
 
 	var ss = &storeServer{
 		option:          option,

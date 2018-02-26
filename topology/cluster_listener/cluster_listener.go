@@ -12,16 +12,18 @@ import (
 	"sync"
 )
 
-type keyspace_name string
+type keyspaceName string
 
-type keyspace_follow_message struct {
-	keyspace   keyspace_name
+type keyspaceFollowMessage struct {
+	keyspace   keyspaceName
 	isUnfollow bool
 }
+
+// ClusterListener listens to cluster topology changes, and maintains a connection pool to the servers.
 type ClusterListener struct {
 	sync.RWMutex
-	clusters                  map[keyspace_name]*topology.Cluster
-	keyspaceFollowMessageChan chan keyspace_follow_message
+	clusters                  map[keyspaceName]*topology.Cluster
+	keyspaceFollowMessageChan chan keyspaceFollowMessage
 	dataCenter                string
 	shardEventProcessors      []ShardEventProcessor
 	verbose                   bool
@@ -31,51 +33,59 @@ type ClusterListener struct {
 	disableUnixSocket         bool
 }
 
-func NewClusterClient(dataCenter string, clientName string) *ClusterListener {
+// NewClusterListener creates a cluster listener in a data center.
+// clientName is only for display purpose.
+func NewClusterListener(dataCenter string, clientName string) *ClusterListener {
 	return &ClusterListener{
-		clusters:                  make(map[keyspace_name]*topology.Cluster),
-		keyspaceFollowMessageChan: make(chan keyspace_follow_message, 1),
+		clusters:                  make(map[keyspaceName]*topology.Cluster),
+		keyspaceFollowMessageChan: make(chan keyspaceFollowMessage, 1),
 		dataCenter:                dataCenter,
 		clientName:                clientName,
 		connPools:                 make(map[string]pool.Pool),
 	}
 }
 
+// AddExistingKeyspace registers one keyspace to listen for changes.
+// This is used by store server. The keyspace should already exists in local store.
 func (clusterListener *ClusterListener) AddExistingKeyspace(keyspace string, clusterSize int, replicationFactor int) {
 	clusterListener.Lock()
-	clusterListener.clusters[keyspace_name(keyspace)] = topology.NewCluster(keyspace, clusterListener.dataCenter, clusterSize, replicationFactor)
+	clusterListener.clusters[keyspaceName(keyspace)] = topology.NewCluster(keyspace, clusterListener.dataCenter, clusterSize, replicationFactor)
 	clusterListener.Unlock()
 }
 
-// AddNewKeyspace register to listen to one keyspace
+// AddNewKeyspace registers one keyspace to listen for changes. Mostly used by client APIs.
+// The keyspace should be new in local store.
 func (clusterListener *ClusterListener) AddNewKeyspace(keyspace string, clusterSize int, replicationFactor int) *topology.Cluster {
 	t := clusterListener.GetOrSetCluster(keyspace, clusterSize, replicationFactor)
-	clusterListener.keyspaceFollowMessageChan <- keyspace_follow_message{keyspace: keyspace_name(keyspace)}
+	clusterListener.keyspaceFollowMessageChan <- keyspaceFollowMessage{keyspace: keyspaceName(keyspace)}
 	return t
 }
 
+// RemoveKeyspace stops following changes of a keyspace.
 func (clusterListener *ClusterListener) RemoveKeyspace(keyspace string) {
 	clusterListener.Lock()
-	if _, found := clusterListener.clusters[keyspace_name(keyspace)]; found {
-		delete(clusterListener.clusters, keyspace_name(keyspace))
-		clusterListener.keyspaceFollowMessageChan <- keyspace_follow_message{keyspace: keyspace_name(keyspace), isUnfollow: true}
+	if _, found := clusterListener.clusters[keyspaceName(keyspace)]; found {
+		delete(clusterListener.clusters, keyspaceName(keyspace))
+		clusterListener.keyspaceFollowMessageChan <- keyspaceFollowMessage{keyspace: keyspaceName(keyspace), isUnfollow: true}
 	}
 	clusterListener.Unlock()
 }
 
+// GetCluster gets the cluster of the keyspace in local data center
 func (clusterListener *ClusterListener) GetCluster(keyspace string) (r *topology.Cluster, found bool) {
 	clusterListener.RLock()
-	r, found = clusterListener.clusters[keyspace_name(keyspace)]
+	r, found = clusterListener.clusters[keyspaceName(keyspace)]
 	clusterListener.RUnlock()
 	return
 }
 
+// GetCluster gets or creates the cluster of the keyspace in local data center.
 func (clusterListener *ClusterListener) GetOrSetCluster(keyspace string, clusterSize int, replicationFactor int) *topology.Cluster {
 	clusterListener.Lock()
-	t, ok := clusterListener.clusters[keyspace_name(keyspace)]
+	t, ok := clusterListener.clusters[keyspaceName(keyspace)]
 	if !ok {
 		t = topology.NewCluster(keyspace, clusterListener.dataCenter, clusterSize, replicationFactor)
-		clusterListener.clusters[keyspace_name(keyspace)] = t
+		clusterListener.clusters[keyspaceName(keyspace)] = t
 	}
 	if clusterSize > 0 {
 		t.SetExpectedSize(clusterSize)
@@ -104,7 +114,7 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 					glog.V(4).Infof("%s listener get cluster: %v", clusterListener.clientName, msg.GetCluster())
 					cluster := clusterListener.GetOrSetCluster(msg.Cluster.Keyspace, int(msg.Cluster.ExpectedClusterSize), int(msg.Cluster.ReplicationFactor))
 					for _, node := range msg.Cluster.Nodes {
-						AddNode(cluster, node)
+						addNode(cluster, node)
 						for _, shardEventProcess := range clusterListener.shardEventProcessors {
 							shardEventProcess.OnShardCreateEvent(cluster, node.StoreResource, node.ShardInfo)
 						}
@@ -118,19 +128,19 @@ func (clusterListener *ClusterListener) StartListener(ctx context.Context, maste
 					}
 					for _, node := range msg.Updates.Nodes {
 						if msg.Updates.GetIsPromotion() {
-							PromoteNode(cluster, node)
+							promoteNode(cluster, node)
 							for _, shardEventProcess := range clusterListener.shardEventProcessors {
 								shardEventProcess.OnShardPromoteEvent(cluster, node.StoreResource, node.ShardInfo)
 							}
 						} else if msg.Updates.GetIsDelete() {
-							clusterListener.RemoveNode(msg.Updates.Keyspace, node)
+							clusterListener.removeNode(msg.Updates.Keyspace, node)
 							for _, shardEventProcess := range clusterListener.shardEventProcessors {
 								if shardEventProcess != nil {
 									shardEventProcess.OnShardRemoveEvent(cluster, node.StoreResource, node.ShardInfo)
 								}
 							}
 						} else {
-							oldShardInfo := AddNode(cluster, node)
+							oldShardInfo := addNode(cluster, node)
 							for _, shardEventProcess := range clusterListener.shardEventProcessors {
 								if oldShardInfo == nil {
 									shardEventProcess.OnShardCreateEvent(cluster, node.StoreResource, node.ShardInfo)
@@ -171,6 +181,7 @@ func (clusterListener *ClusterListener) SetUnixSocket(useUnixSocket bool) {
 	clusterListener.disableUnixSocket = !useUnixSocket
 }
 
+// HasConnectedKeyspace checks whether the listener has the infomation of the keyspace or not.
 func (clusterListener *ClusterListener) HasConnectedKeyspace(keyspace string) bool {
 	cluster, found := clusterListener.GetCluster(keyspace)
 	if !found {

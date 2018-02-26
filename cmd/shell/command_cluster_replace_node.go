@@ -25,13 +25,13 @@ func (c *commandClusterReplaceNode) Help() string {
 func (c *commandClusterReplaceNode) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) (err error) {
 
 	if len(args) != 4 {
-		return invalidArguments
+		return errInvalidArguments
 	}
 	keyspace := args[0]
 	dc := args[1]
 	nodeId, err := strconv.ParseUint(args[2], 10, 32)
 	if err != nil {
-		return invalidArguments
+		return errInvalidArguments
 	}
 	newAddress := args[3]
 

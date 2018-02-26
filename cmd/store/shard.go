@@ -15,13 +15,13 @@ import (
 	"time"
 )
 
-type shard_id int
-type server_id int
+type VastoShardId int
+type VastoServerId int
 
 type shard struct {
 	keyspace            string
-	id                  shard_id
-	serverId            server_id
+	id                  VastoShardId
+	serverId            VastoServerId
 	db                  *rocks.Rocks
 	lm                  *binlog.LogManager
 	cluster             *topology.Cluster
@@ -54,8 +54,8 @@ func newShard(keyspaceName, dir string, serverId, nodeId int, cluster *topology.
 
 	s := &shard{
 		keyspace:        keyspaceName,
-		id:              shard_id(nodeId),
-		serverId:        server_id(serverId),
+		id:              VastoShardId(nodeId),
+		serverId:        VastoServerId(serverId),
 		db:              rocks.NewDb(dir, mergeOperator),
 		cluster:         cluster,
 		clusterListener: clusterListener,
@@ -127,7 +127,7 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 	for _, shard := range bootstrapOption.TransitionalFollowSource {
 		go func(shard topology.ClusterShard, existingPrimaryShards []*pb.ClusterNode) {
 			glog.V(2).Infof("%s one-time follow2 %+v, existing servers: %v", s.String(), shard, existingPrimaryShards)
-			err := topology.PrimaryShards(existingPrimaryShards).WithConnection(
+			err := topology.VastoNodes(existingPrimaryShards).WithConnection(
 				fmt.Sprintf("%s one-time follow %d.%d", s.String(), shard.ServerId, shard.ShardId),
 				shard.ServerId,
 				func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {

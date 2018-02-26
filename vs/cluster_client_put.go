@@ -46,7 +46,7 @@ func (c *ClusterClient) Append(key *KeyObject, value []byte) error {
 			return err
 		}
 		if len(responses) == 0 {
-			return NotFoundError
+			return ErrorNotFound
 		}
 		response := responses[0]
 		if !response.Write.Ok {

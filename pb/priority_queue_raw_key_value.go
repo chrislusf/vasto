@@ -37,6 +37,8 @@ func (pq *pqRawKeyValue) Pop() interface{} {
 	return rawItem
 }
 
+// MergeSorted merges multiple channels of sorted RawKeyValue values into a bigger sorted list
+// and processed by the fn function.
 func MergeSorted(chans []chan *RawKeyValue, fn func(*RawKeyValue) error) error {
 
 	pq := make(pqRawKeyValue, 0, len(chans))

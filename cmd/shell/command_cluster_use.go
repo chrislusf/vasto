@@ -23,7 +23,7 @@ func (c *commandClusterUse) Help() string {
 func (c *commandClusterUse) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) (err error) {
 
 	if len(args) != 2 {
-		return invalidArguments
+		return errInvalidArguments
 	}
 
 	commandEnv.keyspace = args[1]

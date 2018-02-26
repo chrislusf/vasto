@@ -5,7 +5,7 @@ import (
 	"github.com/chrislusf/vasto/storage/codec"
 )
 
-// NewNativeMergeOperator creates a MergeOperator object.
+// NewVastoMergeOperator creates a MergeOperator object for rocksdb.
 func NewVastoMergeOperator() gorocksdb.MergeOperator {
 	return vastorMergeOperator{}
 }

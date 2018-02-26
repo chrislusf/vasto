@@ -84,7 +84,7 @@ func (s *shell) runShell() {
 						}
 						if err := c.Do(s.vastoClient, args, commandEnv, os.Stderr); err != nil {
 							fmt.Fprintf(os.Stderr, "error: %v\n", err)
-							if err == invalidArguments {
+							if err == errInvalidArguments {
 								fmt.Println()
 								fmt.Printf("\t%s %s \n", c.Name(), c.Help())
 								fmt.Println()

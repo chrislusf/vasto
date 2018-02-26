@@ -5,7 +5,7 @@ import (
 	"github.com/chrislusf/vasto/topology"
 )
 
-func AddNode(cluster *topology.Cluster, n *pb.ClusterNode) (oldShardInfo *pb.ShardInfo) {
+func addNode(cluster *topology.Cluster, n *pb.ClusterNode) (oldShardInfo *pb.ShardInfo) {
 
 	if n.ShardInfo.IsCandidate {
 		if cluster.GetNextCluster() == nil {
@@ -17,7 +17,7 @@ func AddNode(cluster *topology.Cluster, n *pb.ClusterNode) (oldShardInfo *pb.Sha
 	return cluster.SetShard(n.StoreResource, n.ShardInfo)
 }
 
-func (clusterListener *ClusterListener) RemoveNode(keyspace string, n *pb.ClusterNode) {
+func (clusterListener *ClusterListener) removeNode(keyspace string, n *pb.ClusterNode) {
 	cluster, found := clusterListener.GetCluster(keyspace)
 	if !found {
 		return
@@ -41,7 +41,7 @@ func (clusterListener *ClusterListener) RemoveNode(keyspace string, n *pb.Cluste
 	}
 }
 
-func PromoteNode(cluster *topology.Cluster, n *pb.ClusterNode) {
+func promoteNode(cluster *topology.Cluster, n *pb.ClusterNode) {
 
 	candidateCluster := cluster.GetNextCluster()
 

@@ -9,7 +9,7 @@ import (
 )
 
 type progressKey struct {
-	shardId            shard_id
+	shardId            VastoShardId
 	serverAdminAddress string
 }
 
@@ -23,12 +23,13 @@ type followProcess struct {
 }
 
 var (
-	INTERNAL_PREFIX = []byte("_vasto.")
+	// VastoInternalKeyPrefix is a reserved key prefix for Vasto internal meta data
+	VastoInternalKeyPrefix = []byte("_vasto.")
 )
 
-func genSegmentOffsetKeys(serverAdminAddress string, shardId shard_id) (segmentKey []byte, offsetKey []byte) {
-	segmentKey = []byte(fmt.Sprintf("_vasto.next.segment.%s.%d", serverAdminAddress, shardId))
-	offsetKey = []byte(fmt.Sprintf("_vasto.next.offset.%s.%d", serverAdminAddress, shardId))
+func genSegmentOffsetKeys(serverAdminAddress string, shardId VastoShardId) (segmentKey []byte, offsetKey []byte) {
+	segmentKey = []byte(fmt.Sprintf("%snext.segment.%s.%d", VastoInternalKeyPrefix, serverAdminAddress, shardId))
+	offsetKey = []byte(fmt.Sprintf("%snext.offset.%s.%d", VastoInternalKeyPrefix, serverAdminAddress, shardId))
 	return
 }
 
@@ -46,7 +47,7 @@ func (s *shard) EverySecond() {
 	s.followProcessesLock.Unlock()
 }
 
-func (s *shard) loadProgress(serverAdminAddress string, targetShardId shard_id) (segment uint32, offset uint64, hasProgress bool, err error) {
+func (s *shard) loadProgress(serverAdminAddress string, targetShardId VastoShardId) (segment uint32, offset uint64, hasProgress bool, err error) {
 
 	segmentKey, offsetKey := genSegmentOffsetKeys(serverAdminAddress, targetShardId)
 
@@ -66,7 +67,7 @@ func (s *shard) loadProgress(serverAdminAddress string, targetShardId shard_id) 
 	return nextSegment, nextOffset, hasProgress, err
 }
 
-func (s *shard) saveProgress(serverAdminAddress string, targetShardId shard_id, segment uint32, offset uint64) (err error) {
+func (s *shard) saveProgress(serverAdminAddress string, targetShardId VastoShardId, segment uint32, offset uint64) (err error) {
 
 	glog.V(1).Infof("shard %s follow server %v shard %d next segment %d offset %d", s, serverAdminAddress, targetShardId, segment, offset)
 
@@ -84,7 +85,7 @@ func (s *shard) saveProgress(serverAdminAddress string, targetShardId shard_id, 
 	return nil
 }
 
-func (s *shard) clearProgress(serverAdminAddress string, targetShardId shard_id) {
+func (s *shard) clearProgress(serverAdminAddress string, targetShardId VastoShardId) {
 
 	glog.V(1).Infof("shard %s stops following server %v.%d", s, serverAdminAddress, targetShardId)
 
@@ -108,13 +109,13 @@ func (s *shard) startFollowProcess(peer topology.ClusterShard, cancelFunc contex
 	s.followProcessesLock.Unlock()
 }
 
-func (s *shard) insertInMemoryFollowProgress(serverAdminAddress string, targetShardId shard_id, segment uint32, offset uint64) {
+func (s *shard) insertInMemoryFollowProgress(serverAdminAddress string, targetShardId VastoShardId, segment uint32, offset uint64) {
 	s.followProgressLock.Lock()
 	s.followProgress[progressKey{targetShardId, serverAdminAddress}] = progressValue{segment, offset}
 	s.followProgressLock.Unlock()
 }
 
-func (s *shard) updateInMemoryFollowProgressIfPresent(serverAdminAddress string, targetShardId shard_id, segment uint32, offset uint64) (found bool) {
+func (s *shard) updateInMemoryFollowProgressIfPresent(serverAdminAddress string, targetShardId VastoShardId, segment uint32, offset uint64) (found bool) {
 	s.followProgressLock.Lock()
 	_, found = s.followProgress[progressKey{targetShardId, serverAdminAddress}]
 	if found {
@@ -124,7 +125,7 @@ func (s *shard) updateInMemoryFollowProgressIfPresent(serverAdminAddress string,
 	return found
 }
 
-func (s *shard) deleteInMemoryFollowProgress(serverAdminAddress string, targetShardId shard_id) {
+func (s *shard) deleteInMemoryFollowProgress(serverAdminAddress string, targetShardId VastoShardId) {
 	s.followProgressLock.Lock()
 	delete(s.followProgress, progressKey{targetShardId, serverAdminAddress})
 	s.followProgressLock.Unlock()

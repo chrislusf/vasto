@@ -29,6 +29,7 @@ func (d *Rocks) addSst(name string, next func() (bool, []byte, []byte)) error {
 
 }
 
+// AddSstByWriter add SST by ingesting behind
 func (d *Rocks) AddSstByWriter(name string, writerFunc func(*gorocksdb.SSTFileWriter) (int, error)) error {
 	envOpts := gorocksdb.NewDefaultEnvOptions()
 	defer envOpts.Destroy()

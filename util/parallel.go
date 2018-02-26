@@ -4,6 +4,7 @@ import (
 	"sync"
 )
 
+// Parallel executes multiple actions concurrently. If error happens, one of the errors is returned.
 func Parallel(actions ...func() error) error {
 	var wg sync.WaitGroup
 

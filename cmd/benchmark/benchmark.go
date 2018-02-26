@@ -57,7 +57,7 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 				return fmt.Sprintf("%.2f ops/sec", float64(b.Current())/b.TimeElapsed().Seconds())
 			})
 
-			b.startThreadsWithClient(ctx, *option.Tests, func(hist *Histogram, c *vs.ClusterClient, start, stop, batchSize int) {
+			b.startThreadsWithClient(ctx, *option.Tests, func(hist *histogram, c *vs.ClusterClient, start, stop, batchSize int) {
 				b.execute(hist, c, start, stop, batchSize, func(c *vs.ClusterClient, i int) error {
 
 					var rows []*vs.KeyValue
@@ -90,7 +90,7 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 				return fmt.Sprintf("%.2f ops/sec", float64(b.Current())/b.TimeElapsed().Seconds())
 			})
 
-			b.startThreadsWithClient(ctx, *option.Tests, func(hist *Histogram, c *vs.ClusterClient, start, stop, batchSize int) {
+			b.startThreadsWithClient(ctx, *option.Tests, func(hist *histogram, c *vs.ClusterClient, start, stop, batchSize int) {
 				b.execute(hist, c, start, stop, batchSize, func(c *vs.ClusterClient, i int) error {
 
 					if batchSize == 1 {
@@ -153,11 +153,11 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 
 }
 
-func (b *benchmarker) startThreadsWithClient(ctx context.Context, name string, fn func(hist *Histogram, c *vs.ClusterClient, start, stop, batchSize int)) {
+func (b *benchmarker) startThreadsWithClient(ctx context.Context, name string, fn func(hist *histogram, c *vs.ClusterClient, start, stop, batchSize int)) {
 
 	requestCountEachClient := int(*b.option.RequestCount / *b.option.ClientCount)
 
-	b.startThreads(name, requestCountEachClient, int(*b.option.RequestCountStart), func(hist *Histogram, start, stop, batchSize int) {
+	b.startThreads(name, requestCountEachClient, int(*b.option.RequestCountStart), func(hist *histogram, start, stop, batchSize int) {
 		vc := vs.NewVastoClient(ctx, "benchmarker", *b.option.Master, *b.option.DataCenter)
 		if *b.option.DisableUnixSocket {
 			vc.ClusterListener.SetUnixSocket(false)
@@ -167,7 +167,7 @@ func (b *benchmarker) startThreadsWithClient(ctx context.Context, name string, f
 
 }
 
-func (b *benchmarker) execute(hist *Histogram, c *vs.ClusterClient, start, stop, batchSize int, fn func(c *vs.ClusterClient, i int) error) error {
+func (b *benchmarker) execute(hist *histogram, c *vs.ClusterClient, start, stop, batchSize int, fn func(c *vs.ClusterClient, i int) error) error {
 
 	for i := start; i < stop; i += batchSize {
 		start := time.Now()
@@ -183,11 +183,11 @@ func (b *benchmarker) execute(hist *Histogram, c *vs.ClusterClient, start, stop,
 	return nil
 }
 
-func (b *benchmarker) startThreads(name string, requestCountEachClient int, requestNumberStart int, fn func(hist *Histogram, start, stop, batchSize int)) {
+func (b *benchmarker) startThreads(name string, requestCountEachClient int, requestNumberStart int, fn func(hist *histogram, start, stop, batchSize int)) {
 	start := time.Now()
 	clientCount := int(*b.option.ClientCount)
 
-	hists := make([]Histogram, clientCount)
+	hists := make([]histogram, clientCount)
 	var wg sync.WaitGroup
 	for i := 0; i < clientCount; i++ {
 		wg.Add(1)

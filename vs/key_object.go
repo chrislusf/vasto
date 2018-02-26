@@ -27,7 +27,7 @@ func (k *KeyObject) SetPartitionKey(partitionKey []byte) *KeyObject {
 	return k
 }
 
-// SetPartitionKey sets the partition hash to route the key to the right partition.
+// SetPartitionHash sets the partition hash to route the key to the right partition.
 func (k *KeyObject) SetPartitionHash(partitionHash uint64) *KeyObject {
 	k.partitionHash = partitionHash
 	return k

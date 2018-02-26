@@ -63,14 +63,14 @@ func Uint16toBytes(v uint16) (b []byte) {
 	return b
 }
 
-// float64 converts from little endian 8 bytes
+// BytesToFloat64 converts from little endian 8 bytes to a float64
 func BytesToFloat64(bytes []byte) float64 {
 	bits := binary.LittleEndian.Uint64(bytes)
 	float := math.Float64frombits(bits)
 	return float
 }
 
-// float64 converts to little endian 8 bytes
+// Float64ToBytes converts from a float64 to little endian 8 bytes
 func Float64ToBytes(float float64) []byte {
 	bits := math.Float64bits(float)
 	bytes := make([]byte, 8)

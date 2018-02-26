@@ -36,12 +36,14 @@ func (cc *clientChannels) removeClient(keyspace keyspaceName, dataCenter datacen
 	key := fmt.Sprintf("%s:%s:%s", keyspace, dataCenter, server)
 	cc.Lock()
 	defer cc.Unlock()
-	if ch, ok := cc.clientChans[key]; !ok {
+
+	ch, ok := cc.clientChans[key]
+	if !ok {
 		return fmt.Errorf("client key is not in use: %s", key)
-	} else {
-		delete(cc.clientChans, key)
-		close(ch)
 	}
+
+	delete(cc.clientChans, key)
+	close(ch)
 	return nil
 }
 

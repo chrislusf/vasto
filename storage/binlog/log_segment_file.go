@@ -150,16 +150,20 @@ func (f *logSegmentFile) open() error {
 		f.file.Close()
 		f.file = nil
 	}
-	if file, err := os.OpenFile(f.fullName, os.O_RDWR|os.O_CREATE, 0644); err != nil {
+
+	file, err := os.OpenFile(f.fullName, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
 		return fmt.Errorf("open file %s: %v", f.fullName, err)
-	} else {
-		f.file = file
-		if stat, err := f.file.Stat(); err != nil {
-			return fmt.Errorf("stat file %s: %v", f.fullName, err)
-		} else {
-			f.offset = stat.Size()
-		}
 	}
+
+	f.file = file
+	stat, err := f.file.Stat()
+	if err != nil {
+		return fmt.Errorf("stat file %s: %v", f.fullName, err)
+	}
+
+	f.offset = stat.Size()
+
 	glog.V(2).Infof("open log segment file %s to append", f.fullName)
 	return nil
 }

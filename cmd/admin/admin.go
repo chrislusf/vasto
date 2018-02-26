@@ -6,6 +6,7 @@ import (
 	"google.golang.org/grpc"
 )
 
+// AdminOption has options to run admin shell
 type AdminOption struct {
 	Master *string
 }
@@ -15,6 +16,7 @@ type administer struct {
 	masterClient pb.VastoMasterClient
 }
 
+// RunAdmin starts the admin shell process
 func RunAdmin(option *AdminOption) {
 
 	conn, err := grpc.Dial(*option.Master, grpc.WithInsecure())

@@ -78,7 +78,7 @@ func TestPut10Million(t *testing.T) {
 	db.Delete([]byte(fmt.Sprintf("k%d", 23445)))
 
 	fmt.Printf("%d messages inserted in: %v\n", limit, time.Now().Sub(now))
-	fmt.Printf("db size: %v\n", db.Size())
+	fmt.Printf("db size: %v\n", db.LiveFilesSize())
 	for i, meta := range db.GetLiveFilesMetaData() {
 		fmt.Printf("%d. file %s size:%d level: %v, [%v,%v]\n", i, meta.Name, meta.Size, meta.Level, meta.SmallestKey, meta.LargestKey)
 	}

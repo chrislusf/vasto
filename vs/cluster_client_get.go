@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	NotFoundError        = errors.New("not found")
-	WrongDataFormatError = errors.New("wrong data format")
+	ErrorNotFound        = errors.New("not found")         // ErrorNotFound error when no matching records are found
+	ErrorWrongDataFormat = errors.New("wrong data format") // ErrorWrongDataFormat error when data type is unexpected
 )
 
 // Get gets the value bytes by the key
@@ -28,7 +28,7 @@ func (c *ClusterClient) Get(key *KeyObject) ([]byte, pb.OpAndDataType, error) {
 			return err
 		}
 		if len(responses) == 0 {
-			return NotFoundError
+			return ErrorNotFound
 		}
 		response = responses[0]
 		return nil
@@ -44,7 +44,7 @@ func (c *ClusterClient) Get(key *KeyObject) ([]byte, pb.OpAndDataType, error) {
 
 	kv := response.Get.KeyValue
 	if kv == nil {
-		return nil, pb.OpAndDataType_BYTES, NotFoundError
+		return nil, pb.OpAndDataType_BYTES, ErrorNotFound
 	}
 
 	return kv.Value, kv.DataType, nil

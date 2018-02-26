@@ -25,12 +25,12 @@ func (c *commandResizeCluster) Help() string {
 func (c *commandResizeCluster) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) (err error) {
 
 	if len(args) != 3 {
-		return invalidArguments
+		return errInvalidArguments
 	}
 	keyspace, dc := args[0], args[1]
 	newClusterSize, err := strconv.ParseUint(args[2], 10, 32)
 	if err != nil {
-		return invalidArguments
+		return errInvalidArguments
 	}
 
 	return vastoClient.ResizeCluster(keyspace, dc, int(newClusterSize))

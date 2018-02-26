@@ -12,7 +12,7 @@ type KeyValue struct {
 	value     []byte
 }
 
-// NewKeyValue creates KeyValue with a bytes value
+// NewKeyValue creates a KeyValue with a bytes value
 func NewKeyValue(key, value []byte) *KeyValue {
 	r := &KeyValue{
 		KeyObject: Key(key),
@@ -22,7 +22,7 @@ func NewKeyValue(key, value []byte) *KeyValue {
 	return r
 }
 
-// NewKeyValue creates KeyValue with a float64 value
+// NewKeyFloat64Value creates a KeyValue with a float64 value
 func NewKeyFloat64Value(key []byte, value float64) *KeyValue {
 	r := &KeyValue{
 		KeyObject: Key(key),

@@ -23,7 +23,7 @@ func (c *commandDelete) Help() string {
 
 func (c *commandDelete) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) error {
 	if commandEnv.clusterClient == nil {
-		return noKeyspaceSelected
+		return errNoKeyspaceSelected
 	}
 
 	key := vs.Key([]byte(args[0]))

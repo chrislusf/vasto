@@ -40,7 +40,7 @@ func TestPrimaryShardsWithConnection(t *testing.T) {
 		},
 	}
 
-	err := PrimaryShards(nodes).WithConnection("test shards with conn", 0, func(node *pb.ClusterNode, conn *grpc.ClientConn) error {
+	err := VastoNodes(nodes).WithConnection("test shards with conn", 0, func(node *pb.ClusterNode, conn *grpc.ClientConn) error {
 
 		assert.Equal(t, node.StoreResource.AdminAddress, "localhost:7007", "shards with connection to server 0")
 
@@ -49,14 +49,14 @@ func TestPrimaryShardsWithConnection(t *testing.T) {
 	assert.Equal(t, err, nil, "shards with connection")
 
 	// out of range
-	err = PrimaryShards(nodes).WithConnection("test shards with conn", 4, func(node *pb.ClusterNode, conn *grpc.ClientConn) error {
+	err = VastoNodes(nodes).WithConnection("test shards with conn", 4, func(node *pb.ClusterNode, conn *grpc.ClientConn) error {
 
 		return nil
 	})
 	assert.Equal(t, err != nil, true, "shards with out of range shards")
 
 	// nil node
-	err = PrimaryShards(nodes).WithConnection("test shards with conn", 1, func(node *pb.ClusterNode, conn *grpc.ClientConn) error {
+	err = VastoNodes(nodes).WithConnection("test shards with conn", 1, func(node *pb.ClusterNode, conn *grpc.ClientConn) error {
 		return nil
 	})
 	assert.Equal(t, err != nil, true, "shards with nil node")

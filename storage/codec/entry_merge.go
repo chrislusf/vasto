@@ -5,6 +5,7 @@ import (
 	"github.com/chrislusf/vasto/util"
 )
 
+// Merge merges two []byte into one []byte based on the Entry format.
 func Merge(a, b []byte) (mergedBytes []byte, merged bool) {
 
 	x, merged := MergeEntry(a, b)
@@ -12,6 +13,7 @@ func Merge(a, b []byte) (mergedBytes []byte, merged bool) {
 
 }
 
+// MergeEntry merges two []byte into one Entry object.
 func MergeEntry(a, b []byte) (mergedEntry *Entry, merged bool) {
 	if a == nil {
 		return FromBytes(b), true
@@ -25,6 +27,7 @@ func MergeEntry(a, b []byte) (mergedEntry *Entry, merged bool) {
 
 }
 
+// MergeWith merges one Entry object with a matching []byte.
 func (e *Entry) MergeWith(b []byte) (merged bool) {
 	if b == nil {
 		return true

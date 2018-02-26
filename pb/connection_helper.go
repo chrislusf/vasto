@@ -8,6 +8,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+// SendRequests sends requests by the connection
 func SendRequests(conn io.ReadWriter, requests *Requests) (*Responses, error) {
 
 	var input, output []byte

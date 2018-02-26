@@ -12,6 +12,7 @@ import (
 	"sync"
 )
 
+// LogManager manages the local binlogs
 type LogManager struct {
 	dir               string
 	logFileMaxSize    int64
@@ -29,14 +30,13 @@ type LogManager struct {
 }
 
 const (
-	LogFilePrefix = "binlog-"
-	LogFileSuffix = ".dat"
+	constLogFilePrefix = "binlog-"
+	constLogFileSuffix = ".dat"
 )
 
-/*
- * Each log file's max size should be less than 2**48 = 32TB.
- * There could be logFileCountLimit + 1 log files, with the latest one for writing.
- */
+// NewLogManager creates a new LogManager.
+// logFileMaxSize is in bytes. Each log file's max size should be less than 2**48 = 32TB.
+// There would be logFileCountLimit + 1 log files, with the latest one for writing.
 func NewLogManager(dir string, id int, logFileMaxSize int64, logFileCountLimit int) *LogManager {
 	m := &LogManager{
 		dir:               dir,
@@ -48,6 +48,7 @@ func NewLogManager(dir string, id int, logFileMaxSize int64, logFileCountLimit i
 	return m
 }
 
+// Initialze locates existing logs from disk, and creates files to write if needed.
 func (m *LogManager) Initialze() error {
 
 	if err := m.loadFilesFromDisk(); err != nil {
@@ -59,6 +60,7 @@ func (m *LogManager) Initialze() error {
 	return nil
 }
 
+// Shutdown stops current LogManager
 func (m *LogManager) Shutdown() {
 
 	m.followerCond.L.Lock()
@@ -73,6 +75,7 @@ func (m *LogManager) Shutdown() {
 	m.filesLock.RUnlock()
 }
 
+// AppendEntry appends one log to the binlog file
 func (m *LogManager) AppendEntry(entry *pb.LogEntry) error {
 	if m.lastLogFile.offset >= m.logFileMaxSize {
 		m.lastLogFile.close()
@@ -90,6 +93,7 @@ func (m *LogManager) AppendEntry(entry *pb.LogEntry) error {
 
 }
 
+// ReadEntries reads a few entries from the binlog files, specified by the tuple of segment and offset.
 func (m *LogManager) ReadEntries(segment uint32, offset int64,
 	limit int) (entries []*pb.LogEntry, nextOffset int64, err error) {
 
@@ -141,6 +145,7 @@ func (m *LogManager) maybePrepareCurrentFileForWrite() (err error) {
 	return m.lastLogFile.open()
 }
 
+// HasSegment checks whether the segment exists or not.
 func (m *LogManager) HasSegment(segment uint32) bool {
 	m.filesLock.Lock()
 
@@ -151,6 +156,7 @@ func (m *LogManager) HasSegment(segment uint32) bool {
 	return ok
 }
 
+// GetSegmentRange returns the inclusive range of start and stop of the segments.
 func (m *LogManager) GetSegmentRange() (earlistSegment, latestSegment uint32) {
 	m.filesLock.Lock()
 	defer m.filesLock.Unlock()
@@ -174,7 +180,7 @@ func (m *LogManager) GetSegmentRange() (earlistSegment, latestSegment uint32) {
 }
 
 func (m *LogManager) getFileName(segment uint32) string {
-	return path.Join(m.dir, fmt.Sprintf(LogFilePrefix+"%d"+LogFileSuffix, segment))
+	return path.Join(m.dir, fmt.Sprintf(constLogFilePrefix+"%d"+constLogFileSuffix, segment))
 }
 
 /*
@@ -191,8 +197,8 @@ func (m *LogManager) loadFilesFromDisk() error {
 	maxSegmentNumber := uint32(0)
 	for _, f := range files {
 		name := f.Name()
-		if strings.HasPrefix(name, LogFilePrefix) && strings.HasSuffix(name, LogFileSuffix) {
-			segment := strings.TrimSuffix(strings.TrimPrefix(name, LogFilePrefix), LogFileSuffix)
+		if strings.HasPrefix(name, constLogFilePrefix) && strings.HasSuffix(name, constLogFileSuffix) {
+			segment := strings.TrimSuffix(strings.TrimPrefix(name, constLogFilePrefix), constLogFileSuffix)
 			segmentNumber32, err := strconv.ParseUint(segment, 10, 32)
 			segmentNumber := uint32(segmentNumber32)
 			if err != nil {
@@ -219,6 +225,7 @@ func (m *LogManager) loadFilesFromDisk() error {
 	return nil
 }
 
+// GetSegmentOffset returns the latest segment and offset.
 func (m *LogManager) GetSegmentOffset() (uint32, int64) {
 	if m.lastLogFile == nil {
 		return m.segment, 0

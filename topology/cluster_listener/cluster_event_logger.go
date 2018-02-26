@@ -6,6 +6,7 @@ import (
 	"github.com/chrislusf/vasto/topology"
 )
 
+// ClusterEventLogger logs cluster event changes by glog.V(1)
 type ClusterEventLogger struct {
 	Prefix string
 }

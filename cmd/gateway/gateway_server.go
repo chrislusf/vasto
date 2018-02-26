@@ -11,6 +11,7 @@ import (
 	"os"
 )
 
+// GatewayOption has options to run gateway
 type GatewayOption struct {
 	TcpAddress *string
 	UnixSocket *string
@@ -25,6 +26,7 @@ type gatewayServer struct {
 	vastoClient *vs.VastoClient
 }
 
+// RunGateway starts a gateway process
 func RunGateway(option *GatewayOption) {
 
 	var gs = &gatewayServer{

@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// VastoClient communicates with master to manage and listen to clusters topology changes.
 type VastoClient struct {
 	ctx             context.Context
 	Master          string
@@ -23,7 +24,7 @@ type VastoClient struct {
 func NewVastoClient(ctx context.Context, clientName, master, dataCenter string) *VastoClient {
 	c := &VastoClient{
 		ctx:             ctx,
-		ClusterListener: cluster_listener.NewClusterClient(dataCenter, clientName),
+		ClusterListener: cluster_listener.NewClusterListener(dataCenter, clientName),
 		Master:          master,
 		ClientName:      clientName,
 		DataCenter:      dataCenter,
@@ -55,6 +56,7 @@ func (c *VastoClient) NewClusterClient(keyspace string) (clusterClient *ClusterC
 
 }
 
+// CreateCluster creates a new cluster of the keyspace in the data center, with size and replication factor
 func (c *VastoClient) CreateCluster(keyspace, dataCenter string, clusterSize, replicationFactor int) (*pb.Cluster, error) {
 
 	if replicationFactor == 0 {
@@ -86,6 +88,7 @@ func (c *VastoClient) CreateCluster(keyspace, dataCenter string, clusterSize, re
 
 }
 
+// DeleteCluster deletes the cluster of the keyspace in the data center
 func (c *VastoClient) DeleteCluster(keyspace, dataCenter string) error {
 
 	resp, err := c.MasterClient.DeleteCluster(
@@ -107,6 +110,7 @@ func (c *VastoClient) DeleteCluster(keyspace, dataCenter string) error {
 
 }
 
+// ResizeCluster changes the size of the cluster of the keyspace and data center
 func (c *VastoClient) ResizeCluster(keyspace, dataCenter string, newClusterSize int) error {
 
 	resp, err := c.MasterClient.ResizeCluster(
@@ -129,6 +133,7 @@ func (c *VastoClient) ResizeCluster(keyspace, dataCenter string, newClusterSize 
 
 }
 
+// ReplaceNode replaces one server in the cluster of the keyspace and data center.
 func (c *VastoClient) ReplaceNode(keyspace, dataCenter string, nodeId uint32, newAddress string) error {
 
 	resp, err := c.MasterClient.ReplaceNode(

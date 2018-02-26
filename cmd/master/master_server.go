@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 )
 
+// MasterOption has options to run a master process
 type MasterOption struct {
 	Address *string
 }
@@ -23,6 +24,7 @@ type masterServer struct {
 	keyspaceMutexMapLock sync.Mutex
 }
 
+// RunMaster starts a master process
 func RunMaster(option *MasterOption) {
 	var ms = &masterServer{
 		option:           option,

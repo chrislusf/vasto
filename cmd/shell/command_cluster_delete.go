@@ -23,10 +23,10 @@ func (c *commandDeleteKeyspace) Help() string {
 func (c *commandDeleteKeyspace) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) (err error) {
 
 	if len(args) != 3 {
-		return invalidArguments
+		return errInvalidArguments
 	}
 	if args[0] != "cluster" {
-		return invalidArguments
+		return errInvalidArguments
 	}
 
 	keyspace, dc := args[1], args[2]

@@ -67,7 +67,7 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 
 		glog.V(1).Infof("bootstrap from %d.%d ...", bestPeerToCopy.ServerId, bestPeerToCopy.ShardId)
 
-		return topology.PrimaryShards(existingPrimaryShards).WithConnection(fmt.Sprintf("%s bootstrap from one exisiting %d.%d", s.String(), bestPeerToCopy.ServerId, bestPeerToCopy.ShardId),
+		return topology.VastoNodes(existingPrimaryShards).WithConnection(fmt.Sprintf("%s bootstrap from one exisiting %d.%d", s.String(), bestPeerToCopy.ServerId, bestPeerToCopy.ShardId),
 			bestPeerToCopy.ServerId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 				return s.doBootstrapCopy(ctx, grpcConnection, node, bootstrapPlan.FromClusterSize, bootstrapPlan.ToClusterSize, int(s.id))
 			})
@@ -77,7 +77,7 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 	var sourceRowChans []chan *pb.RawKeyValue
 	for _, shard := range bootstrapPlan.BootstrapSource {
 		bootstrapSourceServerIds = append(bootstrapSourceServerIds, shard.ServerId)
-		sourceRowChans = append(sourceRowChans, make(chan *pb.RawKeyValue, const_BOOTSTRAP_COPY_BATCH_SIZE))
+		sourceRowChans = append(sourceRowChans, make(chan *pb.RawKeyValue, constBootstrapCopyBatchSize))
 	}
 
 	return util.Parallel(
@@ -85,7 +85,7 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 			return eachInt(bootstrapSourceServerIds, func(index, serverId int) error {
 				sourceChan := sourceRowChans[index]
 				defer close(sourceChan)
-				return topology.PrimaryShards(existingPrimaryShards).WithConnection(
+				return topology.VastoNodes(existingPrimaryShards).WithConnection(
 					fmt.Sprintf("%s bootstrap copy from existing server %d", s.String(), serverId),
 					serverId,
 					func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
@@ -180,7 +180,7 @@ func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.Client
 		return fmt.Errorf("writeToSst: %v", err)
 	}
 
-	return s.saveProgress(node.StoreResource.GetAdminAddress(), shard_id(node.ShardInfo.ShardId), segment, offset)
+	return s.saveProgress(node.StoreResource.GetAdminAddress(), VastoShardId(node.ShardInfo.ShardId), segment, offset)
 
 }
 
@@ -233,7 +233,7 @@ func (s *shard) doBootstrapCopy2(ctx context.Context, grpcConnection *grpc.Clien
 	}
 
 	glog.V(1).Infof("bootstrap2 %s from %s segment:offset=%d:%d : %v", s.String(), node.ShardInfo.IdentifierOnThisServer(), segment, offset, err)
-	s.saveProgress(node.StoreResource.GetAdminAddress(), shard_id(node.ShardInfo.ShardId), segment, offset)
+	s.saveProgress(node.StoreResource.GetAdminAddress(), VastoShardId(node.ShardInfo.ShardId), segment, offset)
 
 	return
 }

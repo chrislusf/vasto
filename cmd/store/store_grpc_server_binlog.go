@@ -16,7 +16,7 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 
 	glog.V(1).Infof("TailBinlog %v", request)
 
-	shard, found := ss.keyspaceShards.getShard(request.Keyspace, shard_id(request.ShardId))
+	shard, found := ss.keyspaceShards.getShard(request.Keyspace, VastoShardId(request.ShardId))
 	if !found || shard.isShutdown {
 		return fmt.Errorf("shard: %s.%d not found", request.Keyspace, request.ShardId)
 	}
@@ -106,7 +106,7 @@ func (ss *storeServer) TailBinlog(request *pb.PullUpdateRequest, stream pb.Vasto
 
 func (ss *storeServer) CheckBinlog(ctx context.Context, request *pb.CheckBinlogRequest) (*pb.CheckBinlogResponse, error) {
 
-	node, found := ss.keyspaceShards.getShard(request.Keyspace, shard_id(request.ShardId))
+	node, found := ss.keyspaceShards.getShard(request.Keyspace, VastoShardId(request.ShardId))
 	if !found {
 		return nil, fmt.Errorf("checkbinlog: %s shard %d not found", request.Keyspace, request.ShardId)
 	}

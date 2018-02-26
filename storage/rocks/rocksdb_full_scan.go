@@ -1,6 +1,7 @@
 package rocks
 
 import (
+	"fmt"
 	"github.com/chrislusf/gorocksdb"
 	"github.com/chrislusf/vasto/pb"
 	"sync/atomic"
@@ -11,7 +12,7 @@ func (d *Rocks) FullScan(batchSize int, fn func([]*pb.RawKeyValue) error) error 
 	newClientCounter := atomic.AddInt32(&d.clientCounter, 1)
 	defer atomic.AddInt32(&d.clientCounter, -1)
 	if newClientCounter <= 0 {
-		return ERR_SHUTDOWN
+		return ErrorShutdownInProgress
 	}
 
 	opts := gorocksdb.NewDefaultReadOptions()
@@ -53,7 +54,7 @@ func (d *Rocks) FullScan(batchSize int, fn func([]*pb.RawKeyValue) error) error 
 	}
 
 	if err := iter.Err(); err != nil {
-		return err
+		return fmt.Errorf("full scan iterate: %v", err)
 	}
 	return nil
 }

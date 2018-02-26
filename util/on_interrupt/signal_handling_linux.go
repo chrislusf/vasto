@@ -8,6 +8,7 @@ import (
 	"syscall"
 )
 
+// OnInterrupt executes a function when the process is interrupted.
 func OnInterrupt(fn func(), onExitFunc func()) {
 	// deal with control+c,etc
 	signalChan := make(chan os.Signal, 1)

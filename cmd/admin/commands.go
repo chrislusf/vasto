@@ -7,13 +7,13 @@ import (
 	"github.com/chrislusf/vasto/pb"
 )
 
-type Command interface {
+type command interface {
 	Name() string
 	Help() string
 	Do([]string, io.Writer) error
 	SetMasterCilent(masterClient pb.VastoMasterClient)
 }
 
-var commands = []Command{}
+var commands = []command{}
 
-var InvalidArguments = errors.New("Invalid Arguments")
+var invalidArguments = errors.New("invalid arguments")

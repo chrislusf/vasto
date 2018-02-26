@@ -26,7 +26,7 @@ func (c *commandGet) Help() string {
 
 func (c *commandGet) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) error {
 	if commandEnv.clusterClient == nil {
-		return noKeyspaceSelected
+		return errNoKeyspaceSelected
 	}
 
 	// fmt.Printf("env: %+v\n", env)
@@ -45,21 +45,21 @@ func (c *commandGet) Do(vastoClient *vs.VastoClient, args []string, commandEnv *
 		}
 
 		return err
-	} else {
-		var keys []*vs.KeyObject
-		for _, arg := range args {
-			keys = append(keys, vs.Key([]byte(arg)))
-		}
-		keyValues, err := commandEnv.clusterClient.BatchGet(keys)
-		if err != nil {
-			return err
-		}
-		for _, keyValue := range keyValues {
-			if keyValue == nil {
-				continue
-			}
-			fmt.Fprintf(writer, "%s : %s\n", string(keyValue.GetKey()), string(keyValue.GetValue()))
-		}
-		return nil
 	}
+
+	var keys []*vs.KeyObject
+	for _, arg := range args {
+		keys = append(keys, vs.Key([]byte(arg)))
+	}
+	keyValues, err := commandEnv.clusterClient.BatchGet(keys)
+	if err != nil {
+		return err
+	}
+	for _, keyValue := range keyValues {
+		if keyValue == nil {
+			continue
+		}
+		fmt.Fprintf(writer, "%s : %s\n", string(keyValue.GetKey()), string(keyValue.GetValue()))
+	}
+	return nil
 }

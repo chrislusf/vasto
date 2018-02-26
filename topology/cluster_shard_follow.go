@@ -1,5 +1,6 @@
 package topology
 
+// ClusterShard has the tuple of server id and shard id in a cluster.
 type ClusterShard struct {
 	ShardId  int
 	ServerId int
@@ -70,6 +71,7 @@ func LocalShards(selfServerId int, clusterSize int, replicationFactor int) (shar
 	return
 }
 
+// IsShardInLocal returns true if the tuple if shard should be on current server
 func IsShardInLocal(shardId int, selfServerId int, clusterSize int, replicationFactor int) bool {
 	shards := LocalShards(selfServerId, clusterSize, replicationFactor)
 	for _, shard := range shards {

@@ -26,7 +26,7 @@ func (c *commandPrefix) Help() string {
 func (c *commandPrefix) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) error {
 
 	if commandEnv.clusterClient == nil {
-		return noKeyspaceSelected
+		return errNoKeyspaceSelected
 	}
 
 	prefix := []byte(args[0])

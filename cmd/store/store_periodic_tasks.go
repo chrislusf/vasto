@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type PeriodicTask interface {
+type periodicTask interface {
 	EverySecond()
 }
 
@@ -17,7 +17,7 @@ func (ss *storeServer) startPeriodTasks() {
 	}
 }
 
-func (ss *storeServer) RegisterPeriodicTask(task PeriodicTask) {
+func (ss *storeServer) RegisterPeriodicTask(task periodicTask) {
 
 	glog.V(3).Infof("RegisterPeriodicTask: %+v", task)
 
@@ -35,9 +35,9 @@ func (ss *storeServer) RegisterPeriodicTask(task PeriodicTask) {
 	ss.periodTasks = append(ss.periodTasks, task)
 }
 
-func (ss *storeServer) UnregisterPeriodicTask(task PeriodicTask) {
+func (ss *storeServer) UnregisterPeriodicTask(task periodicTask) {
 	glog.V(3).Infof("UnregisterPeriodicTask: %+v", task)
-	var t []PeriodicTask
+	var t []periodicTask
 	for _, p := range ss.periodTasks {
 		if p != task {
 			x := p

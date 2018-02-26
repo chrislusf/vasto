@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// BootstrapRequest is a request to bootstrap one shard.
 type BootstrapRequest struct {
 	ServerId          int
 	ShardId           int
@@ -13,6 +14,7 @@ type BootstrapRequest struct {
 	ReplicationFactor int
 }
 
+// BootstrapPlan contains detailed plan to bootstrap one shard.
 type BootstrapPlan struct {
 	// 1. bootstrapSource the shard should read missing data from.
 	//   If a list of bootstrap, pickBestBootstrapSource determines whether it should pick the best, or read all and filter
@@ -24,7 +26,7 @@ type BootstrapPlan struct {
 	ToClusterSize            int
 }
 
-// BootstrapPeersWhenResize returns
+// BootstrapPlanWithTopoChange builds the bootstrap plan based on the bootstrap request.
 func BootstrapPlanWithTopoChange(req *BootstrapRequest) (plan *BootstrapPlan) {
 	plan = &BootstrapPlan{FromClusterSize: req.FromClusterSize, ToClusterSize: req.ToClusterSize}
 
@@ -48,25 +50,24 @@ func BootstrapPlanWithTopoChange(req *BootstrapRequest) (plan *BootstrapPlan) {
 			}
 			plan.TransitionalFollowSource = plan.BootstrapSource
 			return
-		} else {
-			// old shards
-			if IsShardInLocal(req.ShardId, req.ServerId, req.ToClusterSize, req.ReplicationFactor) {
-				if IsShardInLocal(req.ShardId, req.ServerId, req.FromClusterSize, req.ReplicationFactor) {
-					// the shard does not move, no need to do anything
-					return
-				} else {
-					// need to copy from a remote server, and no need for transitional follow
-					// this can copy some unnecessariy data, should use the filter
-					plan.BootstrapSource = PartitionShards(req.ServerId, req.ShardId, req.FromClusterSize, req.ReplicationFactor)
-					plan.PickBestBootstrapSource = true
-					return
-				}
-			} else {
-				// not local in new cluster
-				// moving out, nothing to do
+		}
+		// old shards
+		if IsShardInLocal(req.ShardId, req.ServerId, req.ToClusterSize, req.ReplicationFactor) {
+			if IsShardInLocal(req.ShardId, req.ServerId, req.FromClusterSize, req.ReplicationFactor) {
+				// the shard does not move, no need to do anything
 				return
 			}
+			// need to copy from a remote server, and no need for transitional follow
+			// this can copy some unnecessariy data, should use the filter
+			plan.BootstrapSource = PartitionShards(req.ServerId, req.ShardId, req.FromClusterSize, req.ReplicationFactor)
+			plan.PickBestBootstrapSource = true
+			return
+
 		}
+		// not local in new cluster
+		// moving out, nothing to do
+		return
+
 	} else {
 		// shrinking cluster
 		if req.ServerId >= req.ToClusterSize {
@@ -90,23 +91,24 @@ func BootstrapPlanWithTopoChange(req *BootstrapRequest) (plan *BootstrapPlan) {
 					})
 				}
 				return
-			} else {
-				// already exists, in both new and old cluster
-				// add copying from the retiring servers
-				for i := req.ToClusterSize; i < req.FromClusterSize; i++ {
-					plan.BootstrapSource = append(plan.BootstrapSource, ClusterShard{
-						ShardId:  i,
-						ServerId: i,
-					})
-				}
-				plan.TransitionalFollowSource = plan.BootstrapSource
-				return
 			}
-		} else {
-			// not local in new cluster
-			// moving out, nothing to do
+
+			// already exists, in both new and old cluster
+			// add copying from the retiring servers
+			for i := req.ToClusterSize; i < req.FromClusterSize; i++ {
+				plan.BootstrapSource = append(plan.BootstrapSource, ClusterShard{
+					ShardId:  i,
+					ServerId: i,
+				})
+			}
+			plan.TransitionalFollowSource = plan.BootstrapSource
 			return
+
 		}
+		// not local in new cluster
+		// moving out, nothing to do
+		return
+
 	}
 }
 

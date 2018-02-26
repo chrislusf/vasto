@@ -20,7 +20,7 @@ type command interface {
 }
 
 var (
-	commands           = []command{}
-	invalidArguments   = errors.New("invalid arguments")
-	noKeyspaceSelected = errors.New("no keyspace selected")
+	commands              = []command{}
+	errInvalidArguments   = errors.New("invalid arguments")
+	errNoKeyspaceSelected = errors.New("no keyspace selected")
 )

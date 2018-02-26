@@ -23,7 +23,7 @@ func (c *ClusterClient) GetFloat64(key *KeyObject) (float64, error) {
 			return err
 		}
 		if len(responses) == 0 {
-			return NotFoundError
+			return ErrorNotFound
 		}
 		response = responses[0]
 		return nil
@@ -39,11 +39,11 @@ func (c *ClusterClient) GetFloat64(key *KeyObject) (float64, error) {
 
 	kv := response.Get.KeyValue
 	if kv == nil {
-		return 0, NotFoundError
+		return 0, ErrorNotFound
 	}
 
 	if len(kv.Value) != 8 {
-		return 0, WrongDataFormatError
+		return 0, ErrorWrongDataFormat
 	}
 
 	return util.BytesToFloat64(kv.Value), nil

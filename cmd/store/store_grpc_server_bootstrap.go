@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	const_BOOTSTRAP_COPY_BATCH_SIZE = 1024
+	constBootstrapCopyBatchSize = 1024
 )
 
 // BootstrapCopy sends all data if BootstrapCopyRequest's TargetClusterSize==0,
@@ -19,7 +19,7 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 
 	glog.V(1).Infof("BootstrapCopy %v", request)
 
-	shard, found := ss.keyspaceShards.getShard(request.Keyspace, shard_id(request.ShardId))
+	shard, found := ss.keyspaceShards.getShard(request.Keyspace, VastoShardId(request.ShardId))
 	if !found {
 		return fmt.Errorf("BootstrapCopy: %s shard %d not found", request.Keyspace, request.ShardId)
 	}
@@ -32,7 +32,7 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 	targetClusterSize := int(request.TargetClusterSize)
 	currentClusterSize := int(request.ClusterSize)
 	currentShardId := int32(shard.id)
-	batchSize := const_BOOTSTRAP_COPY_BATCH_SIZE
+	batchSize := constBootstrapCopyBatchSize
 	if targetClusterSize > 0 && targetShardId != int32(request.ShardId) {
 		batchSize *= targetClusterSize
 	}
@@ -41,7 +41,7 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 
 		var filteredRows []*pb.RawKeyValue
 		for _, row := range rows {
-			if bytes.HasPrefix(row.Key, INTERNAL_PREFIX) {
+			if bytes.HasPrefix(row.Key, VastoInternalKeyPrefix) {
 				continue
 			}
 			partitionHash := codec.GetPartitionHashFromBytes(row.Value)

@@ -94,37 +94,38 @@ func (ms *gatewayServer) handleRequest(reader io.Reader, writer io.Writer) error
 }
 
 func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
+
+	client := ms.vastoClient.NewClusterClient(*ms.option.Keyspace)
+
 	if command.GetGet() != nil {
-		key := vs.Key(command.Get.Key)
-		key.SetPartitionHash(command.Get.PartitionHash)
-		if value, dt, err := ms.vastoClient.NewClusterClient(*ms.option.Keyspace).Get(key); err != nil {
+		key := vs.Key(command.Get.Key).SetPartitionHash(command.Get.PartitionHash)
+		value, dt, err := client.Get(key)
+		if err != nil {
 			return &pb.Response{
 				Get: &pb.GetResponse{
 					Status: err.Error(),
 				},
 			}
-		} else {
-			return &pb.Response{
-				Get: &pb.GetResponse{
-					Ok: true,
-					KeyValue: &pb.KeyTypeValue{
-						Key:           key.GetKey(),
-						PartitionHash: key.GetPartitionHash(),
-						DataType:      dt,
-						Value:         value,
-					},
+		}
+		return &pb.Response{
+			Get: &pb.GetResponse{
+				Ok: true,
+				KeyValue: &pb.KeyTypeValue{
+					Key:           key.GetKey(),
+					PartitionHash: key.GetPartitionHash(),
+					DataType:      dt,
+					Value:         value,
 				},
-			}
+			},
 		}
 	} else if command.GetPut() != nil {
-		key := vs.Key(command.Get.Key)
-		key.SetPartitionHash(command.Get.PartitionHash)
+		key := vs.Key(command.Get.Key).SetPartitionHash(command.Get.PartitionHash)
 		value := command.Put.Value
 
 		resp := &pb.WriteResponse{
 			Ok: true,
 		}
-		err := ms.vastoClient.NewClusterClient(*ms.option.Keyspace).Put(key, value)
+		err := client.Put(key, value)
 		if err != nil {
 			resp.Ok = false
 			resp.Status = err.Error()
@@ -152,7 +153,7 @@ func (ms *gatewayServer) processRequest(command *pb.Request) *pb.Response {
 		lastSeenKey := command.GetByPrefix.LastSeenKey
 
 		resp := &pb.GetByPrefixResponse{}
-		keyValues, err := ms.vastoClient.NewClusterClient(*ms.option.Keyspace).GetByPrefix(nil, prefix, limit, lastSeenKey)
+		keyValues, err := client.GetByPrefix(nil, prefix, limit, lastSeenKey)
 		if err != nil {
 			resp.Ok = false
 			resp.Status = err.Error()

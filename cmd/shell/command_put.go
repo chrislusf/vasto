@@ -24,11 +24,11 @@ func (c *commandPut) Help() string {
 
 func (c *commandPut) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) error {
 	if commandEnv.clusterClient == nil {
-		return noKeyspaceSelected
+		return errNoKeyspaceSelected
 	}
 
 	if len(args) < 2 {
-		return invalidArguments
+		return errInvalidArguments
 	}
 
 	key := []byte(args[0])

@@ -8,6 +8,7 @@ import (
 // OpAndDataType maps to pb.OpAndDataType
 type OpAndDataType byte
 
+// Entry is the on-disk value bytes in this key-value system.
 type Entry struct {
 	PartitionHash uint64
 	UpdatedAtNs   uint64

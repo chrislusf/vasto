@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// RetryForever keeps retrying the fn unless the context is cancelled.
 func RetryForever(ctx context.Context, name string, fn func() error, waitTimes time.Duration) {
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))

@@ -9,11 +9,7 @@ import (
 	"time"
 )
 
-/*
- * Functions here are used by clients to read/write with the data store.
- * If a shard has a candidate, use the candidate.
- */
-
+// GetConnectionByShardId returns the connection to the shard
 func (clusterListener *ClusterListener) GetConnectionByShardId(keyspace string, shardId int, replica int) (net.Conn, error) {
 
 	r, found := clusterListener.GetCluster(keyspace)
@@ -67,6 +63,7 @@ func (clusterListener *ClusterListener) GetConnectionByShardId(keyspace string, 
 
 }
 
+// GetShardId returns the shard id and partition hash based on teh partition key
 func (clusterListener *ClusterListener) GetShardId(keyspace string, partitionKey []byte) (shardId int, partitionHash uint64) {
 	partitionHash = util.Hash(partitionKey)
 	r, found := clusterListener.GetCluster(keyspace)
