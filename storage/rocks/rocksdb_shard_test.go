@@ -35,7 +35,7 @@ func TestSetCompactionForShard(t *testing.T) {
 	}
 
 	db.SetCompactionForShard(0, shardCount)
-	db.db.CompactRange(gorocksdb.Range{Start:nil, Limit:nil})
+	db.db.CompactRange(gorocksdb.Range{Start: nil, Limit: nil})
 
 	var counter4 = count(db)
 	expected := float64(total) / float64(shardCount)
@@ -70,7 +70,7 @@ func TestSetTtlCompactionForShard(t *testing.T) {
 	time.Sleep(1200 * time.Millisecond)
 
 	db.SetCompactionForShard(0, shardCount)
-	db.db.CompactRange(gorocksdb.Range{Start:nil, Limit:nil})
+	db.db.CompactRange(gorocksdb.Range{Start: nil, Limit: nil})
 
 	var counter4 = count(db)
 

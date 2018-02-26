@@ -1,8 +1,8 @@
 package vs
 
 import (
-	"github.com/chrislusf/vasto/pb"
 	"errors"
+	"github.com/chrislusf/vasto/pb"
 )
 
 // Put puts one key value pair to one partition
