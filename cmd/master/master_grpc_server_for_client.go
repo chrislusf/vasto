@@ -26,7 +26,7 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 		return fmt.Errorf("failed to get peer address")
 	}
 
-	serverAddress := server_address(pr.Addr.String())
+	serverAddress := serverAddress(pr.Addr.String())
 	// glog.V(2).Infof("+ client %v", serverAddress)
 
 	// clean up if disconnects
@@ -34,7 +34,7 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 	defer func() {
 		for k_dc, clientName := range clientWatchedKeyspaceAndDataCenters {
 			t := strings.Split(k_dc, ",")
-			keyspace, dc := keyspace_name(t[0]), data_center_name(t[1])
+			keyspace, dc := keyspaceName(t[0]), datacenterName(t[1])
 			ms.clientChans.removeClient(keyspace, dc, serverAddress)
 			ms.OnClientDisconnectEvent(dc, keyspace, serverAddress, clientName)
 		}
@@ -54,11 +54,11 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 			return fmt.Errorf("read from client %v", err)
 		}
 
-		dc := data_center_name(clientHeartbeat.DataCenter)
+		dc := datacenterName(clientHeartbeat.DataCenter)
 		clientName := clientHeartbeat.ClientName
 
 		if clientHeartbeat.GetClusterFollow() != nil {
-			keyspace := keyspace_name(clientHeartbeat.ClusterFollow.Keyspace)
+			keyspace := keyspaceName(clientHeartbeat.ClusterFollow.Keyspace)
 			clusterKey := fmt.Sprintf("%s,%s", keyspace, dc)
 
 			if clientHeartbeat.ClusterFollow.IsUnfollow {

@@ -7,26 +7,26 @@ import (
 )
 
 func init() {
-	commands = append(commands, &CommandDebug{})
+	commands = append(commands, &commandDebug{})
 }
 
-type CommandDebug struct {
+type commandDebug struct {
 	masterClient pb.VastoMasterClient
 }
 
-func (c *CommandDebug) Name() string {
+func (c *commandDebug) Name() string {
 	return "debug"
 }
 
-func (c *CommandDebug) Help() string {
+func (c *commandDebug) Help() string {
 	return "// print out debug info from master and store consoles"
 }
 
-func (c *CommandDebug) SetMasterCilent(masterClient pb.VastoMasterClient) {
+func (c *commandDebug) SetMasterCilent(masterClient pb.VastoMasterClient) {
 	c.masterClient = masterClient
 }
 
-func (c *CommandDebug) Do(args []string, out io.Writer) (err error) {
+func (c *commandDebug) Do(args []string, out io.Writer) (err error) {
 
 	_, err = c.masterClient.DebugMaster(
 		context.Background(),

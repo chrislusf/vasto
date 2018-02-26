@@ -6,21 +6,21 @@ import (
 	"io"
 )
 
-type CommandEnv struct {
+type commandEnv struct {
 	env           map[string]string
 	keyspace      string
 	dataCenter    string
 	clusterClient *vs.ClusterClient
 }
 
-type Command interface {
+type command interface {
 	Name() string
 	Help() string
-	Do(*vs.VastoClient, []string, *CommandEnv, io.Writer) error
+	Do(*vs.VastoClient, []string, *commandEnv, io.Writer) error
 }
 
 var (
-	commands           = []Command{}
-	InvalidArguments   = errors.New("invalid arguments")
-	NoKeyspaceSelected = errors.New("no keyspace selected")
+	commands           = []command{}
+	invalidArguments   = errors.New("invalid arguments")
+	noKeyspaceSelected = errors.New("no keyspace selected")
 )

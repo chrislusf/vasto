@@ -13,6 +13,7 @@ import (
 	"github.com/gosuri/uiprogress"
 )
 
+// BenchmarkOption stores options for benchmarking
 type BenchmarkOption struct {
 	Master            *string
 	DataCenter        *string
@@ -29,6 +30,7 @@ type benchmarker struct {
 	option *BenchmarkOption
 }
 
+// RunBenchmarker starts a benchmarking run
 func RunBenchmarker(option *BenchmarkOption) {
 	var b = &benchmarker{
 		option: option,

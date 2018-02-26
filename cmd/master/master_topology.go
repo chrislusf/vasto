@@ -19,30 +19,30 @@ shard:
     a partition of data set of a keyspace
 */
 
-type keyspace_name string
-type data_center_name string
-type server_address string
+type keyspaceName string
+type datacenterName string
+type serverAddress string
 
 type dataCenter struct {
-	name    data_center_name
-	servers map[server_address]*pb.StoreResource
+	name    datacenterName
+	servers map[serverAddress]*pb.StoreResource
 	sync.RWMutex
 }
 
 type keyspace struct {
 	sync.RWMutex
-	name     keyspace_name
-	clusters map[data_center_name]*topology.Cluster
+	name     keyspaceName
+	clusters map[datacenterName]*topology.Cluster
 }
 
 type dataCenters struct {
 	sync.RWMutex
-	dataCenters map[data_center_name]*dataCenter
+	dataCenters map[datacenterName]*dataCenter
 }
 
 type keyspaces struct {
 	sync.RWMutex
-	keyspaces map[keyspace_name]*keyspace
+	keyspaces map[keyspaceName]*keyspace
 }
 
 type masterTopology struct {
@@ -53,21 +53,21 @@ type masterTopology struct {
 func newMasterTopology() *masterTopology {
 	return &masterTopology{
 		keyspaces: &keyspaces{
-			keyspaces: make(map[keyspace_name]*keyspace),
+			keyspaces: make(map[keyspaceName]*keyspace),
 		},
 		dataCenters: &dataCenters{
-			dataCenters: make(map[data_center_name]*dataCenter),
+			dataCenters: make(map[datacenterName]*dataCenter),
 		},
 	}
 }
 
 func (ks *keyspaces) getOrCreateKeyspace(keyspaceName string) *keyspace {
 	ks.Lock()
-	k, hasData := ks.keyspaces[keyspace_name(keyspaceName)]
+	k, hasData := ks.keyspaces[keyspaceName(keyspaceName)]
 	if !hasData {
 		k = &keyspace{
-			name:     keyspace_name(keyspaceName),
-			clusters: make(map[data_center_name]*topology.Cluster),
+			name:     keyspaceName(keyspaceName),
+			clusters: make(map[datacenterName]*topology.Cluster),
 		}
 		ks.keyspaces[k.name] = k
 	}
@@ -77,27 +77,27 @@ func (ks *keyspaces) getOrCreateKeyspace(keyspaceName string) *keyspace {
 
 func (ks *keyspaces) getKeyspace(keyspaceName string) (k *keyspace, found bool) {
 	ks.RLock()
-	k, found = ks.keyspaces[keyspace_name(keyspaceName)]
+	k, found = ks.keyspaces[keyspaceName(keyspaceName)]
 	ks.RUnlock()
 	return
 }
 
 func (ks *keyspaces) removeKeyspace(keyspaceName string) {
 	ks.Lock()
-	delete(ks.keyspaces, keyspace_name(keyspaceName))
+	delete(ks.keyspaces, keyspaceName(keyspaceName))
 	ks.Unlock()
 }
 
 func (k *keyspace) getCluster(dataCenterName string) (cluster *topology.Cluster, found bool) {
 	k.RLock()
-	cluster, found = k.clusters[data_center_name(dataCenterName)]
+	cluster, found = k.clusters[datacenterName(dataCenterName)]
 	k.RUnlock()
 	return
 }
 
 func (k *keyspace) removeCluster(dataCenterName string) {
 	k.Lock()
-	delete(k.clusters, data_center_name(dataCenterName))
+	delete(k.clusters, datacenterName(dataCenterName))
 	k.Unlock()
 }
 
@@ -105,10 +105,10 @@ func (k *keyspace) doGetOrCreateCluster(dataCenterName string, clusterSize int, 
 	cluster *topology.Cluster, isNew bool) {
 
 	k.Lock()
-	cluster, found := k.clusters[data_center_name(dataCenterName)]
+	cluster, found := k.clusters[datacenterName(dataCenterName)]
 	if !found {
 		cluster = topology.NewCluster(string(k.name), dataCenterName, clusterSize, replicationFactor)
-		k.clusters[data_center_name(dataCenterName)] = cluster
+		k.clusters[datacenterName(dataCenterName)] = cluster
 		isNew = true
 	}
 	k.Unlock()
@@ -127,11 +127,11 @@ func (k *keyspace) getOrCreateCluster(dataCenterName string, clusterSize int, re
 func (dcs *dataCenters) getOrCreateDataCenter(dataCenterName string) *dataCenter {
 
 	dcs.Lock()
-	dc, hasData := dcs.dataCenters[data_center_name(dataCenterName)]
+	dc, hasData := dcs.dataCenters[datacenterName(dataCenterName)]
 	if !hasData {
 		dc = &dataCenter{
-			name:    data_center_name(dataCenterName),
-			servers: make(map[server_address]*pb.StoreResource),
+			name:    datacenterName(dataCenterName),
+			servers: make(map[serverAddress]*pb.StoreResource),
 		}
 		dcs.dataCenters[dc.name] = dc
 	}
@@ -142,16 +142,16 @@ func (dcs *dataCenters) getOrCreateDataCenter(dataCenterName string) *dataCenter
 
 func (dcs *dataCenters) getDataCenter(dataCenterName string) (dc *dataCenter, found bool) {
 	dcs.RLock()
-	dc, found = dcs.dataCenters[data_center_name(dataCenterName)]
+	dc, found = dcs.dataCenters[datacenterName(dataCenterName)]
 	dcs.RUnlock()
 	return
 }
 
 func (dc *dataCenter) upsertServer(storeResource *pb.StoreResource) (existing *pb.StoreResource, hasData bool) {
 	dc.Lock()
-	existing, hasData = dc.servers[server_address(storeResource.Address)]
+	existing, hasData = dc.servers[serverAddress(storeResource.Address)]
 	if !hasData {
-		dc.servers[server_address(storeResource.Address)] = storeResource
+		dc.servers[serverAddress(storeResource.Address)] = storeResource
 	}
 	dc.Unlock()
 	return
@@ -170,9 +170,9 @@ func (dcs *dataCenters) deleteServer(dc *dataCenter, storeResource *pb.StoreReso
 
 func (dc *dataCenter) doDeleteServer(storeResource *pb.StoreResource) (existing *pb.StoreResource, hasData bool) {
 	dc.Lock()
-	existing, hasData = dc.servers[server_address(storeResource.Address)]
+	existing, hasData = dc.servers[serverAddress(storeResource.Address)]
 	if hasData {
-		delete(dc.servers, server_address(storeResource.Address))
+		delete(dc.servers, serverAddress(storeResource.Address))
 	}
 	dc.Unlock()
 	return

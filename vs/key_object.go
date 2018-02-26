@@ -12,6 +12,7 @@ type KeyObject struct {
 	partitionHash uint64
 }
 
+// Key creates a key object
 func Key(key []byte) *KeyObject {
 	return &KeyObject{
 		key:           key,
@@ -19,20 +20,25 @@ func Key(key []byte) *KeyObject {
 	}
 }
 
+// SetPartitionKey sets the partition key, which hash value is used to route the key
+// to the right partition.
 func (k *KeyObject) SetPartitionKey(partitionKey []byte) *KeyObject {
 	k.partitionHash = util.Hash(partitionKey)
 	return k
 }
 
+// SetPartitionKey sets the partition hash to route the key to the right partition.
 func (k *KeyObject) SetPartitionHash(partitionHash uint64) *KeyObject {
 	k.partitionHash = partitionHash
 	return k
 }
 
+// GetKey returns the key bytes
 func (k *KeyObject) GetKey() []byte {
 	return k.key
 }
 
+// GetPartitionHash returns the partition hash value
 func (k *KeyObject) GetPartitionHash() uint64 {
 	return k.partitionHash
 }

@@ -13,21 +13,21 @@ import (
 )
 
 func init() {
-	commands = append(commands, &CommandDump{})
+	commands = append(commands, &commandDump{})
 }
 
-type CommandDump struct {
+type commandDump struct {
 }
 
-func (c *CommandDump) Name() string {
+func (c *commandDump) Name() string {
 	return "dump"
 }
 
-func (c *CommandDump) Help() string {
+func (c *commandDump) Help() string {
 	return "keys|key_value"
 }
 
-func (c *CommandDump) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) (doError error) {
+func (c *commandDump) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) (doError error) {
 
 	isKeysOnly := true
 	if len(args) > 0 && args[0] == "key_value" {
@@ -35,7 +35,7 @@ func (c *CommandDump) Do(vastoClient *vs.VastoClient, args []string, commandEnv 
 	}
 
 	if commandEnv.clusterClient == nil {
-		return NoKeyspaceSelected
+		return noKeyspaceSelected
 	}
 
 	cluster, err := commandEnv.clusterClient.GetCluster()

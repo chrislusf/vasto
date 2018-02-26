@@ -3,30 +3,30 @@ package shell
 import (
 	"io"
 
-	. "github.com/chrislusf/vasto/vs"
+	"github.com/chrislusf/vasto/vs"
 )
 
 func init() {
-	commands = append(commands, &CommandDelete{})
+	commands = append(commands, &commandDelete{})
 }
 
-type CommandDelete struct {
+type commandDelete struct {
 }
 
-func (c *CommandDelete) Name() string {
+func (c *commandDelete) Name() string {
 	return "del"
 }
 
-func (c *CommandDelete) Help() string {
+func (c *commandDelete) Help() string {
 	return "<key>"
 }
 
-func (c *CommandDelete) Do(vastoClient *VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {
+func (c *commandDelete) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) error {
 	if commandEnv.clusterClient == nil {
-		return NoKeyspaceSelected
+		return noKeyspaceSelected
 	}
 
-	key := Key([]byte(args[0]))
+	key := vs.Key([]byte(args[0]))
 
 	err := commandEnv.clusterClient.Delete(key)
 

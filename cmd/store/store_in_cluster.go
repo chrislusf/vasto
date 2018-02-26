@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	ClusterConfigFile = "cluster.config"
+	constClusterConfigFile = "cluster.config"
 )
 
 func (ss *storeServer) listExistingClusters() error {
@@ -24,7 +24,7 @@ func (ss *storeServer) listExistingClusters() error {
 		}
 
 		keyspaceName := f.Name()
-		fullPath := fmt.Sprintf("%s/%s/%s", *ss.option.Dir, keyspaceName, ClusterConfigFile)
+		fullPath := fmt.Sprintf("%s/%s/%s", *ss.option.Dir, keyspaceName, constClusterConfigFile)
 		txt, err := ioutil.ReadFile(fullPath)
 		if err != nil {
 			glog.Errorf("read file %s: %v", fullPath, err)
@@ -53,7 +53,7 @@ func (ss *storeServer) saveClusterConfig(status *pb.LocalShardsInCluster, keyspa
 
 	txt := proto.MarshalTextString(status)
 
-	fullPath := fmt.Sprintf("%s/%s/%s", *ss.option.Dir, keyspaceName, ClusterConfigFile)
+	fullPath := fmt.Sprintf("%s/%s/%s", *ss.option.Dir, keyspaceName, constClusterConfigFile)
 
 	glog.V(1).Infof("%s save cluster %s to %s", ss.storeName, keyspaceName, fullPath)
 

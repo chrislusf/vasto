@@ -28,7 +28,7 @@ func (s *shell) runShell() {
 
 	reg, _ := regexp.Compile(`'.*?'|".*?"|\S+`)
 
-	commandEnv := &CommandEnv{
+	commandEnv := &commandEnv{
 		keyspace: *s.option.Keyspace,
 	}
 	if commandEnv.keyspace != "" {
@@ -84,7 +84,7 @@ func (s *shell) runShell() {
 						}
 						if err := c.Do(s.vastoClient, args, commandEnv, os.Stderr); err != nil {
 							fmt.Fprintf(os.Stderr, "error: %v\n", err)
-							if err == InvalidArguments {
+							if err == invalidArguments {
 								fmt.Println()
 								fmt.Printf("\t%s %s \n", c.Name(), c.Help())
 								fmt.Println()

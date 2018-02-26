@@ -6,27 +6,27 @@ import (
 )
 
 func init() {
-	commands = append(commands, &CommandDeleteKeyspace{})
+	commands = append(commands, &commandDeleteKeyspace{})
 }
 
-type CommandDeleteKeyspace struct {
+type commandDeleteKeyspace struct {
 }
 
-func (c *CommandDeleteKeyspace) Name() string {
+func (c *commandDeleteKeyspace) Name() string {
 	return "delete"
 }
 
-func (c *CommandDeleteKeyspace) Help() string {
+func (c *commandDeleteKeyspace) Help() string {
 	return "cluster <keysapce> <datacenter>"
 }
 
-func (c *CommandDeleteKeyspace) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) (err error) {
+func (c *commandDeleteKeyspace) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) (err error) {
 
 	if len(args) != 3 {
-		return InvalidArguments
+		return invalidArguments
 	}
 	if args[0] != "cluster" {
-		return InvalidArguments
+		return invalidArguments
 	}
 
 	keyspace, dc := args[1], args[2]

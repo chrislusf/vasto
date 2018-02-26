@@ -8,29 +8,29 @@ import (
 )
 
 func init() {
-	commands = append(commands, &CommandResizeCluster{})
+	commands = append(commands, &commandResizeCluster{})
 }
 
-type CommandResizeCluster struct {
+type commandResizeCluster struct {
 }
 
-func (c *CommandResizeCluster) Name() string {
+func (c *commandResizeCluster) Name() string {
 	return "resize"
 }
 
-func (c *CommandResizeCluster) Help() string {
+func (c *commandResizeCluster) Help() string {
 	return "<keyspace> <data_center> <new_cluster_size>"
 }
 
-func (c *CommandResizeCluster) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) (err error) {
+func (c *commandResizeCluster) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) (err error) {
 
 	if len(args) != 3 {
-		return InvalidArguments
+		return invalidArguments
 	}
 	keyspace, dc := args[0], args[1]
 	newClusterSize, err := strconv.ParseUint(args[2], 10, 32)
 	if err != nil {
-		return InvalidArguments
+		return invalidArguments
 	}
 
 	return vastoClient.ResizeCluster(keyspace, dc, int(newClusterSize))

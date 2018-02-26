@@ -22,7 +22,7 @@ func (ms *masterServer) CreateCluster(ctx context.Context, req *pb.CreateCluster
 
 	keyspace, foundKeyspace := ms.topo.keyspaces.getKeyspace(req.Keyspace)
 	if foundKeyspace {
-		cluster, foundCluster := keyspace.clusters[data_center_name(req.DataCenter)]
+		cluster, foundCluster := keyspace.clusters[datacenterName(req.DataCenter)]
 		if foundCluster && cluster.ExpectedSize() > 0 {
 			resp.Error = fmt.Sprintf("keyspace %s in datacenter %s already exists", req.Keyspace, req.DataCenter)
 			return

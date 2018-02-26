@@ -8,30 +8,30 @@ import (
 )
 
 func init() {
-	commands = append(commands, &CommandClusterReplaceNode{})
+	commands = append(commands, &commandClusterReplaceNode{})
 }
 
-type CommandClusterReplaceNode struct {
+type commandClusterReplaceNode struct {
 }
 
-func (c *CommandClusterReplaceNode) Name() string {
+func (c *commandClusterReplaceNode) Name() string {
 	return "replace"
 }
 
-func (c *CommandClusterReplaceNode) Help() string {
+func (c *commandClusterReplaceNode) Help() string {
 	return "<keyspace> <data_center> <node_id> <new_server_ip:new_server_por>"
 }
 
-func (c *CommandClusterReplaceNode) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) (err error) {
+func (c *commandClusterReplaceNode) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) (err error) {
 
 	if len(args) != 4 {
-		return InvalidArguments
+		return invalidArguments
 	}
 	keyspace := args[0]
 	dc := args[1]
 	nodeId, err := strconv.ParseUint(args[2], 10, 32)
 	if err != nil {
-		return InvalidArguments
+		return invalidArguments
 	}
 	newAddress := args[3]
 

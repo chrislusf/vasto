@@ -8,27 +8,27 @@ import (
 )
 
 func init() {
-	commands = append(commands, &CommandPut{})
+	commands = append(commands, &commandPut{})
 }
 
-type CommandPut struct {
+type commandPut struct {
 }
 
-func (c *CommandPut) Name() string {
+func (c *commandPut) Name() string {
 	return "put"
 }
 
-func (c *CommandPut) Help() string {
+func (c *commandPut) Help() string {
 	return "<key> <value>"
 }
 
-func (c *CommandPut) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {
+func (c *commandPut) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) error {
 	if commandEnv.clusterClient == nil {
-		return NoKeyspaceSelected
+		return noKeyspaceSelected
 	}
 
 	if len(args) < 2 {
-		return InvalidArguments
+		return invalidArguments
 	}
 
 	key := []byte(args[0])

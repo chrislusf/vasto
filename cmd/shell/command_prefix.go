@@ -9,24 +9,24 @@ import (
 )
 
 func init() {
-	commands = append(commands, &CommandPrefix{})
+	commands = append(commands, &commandPrefix{})
 }
 
-type CommandPrefix struct {
+type commandPrefix struct {
 }
 
-func (c *CommandPrefix) Name() string {
+func (c *commandPrefix) Name() string {
 	return "prefix"
 }
 
-func (c *CommandPrefix) Help() string {
+func (c *commandPrefix) Help() string {
 	return "<prefix> [<limit> <lastSeenKey>], prefix should also be the partition key"
 }
 
-func (c *CommandPrefix) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {
+func (c *commandPrefix) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) error {
 
 	if commandEnv.clusterClient == nil {
-		return NoKeyspaceSelected
+		return noKeyspaceSelected
 	}
 
 	prefix := []byte(args[0])

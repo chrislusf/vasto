@@ -10,21 +10,21 @@ import (
 )
 
 func init() {
-	commands = append(commands, &CommandDesc{})
+	commands = append(commands, &commandDesc{})
 }
 
-type CommandDesc struct {
+type commandDesc struct {
 }
 
-func (c *CommandDesc) Name() string {
+func (c *commandDesc) Name() string {
 	return "desc"
 }
 
-func (c *CommandDesc) Help() string {
+func (c *commandDesc) Help() string {
 	return "keyspaces|datacenters|<keyspace> <data center>"
 }
 
-func (c *CommandDesc) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, out io.Writer) error {
+func (c *commandDesc) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, out io.Writer) error {
 
 	param := "keyspaces"
 	if len(args) > 0 {

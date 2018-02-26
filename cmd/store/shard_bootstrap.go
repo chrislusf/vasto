@@ -77,7 +77,7 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 	var sourceRowChans []chan *pb.RawKeyValue
 	for _, shard := range bootstrapPlan.BootstrapSource {
 		bootstrapSourceServerIds = append(bootstrapSourceServerIds, shard.ServerId)
-		sourceRowChans = append(sourceRowChans, make(chan *pb.RawKeyValue, BOOTSTRAP_COPY_BATCH_SIZE))
+		sourceRowChans = append(sourceRowChans, make(chan *pb.RawKeyValue, const_BOOTSTRAP_COPY_BATCH_SIZE))
 	}
 
 	return util.Parallel(

@@ -32,6 +32,8 @@ func (m *shardingCompactionFilter) Filter(level int, key, val []byte) (bool, []b
 	return false, nil
 }
 
+// SetCompactionForShard changes the compaction filter to use the shardId and shardCount.
+// All entries not belong to the shard will be physically purged during next compaction.
 func (d *Rocks) SetCompactionForShard(shardId, shardCount int) {
 	d.compactionFilter.configure(int32(shardId), shardCount)
 }

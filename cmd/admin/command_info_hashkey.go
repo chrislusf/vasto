@@ -10,26 +10,26 @@ import (
 )
 
 func init() {
-	commands = append(commands, &CommandInfo{})
+	commands = append(commands, &commandInfo{})
 }
 
-type CommandInfo struct {
+type commandInfo struct {
 	masterClient pb.VastoMasterClient
 }
 
-func (c *CommandInfo) Name() string {
+func (c *commandInfo) Name() string {
 	return "info"
 }
 
-func (c *CommandInfo) Help() string {
+func (c *commandInfo) Help() string {
 	return "hashkey <key> <cluster_size>  // see the key will go to which bucket"
 }
 
-func (c *CommandInfo) SetMasterCilent(masterClient pb.VastoMasterClient) {
+func (c *commandInfo) SetMasterCilent(masterClient pb.VastoMasterClient) {
 	c.masterClient = masterClient
 }
 
-func (c *CommandInfo) Do(args []string, out io.Writer) (err error) {
+func (c *commandInfo) Do(args []string, out io.Writer) (err error) {
 
 	if args[0] == "hashkey" {
 		if len(args) != 3 {

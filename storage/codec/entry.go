@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// OpAndDataType maps to pb.OpAndDataType
 type OpAndDataType byte
 
 type Entry struct {
@@ -15,6 +16,7 @@ type Entry struct {
 	Value         []byte
 }
 
+// ToBytes serializes the entry into bytes
 func (e *Entry) ToBytes() []byte {
 	b := make([]byte, len(e.Value)+21)
 
@@ -27,6 +29,7 @@ func (e *Entry) ToBytes() []byte {
 	return b
 }
 
+// FromBytes deserialize bytes into one Entry
 func FromBytes(b []byte) *Entry {
 
 	return &Entry{
@@ -39,13 +42,16 @@ func FromBytes(b []byte) *Entry {
 
 }
 
+// GetPartitionHashFromBytes reads the partition hash directly from bytes
 func GetPartitionHashFromBytes(b []byte) uint64 {
 	return binary.LittleEndian.Uint64(b[0:8])
 }
 
-func (entry *Entry) IsExpired() bool {
+// IsExpired checks whether the entry updated_at time plus ttl time is less than current time.
+// If ttlSecond is 0, the entry will not expire.
+func (e *Entry) IsExpired() bool {
 
-	return entry.TtlSecond > 0 &&
-		entry.UpdatedAtNs+uint64(entry.TtlSecond*1e9) < uint64(time.Now().UnixNano())
+	return e.TtlSecond > 0 &&
+		e.UpdatedAtNs+uint64(e.TtlSecond*1e9) < uint64(time.Now().UnixNano())
 
 }

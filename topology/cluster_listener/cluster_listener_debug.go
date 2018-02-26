@@ -2,6 +2,7 @@ package cluster_listener
 
 import "fmt"
 
+// Debug prints out the cluster detailed information.
 func (clusterListener *ClusterListener) Debug(prefix string) {
 	fmt.Printf("%sevent processers:\n", prefix)
 	for _, p := range clusterListener.shardEventProcessors {

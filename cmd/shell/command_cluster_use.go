@@ -6,24 +6,24 @@ import (
 )
 
 func init() {
-	commands = append(commands, &CommandClusterUse{})
+	commands = append(commands, &commandClusterUse{})
 }
 
-type CommandClusterUse struct {
+type commandClusterUse struct {
 }
 
-func (c *CommandClusterUse) Name() string {
+func (c *commandClusterUse) Name() string {
 	return "use"
 }
 
-func (c *CommandClusterUse) Help() string {
+func (c *commandClusterUse) Help() string {
 	return "keyspace <keysapce>"
 }
 
-func (c *CommandClusterUse) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) (err error) {
+func (c *commandClusterUse) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) (err error) {
 
 	if len(args) != 2 {
-		return InvalidArguments
+		return invalidArguments
 	}
 
 	commandEnv.keyspace = args[1]

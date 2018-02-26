@@ -5,10 +5,12 @@ type writeRequest interface {
 	GetKey() []byte
 }
 
+// GetPartitionHash returns the partition hash value
 func (entry *LogEntry) GetPartitionHash() uint64 {
 	return entry.getWriteRequest().GetPartitionHash()
 }
 
+// GetKey returns the key bytes
 func (entry *LogEntry) GetKey() []byte {
 	return entry.getWriteRequest().GetKey()
 }

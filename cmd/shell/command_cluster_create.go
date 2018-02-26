@@ -10,27 +10,27 @@ import (
 )
 
 func init() {
-	commands = append(commands, &CommandCreateKeyspace{})
+	commands = append(commands, &commandCreateKeyspace{})
 }
 
-type CommandCreateKeyspace struct {
+type commandCreateKeyspace struct {
 }
 
-func (c *CommandCreateKeyspace) Name() string {
+func (c *commandCreateKeyspace) Name() string {
 	return "create"
 }
 
-func (c *CommandCreateKeyspace) Help() string {
+func (c *commandCreateKeyspace) Help() string {
 	return "cluster <keysapce> <datacenter> <server count> <replication factor>"
 }
 
-func (c *CommandCreateKeyspace) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) (err error) {
+func (c *commandCreateKeyspace) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) (err error) {
 
 	if len(args) != 5 {
-		return InvalidArguments
+		return invalidArguments
 	}
 	if args[0] != "cluster" {
-		return InvalidArguments
+		return invalidArguments
 	}
 
 	keyspace, dc := args[1], args[2]
@@ -38,22 +38,22 @@ func (c *CommandCreateKeyspace) Do(vastoClient *vs.VastoClient, args []string, c
 	clusterSize, err := strconv.ParseUint(args[3], 10, 64)
 	if err != nil {
 		println("can not parse server count", args[3])
-		return InvalidArguments
+		return invalidArguments
 	}
 	replicationFactor, err := strconv.ParseUint(args[4], 10, 64)
 	if err != nil {
 		println("can not parse replication factor", args[4])
-		return InvalidArguments
+		return invalidArguments
 	}
 
 	if replicationFactor == 0 {
 		println("replication factor", replicationFactor, "should be greater than 0")
-		return InvalidArguments
+		return invalidArguments
 	}
 
 	if replicationFactor > clusterSize {
 		println("replication factor", replicationFactor, "should not be bigger than cluster size", clusterSize)
-		return InvalidArguments
+		return invalidArguments
 	}
 
 	cluster, err := vastoClient.CreateCluster(keyspace, dc, int(clusterSize), int(replicationFactor))

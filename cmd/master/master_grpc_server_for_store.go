@@ -53,8 +53,8 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 
 func (ms *masterServer) notifyUpdate(shardInfo *pb.ShardInfo, storeResource *pb.StoreResource) error {
 	return ms.clientChans.notifyStoreResourceUpdate(
-		keyspace_name(shardInfo.KeyspaceName),
-		data_center_name(storeResource.DataCenter),
+		keyspaceName(shardInfo.KeyspaceName),
+		datacenterName(storeResource.DataCenter),
 		[]*pb.ClusterNode{
 			{
 				StoreResource: storeResource,
@@ -68,8 +68,8 @@ func (ms *masterServer) notifyUpdate(shardInfo *pb.ShardInfo, storeResource *pb.
 
 func (ms *masterServer) notifyDeletion(shardInfo *pb.ShardInfo, storeResource *pb.StoreResource) error {
 	return ms.clientChans.notifyStoreResourceUpdate(
-		keyspace_name(shardInfo.KeyspaceName),
-		data_center_name(storeResource.DataCenter),
+		keyspaceName(shardInfo.KeyspaceName),
+		datacenterName(storeResource.DataCenter),
 		[]*pb.ClusterNode{
 			{
 				StoreResource: storeResource,
@@ -83,8 +83,8 @@ func (ms *masterServer) notifyDeletion(shardInfo *pb.ShardInfo, storeResource *p
 
 func (ms *masterServer) notifyPromotion(shardInfo *pb.ShardInfo, storeResource *pb.StoreResource) error {
 	return ms.clientChans.notifyStoreResourceUpdate(
-		keyspace_name(shardInfo.KeyspaceName),
-		data_center_name(storeResource.DataCenter),
+		keyspaceName(shardInfo.KeyspaceName),
+		datacenterName(storeResource.DataCenter),
 		[]*pb.ClusterNode{
 			{
 				StoreResource: storeResource,

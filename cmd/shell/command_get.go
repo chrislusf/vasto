@@ -10,23 +10,23 @@ import (
 )
 
 func init() {
-	commands = append(commands, &CommandGet{})
+	commands = append(commands, &commandGet{})
 }
 
-type CommandGet struct {
+type commandGet struct {
 }
 
-func (c *CommandGet) Name() string {
+func (c *commandGet) Name() string {
 	return "get"
 }
 
-func (c *CommandGet) Help() string {
+func (c *commandGet) Help() string {
 	return "<key>"
 }
 
-func (c *CommandGet) Do(vastoClient *vs.VastoClient, args []string, commandEnv *CommandEnv, writer io.Writer) error {
+func (c *commandGet) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) error {
 	if commandEnv.clusterClient == nil {
-		return NoKeyspaceSelected
+		return noKeyspaceSelected
 	}
 
 	// fmt.Printf("env: %+v\n", env)

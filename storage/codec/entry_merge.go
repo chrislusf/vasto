@@ -25,7 +25,7 @@ func MergeEntry(a, b []byte) (mergedEntry *Entry, merged bool) {
 
 }
 
-func (x *Entry) MergeWith(b []byte) (merged bool) {
+func (e *Entry) MergeWith(b []byte) (merged bool) {
 	if b == nil {
 		return true
 	}
@@ -34,19 +34,19 @@ func (x *Entry) MergeWith(b []byte) (merged bool) {
 
 	switch y.OpAndDataType {
 	case OpAndDataType(pb.OpAndDataType_BYTES):
-		x.Value = append(x.Value, y.Value...)
+		e.Value = append(e.Value, y.Value...)
 	case OpAndDataType(pb.OpAndDataType_FLOAT64):
-		result := util.BytesToFloat64(x.Value) + util.BytesToFloat64(y.Value)
-		x.Value = util.Float64ToBytes(result)
+		result := util.BytesToFloat64(e.Value) + util.BytesToFloat64(y.Value)
+		e.Value = util.Float64ToBytes(result)
 	case OpAndDataType(pb.OpAndDataType_MAX_FLOAT64):
-		left, right := util.BytesToFloat64(x.Value), util.BytesToFloat64(y.Value)
+		left, right := util.BytesToFloat64(e.Value), util.BytesToFloat64(y.Value)
 		if left < right {
-			x.Value = y.Value
+			e.Value = y.Value
 		}
 	case OpAndDataType(pb.OpAndDataType_MIN_FLOAT64):
-		left, right := util.BytesToFloat64(x.Value), util.BytesToFloat64(y.Value)
+		left, right := util.BytesToFloat64(e.Value), util.BytesToFloat64(y.Value)
 		if left > right {
-			x.Value = y.Value
+			e.Value = y.Value
 		}
 	}
 

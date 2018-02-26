@@ -4,6 +4,7 @@ import (
 	"github.com/chrislusf/vasto/pb"
 )
 
+// ToCluster converts the cluster into pb.Cluster object
 func (cluster *Cluster) ToCluster() *pb.Cluster {
 	if cluster == nil {
 		return &pb.Cluster{}

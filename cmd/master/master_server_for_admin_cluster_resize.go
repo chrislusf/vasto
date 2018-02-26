@@ -218,7 +218,7 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 	}
 
 	// notify the new cluster size, clients can write to the new set of servers now
-	ms.clientChans.notifyClusterResize(keyspace_name(req.Keyspace), data_center_name(req.DataCenter), uint32(oldClusterSize), req.TargetClusterSize)
+	ms.clientChans.notifyClusterResize(keyspaceName(req.Keyspace), datacenterName(req.DataCenter), uint32(oldClusterSize), req.TargetClusterSize)
 
 	// wait a bit for the slow-to-change clients
 	time.Sleep(5 * time.Second)

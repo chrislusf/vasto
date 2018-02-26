@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	BOOTSTRAP_COPY_BATCH_SIZE = 1024
+	const_BOOTSTRAP_COPY_BATCH_SIZE = 1024
 )
 
 // BootstrapCopy sends all data if BootstrapCopyRequest's TargetClusterSize==0,
@@ -32,7 +32,7 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 	targetClusterSize := int(request.TargetClusterSize)
 	currentClusterSize := int(request.ClusterSize)
 	currentShardId := int32(shard.id)
-	batchSize := BOOTSTRAP_COPY_BATCH_SIZE
+	batchSize := const_BOOTSTRAP_COPY_BATCH_SIZE
 	if targetClusterSize > 0 && targetShardId != int32(request.ShardId) {
 		batchSize *= targetClusterSize
 	}
@@ -62,7 +62,7 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 			KeyValues: filteredRows,
 		}
 		if err := stream.Send(t); err != nil {
-			return err
+			return fmt.Errorf("full copy: %v", err)
 		}
 		return nil
 	})

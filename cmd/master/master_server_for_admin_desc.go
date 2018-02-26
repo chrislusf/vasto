@@ -18,7 +18,7 @@ func (ms *masterServer) Describe(ctx context.Context, req *pb.DescribeRequest) (
 			if found {
 				resp.DescCluster = &pb.DescribeResponse_DescCluster{
 					Cluster:     cluster.ToCluster(),
-					ClientCount: uint32(ms.clientsStat.getClusterClientCount(keyspace.name, data_center_name(req.DescCluster.DataCenter))),
+					ClientCount: uint32(ms.clientsStat.getClusterClientCount(keyspace.name, datacenterName(req.DescCluster.DataCenter))),
 				}
 				if cluster.GetNextCluster() != nil {
 					resp.DescCluster.NextCluster = cluster.GetNextCluster().ToCluster()

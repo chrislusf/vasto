@@ -9,19 +9,19 @@ import (
 type clientsStat struct {
 	sync.Mutex
 	clusterClientCount  map[string]int
-	dcClientCount       map[data_center_name]int
-	keyspaceClientCount map[keyspace_name]int
+	dcClientCount       map[datacenterName]int
+	keyspaceClientCount map[keyspaceName]int
 }
 
 func newClientsStat() *clientsStat {
 	return &clientsStat{
 		clusterClientCount:  make(map[string]int),
-		dcClientCount:       make(map[data_center_name]int),
-		keyspaceClientCount: make(map[keyspace_name]int),
+		dcClientCount:       make(map[datacenterName]int),
+		keyspaceClientCount: make(map[keyspaceName]int),
 	}
 }
 
-func (c *clientsStat) getKeyspaceClientCount(keyspace keyspace_name) int {
+func (c *clientsStat) getKeyspaceClientCount(keyspace keyspaceName) int {
 	c.Lock()
 	defer c.Unlock()
 
@@ -31,7 +31,7 @@ func (c *clientsStat) getKeyspaceClientCount(keyspace keyspace_name) int {
 	return 0
 }
 
-func (c *clientsStat) getDataCenterClientCount(dataCenter data_center_name) int {
+func (c *clientsStat) getDataCenterClientCount(dataCenter datacenterName) int {
 	c.Lock()
 	defer c.Unlock()
 
@@ -41,7 +41,7 @@ func (c *clientsStat) getDataCenterClientCount(dataCenter data_center_name) int 
 	return 0
 }
 
-func (c *clientsStat) getClusterClientCount(keyspace keyspace_name, dataCenter data_center_name) int {
+func (c *clientsStat) getClusterClientCount(keyspace keyspaceName, dataCenter datacenterName) int {
 	clusterKey := fmt.Sprintf("%s:%s", keyspace, dataCenter)
 	c.Lock()
 	defer c.Unlock()
@@ -52,7 +52,7 @@ func (c *clientsStat) getClusterClientCount(keyspace keyspace_name, dataCenter d
 	return 0
 }
 
-func (c *clientsStat) addClient(keyspace keyspace_name, dataCenter data_center_name, server server_address) {
+func (c *clientsStat) addClient(keyspace keyspaceName, dataCenter datacenterName, server serverAddress) {
 	clusterKey := fmt.Sprintf("%s:%s", keyspace, dataCenter)
 	c.Lock()
 	defer c.Unlock()
@@ -76,7 +76,7 @@ func (c *clientsStat) addClient(keyspace keyspace_name, dataCenter data_center_n
 
 }
 
-func (c *clientsStat) removeClient(keyspace keyspace_name, dataCenter data_center_name, server server_address) {
+func (c *clientsStat) removeClient(keyspace keyspaceName, dataCenter datacenterName, server serverAddress) {
 	clusterKey := fmt.Sprintf("%s:%s", keyspace, dataCenter)
 	c.Lock()
 	defer c.Unlock()
@@ -106,12 +106,12 @@ func (c *clientsStat) removeClient(keyspace keyspace_name, dataCenter data_cente
 
 }
 
-func (ms *masterServer) OnClientConnectEvent(dc data_center_name, keyspace keyspace_name, clientAddress server_address, clientName string) {
+func (ms *masterServer) OnClientConnectEvent(dc datacenterName, keyspace keyspaceName, clientAddress serverAddress, clientName string) {
 	glog.V(1).Infof("[master] + client %v from %v keyspace(%v) datacenter(%v)", clientName, clientAddress, keyspace, dc)
 	ms.clientsStat.addClient(keyspace, dc, clientAddress)
 }
 
-func (ms *masterServer) OnClientDisconnectEvent(dc data_center_name, keyspace keyspace_name, clientAddress server_address, clientName string) {
+func (ms *masterServer) OnClientDisconnectEvent(dc datacenterName, keyspace keyspaceName, clientAddress serverAddress, clientName string) {
 	glog.V(1).Infof("[master] - client %v from %v keyspace(%v) datacenter(%v)", clientName, clientAddress, keyspace, dc)
 	ms.clientsStat.removeClient(keyspace, dc, clientAddress)
 	if ms.clientsStat.getClusterClientCount(keyspace, dc) <= 0 {

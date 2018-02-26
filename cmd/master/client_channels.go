@@ -20,7 +20,7 @@ func newClientChannels() *clientChannels {
 	}
 }
 
-func (cc *clientChannels) addClient(keyspace keyspace_name, dataCenter data_center_name, server server_address) (chan *pb.ClientMessage, error) {
+func (cc *clientChannels) addClient(keyspace keyspaceName, dataCenter datacenterName, server serverAddress) (chan *pb.ClientMessage, error) {
 	key := fmt.Sprintf("%s:%s:%s", keyspace, dataCenter, server)
 	cc.Lock()
 	defer cc.Unlock()
@@ -32,7 +32,7 @@ func (cc *clientChannels) addClient(keyspace keyspace_name, dataCenter data_cent
 	return ch, nil
 }
 
-func (cc *clientChannels) removeClient(keyspace keyspace_name, dataCenter data_center_name, server server_address) error {
+func (cc *clientChannels) removeClient(keyspace keyspaceName, dataCenter datacenterName, server serverAddress) error {
 	key := fmt.Sprintf("%s:%s:%s", keyspace, dataCenter, server)
 	cc.Lock()
 	defer cc.Unlock()
@@ -45,7 +45,7 @@ func (cc *clientChannels) removeClient(keyspace keyspace_name, dataCenter data_c
 	return nil
 }
 
-func (cc *clientChannels) sendClient(keyspace keyspace_name, dataCenter data_center_name, server server_address, msg *pb.ClientMessage) error {
+func (cc *clientChannels) sendClient(keyspace keyspaceName, dataCenter datacenterName, server serverAddress, msg *pb.ClientMessage) error {
 	key := fmt.Sprintf("%s:%s:%s", keyspace, dataCenter, server)
 	cc.Lock()
 	defer cc.Unlock()
@@ -57,7 +57,7 @@ func (cc *clientChannels) sendClient(keyspace keyspace_name, dataCenter data_cen
 	return nil
 }
 
-func (cc *clientChannels) notifyClients(keyspace keyspace_name, dataCenter data_center_name, msg *pb.ClientMessage) error {
+func (cc *clientChannels) notifyClients(keyspace keyspaceName, dataCenter datacenterName, msg *pb.ClientMessage) error {
 	prefix := fmt.Sprintf("%s:%s:", keyspace, dataCenter)
 	cc.Lock()
 	for key, ch := range cc.clientChans {
@@ -69,7 +69,7 @@ func (cc *clientChannels) notifyClients(keyspace keyspace_name, dataCenter data_
 	return nil
 }
 
-func (cc *clientChannels) notifyStoreResourceUpdate(keyspace keyspace_name, dataCenter data_center_name, nodes []*pb.ClusterNode, isDelete bool, isPromotion bool) error {
+func (cc *clientChannels) notifyStoreResourceUpdate(keyspace keyspaceName, dataCenter datacenterName, nodes []*pb.ClusterNode, isDelete bool, isPromotion bool) error {
 	return cc.notifyClients(
 		keyspace,
 		dataCenter,
@@ -84,7 +84,7 @@ func (cc *clientChannels) notifyStoreResourceUpdate(keyspace keyspace_name, data
 	)
 }
 
-func (cc *clientChannels) sendClientCluster(keyspace keyspace_name, dataCenter data_center_name, server server_address, cluster *topology.Cluster) error {
+func (cc *clientChannels) sendClientCluster(keyspace keyspaceName, dataCenter datacenterName, server serverAddress, cluster *topology.Cluster) error {
 	return cc.sendClient(
 		keyspace,
 		dataCenter,
@@ -95,7 +95,7 @@ func (cc *clientChannels) sendClientCluster(keyspace keyspace_name, dataCenter d
 	)
 }
 
-func (cc *clientChannels) notifyClusterResize(keyspace keyspace_name, dataCenter data_center_name, currentClusterSize, targetClusterSize uint32) error {
+func (cc *clientChannels) notifyClusterResize(keyspace keyspaceName, dataCenter datacenterName, currentClusterSize, targetClusterSize uint32) error {
 	return cc.notifyClients(
 		keyspace,
 		dataCenter,
