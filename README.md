@@ -72,8 +72,26 @@ When the master receives a request to resize the keyspace from m shards to n sha
 To achive minimum data movement and avoid overloading a few particular existing stores when resizing, 
 Vasto used jumping hash to allocate data.
 
-# APIs
+# Client APIs
 
-Work in progress.
+See https://godoc.org/github.com/chrislusf/vasto/vs
+
+## Example
+
+    // create a vasto client talking to master at localhost:8278, in data center dc1
+	c := vs.NewVastoClient(context.Background(), "client_name", "localhost:8278", "dc1")
+    // create a cluster for keyspace ks1, in data center dc1, with one server, and one copy of data.
+	c.CreateCluster("ks1", "dc1", 1, 1)
+    // get a cluster client for ks1
+	ks := c.NewClusterClient("ks1")
+
+    ...
+    var key []byte
+    var value []byte
+    ks.Put(key, value)
+
+    data, _, _ := ks.Get(vs.Key(key))
+    ...
+
 
 Currently only basic go library is provided. The gateway is not ready yet.
