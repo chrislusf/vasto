@@ -31,12 +31,13 @@ minus the need to balance performance and cloud service costs, plus consistent a
 
 There are one Vasto master and N number of Vasto stores, plus Vasto clients or Vasto proxies/gateways.
 1. The Vasto stores are basically simple wrapper of RocksDB. 
-1. The Vasto master manage all the Vasto stores and Vasto clients.
-1. Vasto clients rely on master to connect to the right Vasto stores.
+1. The Vasto master manages all the Vasto stores and Vasto clients.
+1. Vasto clients rely on the master to connect to the right Vasto stores.
 1. Vasto gateways use Vasto client libraries to support different APIs.
 
 The master is the brain of the system. Vasto does not use gossip protocols, or other consensus algorithms.
-Vasto uses a single master for simple setup, fast failure detection, fast topology changes, and precise coordinations.
+Instead, Vasto uses a single master for simple setup, fast failure detection, fast topology changes,
+and precise coordinations.
 The master only contains soft states and is only required when topology changes. 
 So even if it ever crashes, a simple restart will recover everything.
 
@@ -69,8 +70,20 @@ When the master receives a request to resize the keyspace from m shards to n sha
 
 # Hashing algorithm
 
-To achive minimum data movement and avoid overloading a few particular existing stores when resizing, 
-Vasto used jumping hash to allocate data.
+Vasto used (Jumping Hash](https://arxiv.org/abs/1406.2294) to allocate data. This algorithm
+1. requires no storage. The master only need soft state to manage all store servers. It is OK to restart master.
+1. evenly distribute the data into buckets.
+1. when the number of bucket changes, it can also evenly dividing the workload.
+
+# Eventual Consistency and Active-Active Replication
+
+All Vasto stores can be used to read and write. The changes will be propagated to other replicas within a few
+milliseconds. Only the primary replica participate in the normal operations. The replica are participating
+when the primary replica is down, or in a different data center.
+
+Vasto assumes the data already has the event time. It should be the time when the event really happens, not the
+time when the data is feed into Vasto system. If the system fails over to the replica partition, and there are
+multiple changes to one key, the one with latest event times will win.
 
 # Client APIs
 
