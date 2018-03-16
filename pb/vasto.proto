@@ -1,5 +1,10 @@
 syntax = "proto3";
 
+option java_multiple_files = true;
+option java_package = "io.vasto";
+option java_outer_classname = "VastoProto";
+option objc_class_prefix = "VS";
+
 package pb;
 
 service VastoMaster {
