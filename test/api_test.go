@@ -9,7 +9,7 @@ import (
 	"context"
 	m "github.com/chrislusf/vasto/cmd/master"
 	s "github.com/chrislusf/vasto/cmd/store"
-	"github.com/chrislusf/vasto/vs"
+	"github.com/chrislusf/vasto/goclient/vs"
 	"log"
 	"os"
 	"time"

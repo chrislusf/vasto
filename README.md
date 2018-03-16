@@ -1,7 +1,7 @@
 # Vasto
 
 [![Build Status](https://travis-ci.org/chrislusf/vasto.svg?branch=master)](https://travis-ci.org/chrislusf/vasto)
-[![GoDoc](https://godoc.org/github.com/chrislusf/vasto/vs?status.svg)](https://godoc.org/github.com/chrislusf/vasto/vs)
+[![GoDoc](https://godoc.org/github.com/chrislusf/vasto/goclient/vs?status.svg)](https://godoc.org/github.com/chrislusf/vasto/goclient/vs)
 [![Go Report Card](https://goreportcard.com/badge/github.com/chrislusf/vasto)](https://goreportcard.com/report/github.com/chrislusf/vasto)
 [![codecov](https://codecov.io/gh/chrislusf/vasto/branch/master/graph/badge.svg)](https://codecov.io/gh/chrislusf/vasto)
 
@@ -87,7 +87,7 @@ multiple changes to one key, the one with latest event times will win.
 
 # Client APIs
 
-See https://godoc.org/github.com/chrislusf/vasto/vs
+See https://godoc.org/github.com/chrislusf/vasto/goclient/vs
 
 ## Example
 

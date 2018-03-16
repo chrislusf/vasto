@@ -2,7 +2,7 @@ package shell
 
 import (
 	"context"
-	"github.com/chrislusf/vasto/vs"
+	"github.com/chrislusf/vasto/goclient/vs"
 )
 
 // ShellOption has options to run the shell

@@ -7,7 +7,7 @@ import (
 	"context"
 	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/vs"
+	"github.com/chrislusf/vasto/goclient/vs"
 	"google.golang.org/grpc"
 	"sync/atomic"
 )

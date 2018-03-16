@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chrislusf/vasto/vs"
+	"github.com/chrislusf/vasto/goclient/vs"
 	"github.com/gosuri/uiprogress"
 )
 

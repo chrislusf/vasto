@@ -3,7 +3,7 @@ package shell
 import (
 	"io"
 
-	"github.com/chrislusf/vasto/vs"
+	"github.com/chrislusf/vasto/goclient/vs"
 )
 
 func init() {

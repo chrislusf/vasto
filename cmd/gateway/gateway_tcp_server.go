@@ -6,7 +6,7 @@ import (
 	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/util"
-	"github.com/chrislusf/vasto/vs"
+	"github.com/chrislusf/vasto/goclient/vs"
 	"github.com/golang/protobuf/proto"
 	"io"
 	"net"

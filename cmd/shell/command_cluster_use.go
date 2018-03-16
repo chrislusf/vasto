@@ -1,7 +1,7 @@
 package shell
 
 import (
-	"github.com/chrislusf/vasto/vs"
+	"github.com/chrislusf/vasto/goclient/vs"
 	"io"
 )
 
