@@ -168,7 +168,7 @@ func (clusterListener *ClusterListener) processClientMessage(msg *pb.ClientMessa
 					shardEventProcess.OnShardPromoteEvent(cluster, node.StoreResource, node.ShardInfo)
 				}
 			} else if msg.Updates.GetIsDelete() {
-				clusterListener.removeNode(msg.Updates.Keyspace, node)
+				clusterListener.removeNode(cluster, node)
 				for _, shardEventProcess := range clusterListener.shardEventProcessors {
 					if shardEventProcess != nil {
 						shardEventProcess.OnShardRemoveEvent(cluster, node.StoreResource, node.ShardInfo)

@@ -17,11 +17,8 @@ func addNode(cluster *topology.Cluster, n *pb.ClusterNode) (oldShardInfo *pb.Sha
 	return cluster.SetShard(n.StoreResource, n.ShardInfo)
 }
 
-func (clusterListener *ClusterListener) removeNode(keyspace string, n *pb.ClusterNode) {
-	cluster, found := clusterListener.GetCluster(keyspace)
-	if !found {
-		return
-	}
+func (clusterListener *ClusterListener) removeNode(cluster *topology.Cluster, n *pb.ClusterNode) {
+
 	if n.ShardInfo.IsCandidate {
 		if cluster.GetNextCluster() == nil {
 			cluster.SetNextCluster(int(n.ShardInfo.ClusterSize), int(n.ShardInfo.ReplicationFactor))
