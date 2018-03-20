@@ -74,7 +74,7 @@ func (c *ClusterClient) broadcastEachShard(prefixRequest *pb.GetByPrefixRequest)
 
 func (c *ClusterClient) prefixQueryToSingleShard(shardId int, prefixRequest *pb.GetByPrefixRequest) (results []*KeyValue, err error) {
 
-	responses, err := c.sendRequestsToOneShard([]*pb.Request{{
+	responses, err := c.sendRequestsToOneShard(shardId, []*pb.Request{{
 		ShardId:     uint32(shardId),
 		GetByPrefix: prefixRequest,
 	}})

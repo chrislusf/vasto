@@ -37,15 +37,9 @@ func (c *ClusterClient) GetCluster() (*topology.Cluster, error) {
 
 // sendRequestsToOneShard send the requests to one partition
 // assuming the requests going to the same shard
-func (c *ClusterClient) sendRequestsToOneShard(requests []*pb.Request) (results []*pb.Response, err error) {
+func (c *ClusterClient) sendRequestsToOneShard(shardId int, requests []*pb.Request) (results []*pb.Response, err error) {
 
-	if len(requests) == 0 {
-		return nil, nil
-	}
-
-	shardId := requests[0].ShardId
-
-	conn, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, int(shardId), c.Replica)
+	conn, err := c.ClusterListener.GetConnectionByShardId(c.keyspace, shardId, c.Replica)
 
 	if err != nil {
 		return nil, err
@@ -85,7 +79,7 @@ func (c *ClusterClient) BatchProcess(requests []*pb.Request,
 
 	err = mapEachShard(shardIdToRequests, func(shardId uint32, requests []*pb.Request) error {
 
-		responses, err := c.sendRequestsToOneShard(requests)
+		responses, err := c.sendRequestsToOneShard(int(shardId), requests)
 
 		if err != nil {
 			return fmt.Errorf("shard %d process error: %v", shardId, err)
