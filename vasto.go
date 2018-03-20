@@ -49,7 +49,7 @@ var (
 		TcpPort:           store.Flag("port", "store listening tcp port").Default("8279").Int32(),
 		DisableUnixSocket: store.Flag("disableUnixSocket", "store listening unix socket").Default("false").Bool(),
 		Master:            store.Flag("master", "master address").Default("localhost:8278").String(),
-		DataCenter:        store.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
+		DataCenter:        store.Flag("dataCenter", "data center name").Default("dc1").String(),
 		LogFileSizeMb:     store.Flag("logFileSizeMb", "log file size limit in MB").Default("128").Int(),
 		LogFileCount:      store.Flag("logFileCount", "log file count limit").Default("3").Int(),
 		DiskSizeGb:        store.Flag("diskSizeGb", "disk size in GB").Default("10").Int(),
@@ -69,7 +69,7 @@ var (
 		TcpPort:           server.Flag("store.port", "server listening tcp port").Default("8279").Int32(),
 		DisableUnixSocket: server.Flag("store.disableUnixSocket", "server listening unix socket").Default("false").Bool(),
 		Master:            server.Flag("store.master", "master address").Default("localhost:8278").String(),
-		DataCenter:        server.Flag("store.dataCenter", "data center name").Default("defaultDataCenter").String(),
+		DataCenter:        server.Flag("store.dataCenter", "data center name").Default("dc1").String(),
 		LogFileSizeMb:     server.Flag("store.logFileSizeMb", "log file size limit in MB").Default("128").Int(),
 		LogFileCount:      server.Flag("store.logFileCount", "log file count limit").Default("3").Int(),
 		DiskSizeGb:        server.Flag("store.diskSizeGb", "disk size in GB").Default("10").Int(),
@@ -83,7 +83,7 @@ var (
 		TcpAddress: gateway.Flag("address", "gateway tcp host address").Default(":8281").String(),
 		UnixSocket: gateway.Flag("unixSocket", "gateway listening unix socket").Default("").Short('s').String(),
 		Master:     gateway.Flag("master", "master address").Default("localhost:8278").String(),
-		DataCenter: gateway.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
+		DataCenter: gateway.Flag("dataCenter", "data center name").Default("dc1").String(),
 		Keyspace:   gateway.Flag("keyspace", "keyspace name").Default("").String(),
 	}
 	gatewayProfile = gateway.Flag("cpuprofile", "cpu profile output file").Default("").String()
@@ -95,7 +95,7 @@ var (
 		RequestCountStart: bench.Flag("requestNumberStart", "starting request index").Default("0").Int32(),
 		BatchSize:         bench.Flag("batchSize", "put requests in batch").Default("1").Short('b').Int32(),
 		Master:            bench.Flag("master", "master address").Default("localhost:8278").String(),
-		DataCenter:        bench.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
+		DataCenter:        bench.Flag("dataCenter", "data center name").Default("dc1").String(),
 		Keyspace:          bench.Flag("keyspace", "keyspace name").Default("benchmark").String(),
 		Tests:             bench.Flag("tests", "[put|get]").Default("put,get").Short('t').String(),
 		DisableUnixSocket: bench.Flag("disableUnixSocket", "avoid unix socket and only use tcp network").Default("false").Bool(),
@@ -105,7 +105,7 @@ var (
 	shell       = app.Command("shell", "Start a vasto shell")
 	shellOption = &sh.ShellOption{
 		Master:     shell.Flag("master", "master address").Default("localhost:8278").String(),
-		DataCenter: shell.Flag("dataCenter", "data center name").Default("defaultDataCenter").String(),
+		DataCenter: shell.Flag("dataCenter", "data center name").Default("dc1").String(),
 		Keyspace:   shell.Flag("keyspace", "keyspace name").Default("").String(),
 	}
 
