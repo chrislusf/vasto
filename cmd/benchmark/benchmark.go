@@ -66,7 +66,7 @@ func (b *benchmarker) runBenchmarkerOnCluster(ctx context.Context, option *Bench
 						key := []byte(fmt.Sprintf("k%d", i+t))
 						value := []byte(fmt.Sprintf("v%d", i+t))
 
-						row := vs.NewKeyValue(key, value)
+						row := vs.NewKeyValue(vs.Key(key), vs.BytesValue(value))
 
 						rows = append(rows, row)
 

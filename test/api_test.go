@@ -32,9 +32,9 @@ func TestOpen(t *testing.T) {
 	log.Println("NewClusterClient ks1")
 
 	ks.BatchPut([]*vs.KeyValue{
-		vs.NewKeyValue([]byte("x1"), []byte("y2")),
-		vs.NewKeyValue([]byte("x2"), []byte("y2")),
-		vs.NewKeyValue([]byte("x3"), []byte("y3")),
+		vs.NewKeyValue(vs.Key([]byte("x1")), vs.BytesValue([]byte("y1"))),
+		vs.NewKeyValue(vs.Key([]byte("x2")), vs.BytesValue([]byte("y2"))),
+		vs.NewKeyValue(vs.Key([]byte("x3")), vs.BytesValue([]byte("y3"))),
 	})
 
 	data, _, err := ks.Get(vs.Key([]byte("x2")))

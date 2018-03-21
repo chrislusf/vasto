@@ -2,59 +2,27 @@ package vs
 
 import (
 	"github.com/chrislusf/vasto/pb"
-	"github.com/chrislusf/vasto/util"
 )
 
 // KeyValue stores a reference to KeyObject, data type, and actual data bytes
 type KeyValue struct {
 	*KeyObject
-	valueType pb.OpAndDataType
-	value     []byte
+	*ValueObject
 }
 
 // NewKeyValue creates a KeyValue with a bytes value
-func NewKeyValue(key, value []byte) *KeyValue {
+func NewKeyValue(key *KeyObject, value *ValueObject) *KeyValue {
 	r := &KeyValue{
-		KeyObject: Key(key),
-		valueType: pb.OpAndDataType_BYTES,
-		value:     value,
+		KeyObject:   key,
+		ValueObject: value,
 	}
 	return r
-}
-
-// NewKeyFloat64Value creates a KeyValue with a float64 value
-func NewKeyFloat64Value(key []byte, value float64) *KeyValue {
-	r := &KeyValue{
-		KeyObject: Key(key),
-		valueType: pb.OpAndDataType_FLOAT64,
-		value:     util.Float64ToBytes(value),
-	}
-	return r
-}
-
-// GetValue returns the value bytes
-func (kv *KeyValue) GetValue() []byte {
-	return kv.value
-}
-
-// GetFloat64 returns the value float64
-func (kv *KeyValue) GetFloat64() float64 {
-	if kv.valueType == pb.OpAndDataType_FLOAT64 {
-		return util.BytesToFloat64(kv.value)
-	}
-	return 0
-}
-
-// GetValueType returns the data type of the value
-func (kv *KeyValue) GetValueType() pb.OpAndDataType {
-	return kv.valueType
 }
 
 func fromPbKeyTypeValue(kv *pb.KeyTypeValue) *KeyValue {
 	r := &KeyValue{
-		KeyObject: Key(kv.Key),
-		valueType: kv.DataType,
-		value:     kv.Value,
+		KeyObject:   Key(kv.Key),
+		ValueObject: Value(kv.Value, kv.DataType),
 	}
 	r.KeyObject.SetPartitionHash(kv.PartitionHash)
 	return r
