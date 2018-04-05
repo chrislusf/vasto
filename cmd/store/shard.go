@@ -101,7 +101,7 @@ func (s *shard) setCompactionFilterClusterSize(clusterSize int) {
 
 }
 
-func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, selfAdminAddress string, existingPrimaryShards []*pb.ClusterNode) error {
+func (s *shard) startWithBootstrapPlan(bootstrapPlan *topology.BootstrapPlan, selfAdminAddress string, existingPrimaryShards []*pb.ClusterNode) error {
 
 	if len(existingPrimaryShards) == 0 {
 		for i := 0; i < s.cluster.ExpectedSize(); i++ {
@@ -121,20 +121,20 @@ func (s *shard) startWithBootstrapPlan(bootstrapOption *topology.BootstrapPlan, 
 	}
 
 	// add normal follow
-	s.adjustNormalFollowings(bootstrapOption.ToClusterSize, s.cluster.ReplicationFactor())
+	s.adjustNormalFollowings(bootstrapPlan.ToClusterSize, s.cluster.ReplicationFactor())
 
 	oneTimeFollowCtx, oneTimeFollowCancelFunc := context.WithCancel(context.Background())
 
 	// add one time follow during transitional period, there are no retries, assuming the source shards are already up
-	glog.V(1).Infof("%s one-time follow %+v, cluster %v", s.String(), bootstrapOption.TransitionalFollowSource, s.cluster.String())
-	for _, shard := range bootstrapOption.TransitionalFollowSource {
+	glog.V(1).Infof("%s one-time follow %+v, cluster %v", s.String(), bootstrapPlan.TransitionalFollowSource, s.cluster.String())
+	for _, shard := range bootstrapPlan.TransitionalFollowSource {
 		go func(shard topology.ClusterShard, existingPrimaryShards []*pb.ClusterNode) {
 			glog.V(2).Infof("%s one-time follow2 %+v, existing servers: %v", s.String(), shard, existingPrimaryShards)
 			err := topology.VastoNodes(existingPrimaryShards).WithConnection(
 				fmt.Sprintf("%s one-time follow %d.%d", s.String(), shard.ServerId, shard.ShardId),
 				shard.ServerId,
 				func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
-					return s.followChanges(oneTimeFollowCtx, node, grpcConnection, shard.ShardId, bootstrapOption.ToClusterSize, true)
+					return s.followChanges(oneTimeFollowCtx, node, grpcConnection, shard.ShardId, bootstrapPlan.ToClusterSize, true)
 				},
 			)
 			if err != nil {
