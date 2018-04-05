@@ -146,7 +146,7 @@ func (s *shard) checkBinlogAvailable(ctx context.Context, grpcConnection *grpc.C
 
 	segment, _, hasProgress, err := s.loadProgress(node.StoreResource.GetAdminAddress(), s.id)
 
-	// println("shard", s.id, "segment", segment, "hasProgress", hasProgress, "err", err)
+	glog.V(1).Infof("checkBinlogAvailable: shard %d segment %d hasProgress:%b, err: %v", s.id, segment, hasProgress, err)
 
 	if !hasProgress {
 		return 0, false, nil

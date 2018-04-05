@@ -16,6 +16,9 @@ func (s *shard) isBootstrapNeeded(ctx context.Context, bootstrapOption *topology
 	isBootstrapNeededChan := make(chan bool, len(peerShards))
 	maxSegment := uint32(0)
 	checkedServerCount := 0
+
+	glog.V(1).Infof("shard %v checkBinlogAvailable on peers %v", s.id, peerShards)
+
 	for _, peer := range peerShards {
 		_, ok := s.cluster.GetNode(peer.ServerId, 0)
 		if !ok {
@@ -28,6 +31,7 @@ func (s *shard) isBootstrapNeeded(ctx context.Context, bootstrapOption *topology
 				latestSegment, canTailBinlog, err := s.checkBinlogAvailable(ctx, grpcConnection, node)
 				if err != nil {
 					isBootstrapNeededChan <- false
+					glog.V(1).Infof("shard %v checkBinlogAvailable on %s: %v", s.id, node.StoreResource, err)
 					return err
 				}
 				if latestSegment >= maxSegment {
@@ -49,7 +53,7 @@ func (s *shard) isBootstrapNeeded(ctx context.Context, bootstrapOption *topology
 	if isNeeded {
 		glog.V(1).Infof("shard %v found peer server %v to bootstrap from", s.String(), bestPeerToCopy)
 	} else {
-		glog.V(2).Infof("shard %v found bootstrapping is not needed", s.id)
+		glog.V(1).Infof("shard %v found bootstrapping is not needed", s.id)
 	}
 
 	return bestPeerToCopy, isNeeded
