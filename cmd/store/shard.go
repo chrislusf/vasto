@@ -111,7 +111,7 @@ func (s *shard) startWithBootstrapPlan(bootstrapPlan *topology.BootstrapPlan, se
 		}
 	}
 
-	// bootstrap the data
+	// bootstrap the data from peers
 	if s.cluster != nil {
 		err := s.maybeBootstrapAfterRestart(s.ctx)
 		if err != nil {
@@ -119,6 +119,9 @@ func (s *shard) startWithBootstrapPlan(bootstrapPlan *topology.BootstrapPlan, se
 			return fmt.Errorf("normal bootstrap %s: %v", s.String(), err)
 		}
 	}
+
+	// bootstrap if any topology change
+	s.topoChangeBootstrap(context.Background(), bootstrapPlan, existingPrimaryShards)
 
 	// add normal follow
 	s.adjustNormalFollowings(bootstrapPlan.ToClusterSize, s.cluster.ReplicationFactor())
