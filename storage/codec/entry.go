@@ -2,6 +2,7 @@ package codec
 
 import (
 	"encoding/binary"
+	"github.com/chrislusf/glog"
 	"time"
 )
 
@@ -32,6 +33,11 @@ func (e *Entry) ToBytes() []byte {
 
 // FromBytes deserialize bytes into one Entry
 func FromBytes(b []byte) *Entry {
+
+	if len(b) <= 21 {
+		glog.Errorf("failed to decode entry: %x", b)
+		return nil
+	}
 
 	return &Entry{
 		PartitionHash: binary.LittleEndian.Uint64(b[0:8]),

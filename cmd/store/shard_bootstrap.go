@@ -116,26 +116,51 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 
 			// slow way to backfill
 			glog.V(1).Infof("bootstrap %v via sorted insert ...", s.String())
-			return pb.MergeSorted(sourceRowChans, func(keyValue *pb.RawKeyValue) error {
+			glog.V(1).Infof("life file size before: %d", s.db.LiveFilesSize())
+
+			var receivedCounter int
+			var newCounter int
+			var expiredCounter int
+			var updatedCounter int
+			var skippedCounter int
+
+			err := pb.MergeSorted(sourceRowChans, func(keyValue *pb.RawKeyValue) error {
+
+				receivedCounter++
 
 				b, err := s.db.Get(keyValue.Key)
 				if err != nil || len(b) == 0 {
+					newCounter++
 					return s.db.Put(keyValue.Key, keyValue.Value)
 				}
 
 				existingRow := codec.FromBytes(b)
 				if existingRow.IsExpired() {
+					expiredCounter++
 					return s.db.Put(keyValue.Key, keyValue.Value)
 				}
 
 				incomingRow := codec.FromBytes(keyValue.Value)
 				if existingRow.UpdatedAtNs < incomingRow.UpdatedAtNs {
+					updatedCounter++
 					return s.db.Put(keyValue.Key, keyValue.Value)
 				}
+
+				skippedCounter++
 
 				return nil
 
 			})
+
+			glog.V(1).Infof("bootstrap %v via sorted insert processed %d entries", s.String(), receivedCounter)
+			glog.V(1).Infof("new entries: %d", newCounter)
+			glog.V(1).Infof("expired entries: %d", expiredCounter)
+			glog.V(1).Infof("updated entries: %d", updatedCounter)
+			glog.V(1).Infof("skipped entries: %d", skippedCounter)
+
+			glog.V(1).Infof("life file size after: %d", s.db.LiveFilesSize())
+
+			return err
 
 		},
 	)
@@ -174,7 +199,9 @@ func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.Client
 
 	glog.V(1).Infof("bootstrap %s from %s %s filter by %d/%d", s.String(), node.StoreResource.Address, node.ShardInfo.IdentifierOnThisServer(), targetShardId, targetClusterSize)
 
-	segment, offset, err := s.writeToSst(ctx, grpcConnection, node.ShardInfo, clusterSize, targetClusterSize, targetShardId)
+	counter, segment, offset, err := s.writeToSst(ctx, grpcConnection, node.ShardInfo, clusterSize, targetClusterSize, targetShardId)
+
+	glog.V(1).Infof("bootstrap %s from %s %s filter by %d/%d received %d entries", s.String(), node.StoreResource.Address, node.ShardInfo.IdentifierOnThisServer(), targetShardId, targetClusterSize, counter)
 
 	if err != nil {
 		return fmt.Errorf("writeToSst: %v", err)
@@ -206,6 +233,7 @@ func (s *shard) doBootstrapCopy2(ctx context.Context, grpcConnection *grpc.Clien
 
 	var segment uint32
 	var offset uint64
+	var counter int
 
 	for {
 
@@ -222,6 +250,7 @@ func (s *shard) doBootstrapCopy2(ctx context.Context, grpcConnection *grpc.Clien
 			// fmt.Printf("%s add to sst: %v\n", sourceShardInfo.IdentifierOnThisServer(), string(keyValue.Key))
 			t := keyValue
 			rowChan <- t
+			counter++
 
 		}
 
@@ -232,13 +261,13 @@ func (s *shard) doBootstrapCopy2(ctx context.Context, grpcConnection *grpc.Clien
 
 	}
 
-	glog.V(1).Infof("bootstrap2 %s from %s segment:offset=%d:%d : %v", s.String(), node.ShardInfo.IdentifierOnThisServer(), segment, offset, err)
+	glog.V(1).Infof("bootstrap2 %s from %s received %d entries, segment:offset=%d:%d : %v", s.String(), node.ShardInfo.IdentifierOnThisServer(), counter, segment, offset, err)
 	s.saveProgress(node.StoreResource.GetAdminAddress(), VastoShardId(node.ShardInfo.ShardId), segment, offset)
 
 	return
 }
 
-func (s *shard) writeToSst(ctx context.Context, grpcConnection *grpc.ClientConn, sourceShardInfo *pb.ShardInfo, clusterSize, targetClusterSize int, targetShardId int) (segment uint32, offset uint64, err error) {
+func (s *shard) writeToSst(ctx context.Context, grpcConnection *grpc.ClientConn, sourceShardInfo *pb.ShardInfo, clusterSize, targetClusterSize int, targetShardId int) (counter int, segment uint32, offset uint64, err error) {
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
@@ -253,14 +282,12 @@ func (s *shard) writeToSst(ctx context.Context, grpcConnection *grpc.ClientConn,
 
 	stream, err := client.BootstrapCopy(ctx, request)
 	if err != nil {
-		return 0, 0, fmt.Errorf("client.BootstrapCopy: %v", err)
+		return 0, 0, 0, fmt.Errorf("client.BootstrapCopy: %v", err)
 	}
 
 	err = s.db.AddSstByWriter(fmt.Sprintf("bootstrap %s from %s %d/%d", s.String(), sourceShardInfo.IdentifierOnThisServer(), targetShardId, targetClusterSize),
 
 		func(w *gorocksdb.SSTFileWriter) (int, error) {
-
-			var counter int
 
 			for {
 

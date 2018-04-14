@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/goclient/vs"
+	"github.com/chrislusf/vasto/pb"
 )
 
 func init() {

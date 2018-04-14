@@ -55,6 +55,7 @@ var (
 		DiskSizeGb:        store.Flag("diskSizeGb", "disk size in GB").Default("10").Int(),
 		Tags:              store.Flag("tags", "comma separated tags").Default("").String(),
 		DisableUseEventIo: store.Flag("disableUseEventIo", "use event loop for network").Default("false").Bool(),
+		DisableBinLog:     store.Flag("disableBinLog", "disable binary log").Default("false").Bool(),
 	}
 	storeProfile = store.Flag("cpuprofile", "cpu profile output file").Default("").String()
 

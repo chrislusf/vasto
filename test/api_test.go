@@ -121,6 +121,7 @@ func startMasterAndStore() int {
 		DiskSizeGb:        getInt(10),
 		Tags:              getString(""),
 		DisableUseEventIo: getBool(false),
+		DisableBinLog:     getBool(false),
 	}
 
 	go s.RunStore(storeOption)

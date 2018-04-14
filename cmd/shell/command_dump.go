@@ -6,8 +6,8 @@ import (
 
 	"context"
 	"github.com/chrislusf/glog"
-	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/goclient/vs"
+	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc"
 	"sync/atomic"
 )

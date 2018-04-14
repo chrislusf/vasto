@@ -112,6 +112,31 @@ func deleteShards(ctx context.Context, req *pb.DeleteClusterRequest, stores []*p
 
 }
 
+func compactShards(ctx context.Context, req *pb.CompactClusterRequest, stores []*pb.StoreResource) error {
+
+	return eachStore(stores, func(serverId int, store *pb.StoreResource) error {
+		// glog.V(2).Infof"connecting to server %d at %s", serverId, store.GetAdminAddress())
+		return withConnection(store, func(grpcConnection *grpc.ClientConn) error {
+
+			client := pb.NewVastoStoreClient(grpcConnection)
+			request := &pb.CompactKeyspaceRequest{
+				Keyspace: req.Keyspace,
+			}
+
+			glog.V(1).Infof("compact keyspace on %v: %v", store.AdminAddress, request)
+			resp, err := client.CompactKeyspace(ctx, request)
+			if err != nil {
+				return err
+			}
+			if resp.Error != "" {
+				return fmt.Errorf("compact keyspace %s on %s: %s", req.Keyspace, store.AdminAddress, resp.Error)
+			}
+			return nil
+		})
+	})
+
+}
+
 func withConnection(store *pb.StoreResource, fn func(*grpc.ClientConn) error) error {
 
 	grpcConnection, err := grpc.Dial(store.GetAdminAddress(), grpc.WithInsecure())

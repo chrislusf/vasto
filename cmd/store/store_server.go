@@ -31,6 +31,7 @@ type StoreOption struct {
 	DiskSizeGb        *int
 	Tags              *string
 	DisableUseEventIo *bool
+	DisableBinLog     *bool
 }
 
 // GetAdminPort returns the admin port of the store, which is the data port plus 10000

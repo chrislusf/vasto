@@ -28,7 +28,9 @@ func (ss *storeServer) processPut(shard *shard, putRequest *pb.PutRequest) *pb.W
 		resp.Ok = false
 		resp.Status = err.Error()
 	} else {
-		shard.logPut(putRequest, nowInNano)
+		if !*ss.option.DisableBinLog {
+			shard.logPut(putRequest, nowInNano)
+		}
 	}
 
 	return resp

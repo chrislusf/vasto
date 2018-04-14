@@ -28,7 +28,9 @@ func (ss *storeServer) processMerge(shard *shard, mergeRequest *pb.MergeRequest)
 		resp.Ok = false
 		resp.Status = err.Error()
 	} else {
-		shard.logMerge(mergeRequest, nowInNano)
+		if !*ss.option.DisableBinLog {
+			shard.logMerge(mergeRequest, nowInNano)
+		}
 	}
 
 	return resp

@@ -1,8 +1,8 @@
 package vs
 
 import (
-	"github.com/chrislusf/vasto/util"
 	"github.com/chrislusf/vasto/pb"
+	"github.com/chrislusf/vasto/util"
 )
 
 type ValueObject struct {

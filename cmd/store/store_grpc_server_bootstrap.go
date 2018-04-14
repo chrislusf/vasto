@@ -37,24 +37,32 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 		batchSize *= targetClusterSize
 	}
 
+	sentCounter := 0
+	skippedCounter := 0
 	err := shard.db.FullScan(batchSize, func(rows []*pb.RawKeyValue) error {
 
 		var filteredRows []*pb.RawKeyValue
 		for _, row := range rows {
 			if bytes.HasPrefix(row.Key, VastoInternalKeyPrefix) {
+				skippedCounter++
 				continue
 			}
 			partitionHash := codec.GetPartitionHashFromBytes(row.Value)
 			if jump.Hash(partitionHash, currentClusterSize) != currentShardId {
 				// glog.V(2).Infof("skipping key=%s currentClusterSize=%d currentShardId=%d", string(row.Key), currentClusterSize, currentShardId)
+				skippedCounter++
 				continue
 			}
 			if targetClusterSize > 0 {
 				if jump.Hash(partitionHash, targetClusterSize) == targetShardId {
 					filteredRows = append(filteredRows, row)
+					sentCounter++
+				} else {
+					skippedCounter++
 				}
 			} else {
 				filteredRows = append(filteredRows, row)
+				sentCounter++
 			}
 		}
 
@@ -77,7 +85,7 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 		return err
 	}
 
-	glog.V(1).Infof("BootstrapCopy %v completed at %d:%d", request, segment, offset)
+	glog.V(1).Infof("BootstrapCopy %v sent %d entries at %d:%d, skipped %d", request, sentCounter, segment, offset, skippedCounter)
 
 	return err
 }

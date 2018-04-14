@@ -29,6 +29,9 @@ service VastoMaster {
     rpc DeleteCluster (DeleteClusterRequest) returns (DeleteClusterResponse) {
     }
 
+    rpc CompactCluster (CompactClusterRequest) returns (CompactClusterResponse) {
+    }
+
     rpc ResizeCluster (ResizeRequest) returns (ResizeResponse) {
     }
 
@@ -65,6 +68,8 @@ service VastoStore {
     rpc CreateShard (CreateShardRequest) returns (CreateShardResponse) {
     }
     rpc DeleteKeyspace (DeleteKeyspaceRequest) returns (DeleteKeyspaceResponse) {
+    }
+    rpc CompactKeyspace (CompactKeyspaceRequest) returns (CompactKeyspaceResponse) {
     }
 
     rpc ReplicateNodePrepare (ReplicateNodePrepareRequest) returns (ReplicateNodePrepareResponse) {
@@ -435,6 +440,15 @@ message DeleteClusterResponse {
     string error = 1;
 }
 
+message CompactClusterRequest {
+    string data_center = 1;
+    string keyspace = 2;
+}
+
+message CompactClusterResponse {
+    string error = 1;
+}
+
 message ReplaceNodeRequest {
     string data_center = 1;
     string keyspace = 2;
@@ -462,6 +476,14 @@ message DeleteKeyspaceRequest {
 }
 
 message DeleteKeyspaceResponse {
+    string error = 1;
+}
+
+message CompactKeyspaceRequest {
+    string keyspace = 1;
+}
+
+message CompactKeyspaceResponse {
     string error = 1;
 }
 

@@ -110,6 +110,28 @@ func (c *VastoClient) DeleteCluster(keyspace, dataCenter string) error {
 
 }
 
+// CompactCluster deletes the cluster of the keyspace in the data center
+func (c *VastoClient) CompactCluster(keyspace, dataCenter string) error {
+
+	resp, err := c.MasterClient.CompactCluster(
+		c.ctx,
+		&pb.CompactClusterRequest{
+			DataCenter: dataCenter,
+			Keyspace:   keyspace,
+		},
+	)
+
+	if err != nil {
+		return fmt.Errorf("compact cluster request: %v", err)
+	}
+	if resp.Error != "" {
+		return fmt.Errorf("compact cluster: %v", resp.Error)
+	}
+
+	return nil
+
+}
+
 // ResizeCluster changes the size of the cluster of the keyspace and data center
 func (c *VastoClient) ResizeCluster(keyspace, dataCenter string, newClusterSize int) error {
 

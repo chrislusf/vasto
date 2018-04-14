@@ -65,6 +65,10 @@ func (ss *storeServer) ResizeCleanup(ctx context.Context, request *pb.ResizeClea
 
 func (ss *storeServer) resizeCreateShards(ctx context.Context, request *pb.ResizeCreateShardRequest) (err error) {
 
+	ss.eachLocalShard(request.Keyspace, int(request.TargetClusterSize), func(shard *shard) {
+		shard.db.PrepareForClusterResize()
+	})
+
 	err = ss.createShards(request.Keyspace, int(request.ServerId), int(request.TargetClusterSize), int(request.ReplicationFactor), true, func(shardId int) *topology.BootstrapPlan {
 
 		return topology.BootstrapPlanWithTopoChange(&topology.BootstrapRequest{
@@ -77,6 +81,9 @@ func (ss *storeServer) resizeCreateShards(ctx context.Context, request *pb.Resiz
 
 	})
 	if err != nil {
+		ss.eachLocalShard(request.Keyspace, int(request.TargetClusterSize), func(shard *shard) {
+			shard.db.CompleteClusterResize()
+		})
 		return
 	}
 
@@ -89,6 +96,11 @@ func (ss *storeServer) resizeCommitShardInfoNewCluster(ctx context.Context, requ
 	if !found {
 		return fmt.Errorf("not found keyspace %s", request.Keyspace)
 	}
+
+	defer ss.eachLocalShard(request.Keyspace, int(request.TargetClusterSize), func(shard *shard) {
+		shard.setCompactionFilterClusterSize(int(request.TargetClusterSize))
+		shard.db.CompleteClusterResize()
+	})
 
 	hasChanges := false
 
@@ -110,17 +122,6 @@ func (ss *storeServer) resizeCommitShardInfoNewCluster(ctx context.Context, requ
 	if hasChanges {
 		if err = ss.saveClusterConfig(localShardsStatus, request.Keyspace); err != nil {
 			return err
-		}
-	}
-
-	shards, found := ss.keyspaceShards.getShards(request.Keyspace)
-	if !found {
-		return fmt.Errorf("unexpected shards not found for %s", request.Keyspace)
-	}
-
-	for _, shard := range shards {
-		if topology.IsShardInLocal(int(shard.id), int(shard.serverId), int(request.TargetClusterSize), shard.cluster.ReplicationFactor()) {
-			shard.setCompactionFilterClusterSize(int(request.TargetClusterSize))
 		}
 	}
 
@@ -167,5 +168,20 @@ func (ss *storeServer) deleteOldShardsInNewCluster(ctx context.Context, request 
 		}
 	}
 
+	return nil
+}
+
+func (ss *storeServer) eachLocalShard(keyspace string, targetClusterSize int, eachFunc func(*shard)) error {
+	shards, found := ss.keyspaceShards.getShards(keyspace)
+	if !found {
+		glog.V(0).Infof("unexpected shards not found for %s", keyspace)
+		return fmt.Errorf("unexpected shards not found for %s", keyspace)
+	}
+
+	for _, shard := range shards {
+		if topology.IsShardInLocal(int(shard.id), int(shard.serverId), targetClusterSize, shard.cluster.ReplicationFactor()) {
+			eachFunc(shard)
+		}
+	}
 	return nil
 }
