@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/chrislusf/gorocksdb"
 	"github.com/chrislusf/vasto/pb"
 	"github.com/chrislusf/vasto/storage/codec"
 	"github.com/chrislusf/vasto/util"
