@@ -70,10 +70,16 @@ When the master receives a request to resize the keyspace from m shards to n sha
 
 # Hashing algorithm
 
-Vasto used [Jumping Hash](https://arxiv.org/abs/1406.2294) to allocate data. This algorithm
+Vasto used [Jumping Consistent Hash](https://arxiv.org/abs/1406.2294) to allocate data. This algorithm
 1. requires no storage. The master only need soft state to manage all store servers. It is OK to restart master.
 1. evenly distribute the data into buckets.
 1. when the number of bucket changes, it can also evenly dividing the workload.
+
+With this jumping hash, the cluster resizing is rather simple, flexible, and efficient:
+1. Cluster can resize up or down freely.
+1. Resizing is well coordinated.
+1. Data can be moved via the most efficient SSTable writes.
+1. Clients aware of the cluster change and can redirect traffic only when the new whole new server are ready.
 
 # Eventual Consistency and Active-Active Replication
 
