@@ -54,7 +54,6 @@ var (
 		LogFileCount:      store.Flag("logFileCount", "log file count limit").Default("3").Int(),
 		DiskSizeGb:        store.Flag("diskSizeGb", "disk size in GB").Default("10").Int(),
 		Tags:              store.Flag("tags", "comma separated tags").Default("").String(),
-		DisableUseEventIo: store.Flag("disableUseEventIo", "use event loop for network").Default("false").Bool(),
 		DisableBinLog:     store.Flag("disableBinLog", "disable binary log").Default("false").Bool(),
 	}
 	storeProfile = store.Flag("cpuprofile", "cpu profile output file").Default("").String()
@@ -75,7 +74,6 @@ var (
 		LogFileCount:      server.Flag("store.logFileCount", "log file count limit").Default("3").Int(),
 		DiskSizeGb:        server.Flag("store.diskSizeGb", "disk size in GB").Default("10").Int(),
 		Tags:              server.Flag("store.tags", "comma separated tags").Default("").String(),
-		DisableUseEventIo: server.Flag("store.disableUseEventIo", "use event loop for network").Default("false").Bool(),
 	}
 	serverProfile = server.Flag("cpuprofile", "cpu profile output file").Default("").String()
 

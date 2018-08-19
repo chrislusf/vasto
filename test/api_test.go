@@ -120,7 +120,6 @@ func startMasterAndStore() int {
 		LogFileCount:      getInt(3),
 		DiskSizeGb:        getInt(10),
 		Tags:              getString(""),
-		DisableUseEventIo: getBool(false),
 		DisableBinLog:     getBool(false),
 	}
 
