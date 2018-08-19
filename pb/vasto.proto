@@ -322,6 +322,7 @@ message BootstrapCopyRequest {
     uint32 target_shard_id = 4;
     uint32 target_cluster_size = 5;
     string origin = 6;
+    uint64 limit = 7;
 }
 message BootstrapCopyResponse {
 

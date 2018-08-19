@@ -9,7 +9,7 @@ import (
 	"github.com/chrislusf/vasto/goclient/vs"
 	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc"
-	"sync/atomic"
+	"strconv"
 )
 
 func init() {
@@ -24,7 +24,7 @@ func (c *commandDump) Name() string {
 }
 
 func (c *commandDump) Help() string {
-	return "keys|key_value"
+	return "keys|key_value [limit]"
 }
 
 func (c *commandDump) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) (doError error) {
@@ -32,6 +32,13 @@ func (c *commandDump) Do(vastoClient *vs.VastoClient, args []string, commandEnv 
 	isKeysOnly := true
 	if len(args) > 0 && args[0] == "key_value" {
 		isKeysOnly = false
+	}
+	limit := uint64(0)
+	if len(args) > 1 {
+		limit, doError = strconv.ParseUint(args[1], 10, 64)
+		if doError != nil {
+			return doError
+		}
 	}
 
 	if commandEnv.clusterClient == nil {
@@ -44,8 +51,6 @@ func (c *commandDump) Do(vastoClient *vs.VastoClient, args []string, commandEnv 
 	}
 
 	chans := make([]chan *pb.RawKeyValue, cluster.ExpectedSize())
-
-	var counter int64
 
 	for i := 0; i < cluster.ExpectedSize(); i++ {
 
@@ -68,6 +73,7 @@ func (c *commandDump) Do(vastoClient *vs.VastoClient, args []string, commandEnv 
 				TargetClusterSize: uint32(cluster.ExpectedSize()),
 				TargetShardId:     uint32(node.ShardInfo.ShardId),
 				Origin:            "shell dump",
+				Limit:             limit,
 			}
 
 			defer close(ch)
@@ -93,7 +99,6 @@ func (c *commandDump) Do(vastoClient *vs.VastoClient, args []string, commandEnv 
 					// fmt.Fprintf(writer, "%v,%v\n", string(keyValue.Key), string(keyValue.Value))
 
 					ch <- keyValue
-					atomic.AddInt64(&counter, 1)
 
 				}
 			}
@@ -102,7 +107,7 @@ func (c *commandDump) Do(vastoClient *vs.VastoClient, args []string, commandEnv 
 
 	}
 
-	err = pb.MergeSorted(chans, func(t *pb.RawKeyValue) error {
+	counter, err := pb.MergeSorted(chans, int64(limit), func(t *pb.RawKeyValue) error {
 		if isKeysOnly {
 			fmt.Fprintf(writer, "%v\n", string(t.Key))
 		} else {

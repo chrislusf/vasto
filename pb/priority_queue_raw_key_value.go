@@ -33,13 +33,13 @@ func (pq *pqRawKeyValue) Pop() interface{} {
 	old := *pq
 	n := len(old)
 	rawItem := old[n-1]
-	*pq = old[0 : n-1]
+	*pq = old[0: n-1]
 	return rawItem
 }
 
 // MergeSorted merges multiple channels of sorted RawKeyValue values into a bigger sorted list
 // and processed by the fn function.
-func MergeSorted(chans []chan *RawKeyValue, fn func(*RawKeyValue) error) error {
+func MergeSorted(chans []chan *RawKeyValue, limit int64, fn func(*RawKeyValue) error) (int64, error) {
 
 	pq := make(pqRawKeyValue, 0, len(chans))
 
@@ -57,10 +57,15 @@ func MergeSorted(chans []chan *RawKeyValue, fn func(*RawKeyValue) error) error {
 	}
 	heap.Init(&pq)
 
+	var counter int64
 	for pq.Len() > 0 {
 		t := heap.Pop(&pq).(*rawItem)
 		if err := fn(t.RawKeyValue); err != nil {
-			return err
+			return counter, err
+		}
+		counter++
+		if limit > 0 && counter >= limit {
+			break
 		}
 		newT, hasMore := <-chans[t.chanIndex]
 		if hasMore {
@@ -72,5 +77,5 @@ func MergeSorted(chans []chan *RawKeyValue, fn func(*RawKeyValue) error) error {
 		}
 	}
 
-	return nil
+	return counter, nil
 }

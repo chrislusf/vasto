@@ -34,7 +34,7 @@ func RetryForever(ctx context.Context, name string, fn func() error, waitTimes t
 
 		select {
 		case <-ctx.Done():
-			glog.V(9).Infof("%s has finished", name)
+			glog.V(0).Infof("%s has finished", name)
 			return
 		default:
 			glog.V(2).Infof("%s retrying...", name)

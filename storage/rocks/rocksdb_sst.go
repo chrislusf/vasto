@@ -10,8 +10,8 @@ import (
 
 func (d *Rocks) addSst(name string, next func() (bool, []byte, []byte)) error {
 
-	return d.AddSstByWriter(name, func(w *gorocksdb.SSTFileWriter) (int, error) {
-		var counter int
+	return d.AddSstByWriter(name, func(w *gorocksdb.SSTFileWriter) (int64, error) {
+		var counter int64
 		var hasNext bool
 		var key, value []byte
 		for {
@@ -30,7 +30,7 @@ func (d *Rocks) addSst(name string, next func() (bool, []byte, []byte)) error {
 }
 
 // AddSstByWriter add SST by ingesting behind
-func (d *Rocks) AddSstByWriter(name string, writerFunc func(*gorocksdb.SSTFileWriter) (int, error)) error {
+func (d *Rocks) AddSstByWriter(name string, writerFunc func(*gorocksdb.SSTFileWriter) (int64, error)) error {
 	envOpts := gorocksdb.NewDefaultEnvOptions()
 	defer envOpts.Destroy()
 	opts := gorocksdb.NewDefaultOptions()
@@ -53,7 +53,7 @@ func (d *Rocks) AddSstByWriter(name string, writerFunc func(*gorocksdb.SSTFileWr
 		return fmt.Errorf("open temp file: %v", err)
 	}
 
-	var counter int
+	var counter int64
 	counter, err = writerFunc(w)
 	if err != nil {
 		return fmt.Errorf("write: %v", err)

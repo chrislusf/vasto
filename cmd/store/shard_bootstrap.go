@@ -99,14 +99,12 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 				s.hasBackfilled = true
 				glog.V(1).Infof("bootstrap %v via sst ...", s.String())
 				return s.db.AddSstByWriter(fmt.Sprintf("%s bootstrapCopy write", s.String()),
-					func(w *gorocksdb.SSTFileWriter) (int, error) {
-						var counter int
-						err := pb.MergeSorted(sourceRowChans, func(keyValue *pb.RawKeyValue) error {
+					func(w *gorocksdb.SSTFileWriter) (int64, error) {
+						counter, err := pb.MergeSorted(sourceRowChans, 0, func(keyValue *pb.RawKeyValue) error {
 
 							if err := w.Add(keyValue.Key, keyValue.Value); err != nil {
 								return fmt.Errorf("add to sst: %v", err)
 							}
-							counter++
 							return nil
 						})
 						return counter, err
@@ -118,15 +116,13 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 			glog.V(1).Infof("bootstrap %v via sorted insert ...", s.String())
 			glog.V(1).Infof("life file size before: %d", s.db.LiveFilesSize())
 
-			var receivedCounter int
+			var receivedCounter int64
 			var newCounter int
 			var expiredCounter int
 			var updatedCounter int
 			var skippedCounter int
 
-			err := pb.MergeSorted(sourceRowChans, func(keyValue *pb.RawKeyValue) error {
-
-				receivedCounter++
+			receivedCounter, err := pb.MergeSorted(sourceRowChans, 0, func(keyValue *pb.RawKeyValue) error {
 
 				b, err := s.db.Get(keyValue.Key)
 				if err != nil || len(b) == 0 {
@@ -267,7 +263,7 @@ func (s *shard) doBootstrapCopy2(ctx context.Context, grpcConnection *grpc.Clien
 	return
 }
 
-func (s *shard) writeToSst(ctx context.Context, grpcConnection *grpc.ClientConn, sourceShardInfo *pb.ShardInfo, clusterSize, targetClusterSize int, targetShardId int) (counter int, segment uint32, offset uint64, err error) {
+func (s *shard) writeToSst(ctx context.Context, grpcConnection *grpc.ClientConn, sourceShardInfo *pb.ShardInfo, clusterSize, targetClusterSize int, targetShardId int) (counter int64, segment uint32, offset uint64, err error) {
 
 	client := pb.NewVastoStoreClient(grpcConnection)
 
@@ -287,7 +283,7 @@ func (s *shard) writeToSst(ctx context.Context, grpcConnection *grpc.ClientConn,
 
 	err = s.db.AddSstByWriter(fmt.Sprintf("bootstrap %s from %s %d/%d", s.String(), sourceShardInfo.IdentifierOnThisServer(), targetShardId, targetClusterSize),
 
-		func(w *gorocksdb.SSTFileWriter) (int, error) {
+		func(w *gorocksdb.SSTFileWriter) (int64, error) {
 
 			for {
 

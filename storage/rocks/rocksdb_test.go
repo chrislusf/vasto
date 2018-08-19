@@ -173,7 +173,7 @@ func TestFullScan(t *testing.T) {
 	db.Delete([]byte(fmt.Sprintf("k%d", 23445)))
 
 	var counter1 int
-	db.FullScan(batchSize, func(rows []*pb.RawKeyValue) error {
+	db.FullScan(uint64(batchSize), 0, func(rows []*pb.RawKeyValue) error {
 		for range rows {
 			counter1++
 		}

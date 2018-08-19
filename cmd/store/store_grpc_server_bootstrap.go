@@ -39,7 +39,7 @@ func (ss *storeServer) BootstrapCopy(request *pb.BootstrapCopyRequest, stream pb
 
 	sentCounter := 0
 	skippedCounter := 0
-	err := shard.db.FullScan(batchSize, func(rows []*pb.RawKeyValue) error {
+	err := shard.db.FullScan(uint64(batchSize), request.Limit, func(rows []*pb.RawKeyValue) error {
 
 		var filteredRows []*pb.RawKeyValue
 		for _, row := range rows {
