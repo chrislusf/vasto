@@ -19,7 +19,7 @@ func (c *commandClusterReplaceNode) Name() string {
 }
 
 func (c *commandClusterReplaceNode) Help() string {
-	return "<keyspace> <node_id> <new_server_ip:new_server_por>"
+	return "<keyspace> <node_id> <new_server_ip:new_server_port>"
 }
 
 func (c *commandClusterReplaceNode) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) (err error) {
