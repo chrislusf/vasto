@@ -207,7 +207,7 @@ func (cluster *Cluster) SetExpectedSize(expectedSize int) {
 
 // SetNextCluster creates a new cluster and sets the size and replication factor
 func (cluster *Cluster) SetNextCluster(expectedSize int, replicationFactor int) *Cluster {
-	cluster.nextCluster = NewCluster(cluster.keyspace, cluster.dataCenter, expectedSize, replicationFactor)
+	cluster.nextCluster = NewCluster(cluster.keyspace, expectedSize, replicationFactor)
 	return cluster.nextCluster
 }
 
@@ -263,10 +263,9 @@ func (cluster *Cluster) GetAllShards() []LogicalShardGroup {
 }
 
 // NewCluster creates a new cluster.
-func NewCluster(keyspace, dataCenter string, expectedSize int, replicationFactor int) *Cluster {
+func NewCluster(keyspace string, expectedSize int, replicationFactor int) *Cluster {
 	return &Cluster{
 		keyspace:          keyspace,
-		dataCenter:        dataCenter,
 		logicalShards:     make([]LogicalShardGroup, expectedSize),
 		expectedSize:      expectedSize,
 		replicationFactor: replicationFactor,

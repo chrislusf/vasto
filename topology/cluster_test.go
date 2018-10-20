@@ -32,7 +32,6 @@ func TestClusterProto(t *testing.T) {
 	cluster := ring3.ToCluster()
 
 	assert.Equal(t, cluster.Keyspace, "ks1", "keyspace")
-	assert.Equal(t, cluster.DataCenter, "dc1", "data center")
 	assert.Equal(t, cluster.ExpectedClusterSize, uint32(3), "expected cluster size")
 	assert.Equal(t, cluster.CurrentClusterSize, uint32(3), "current cluster size")
 

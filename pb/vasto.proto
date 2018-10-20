@@ -147,7 +147,6 @@ message ClientMessage {
 
 message Cluster {
     string keyspace = 1;
-    string data_center = 2;
     repeated ClusterNode nodes = 3;
     uint32 expected_cluster_size = 4;
     uint32 current_cluster_size = 5;

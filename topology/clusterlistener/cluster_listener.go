@@ -48,7 +48,7 @@ func NewClusterListener(dataCenter string, clientName string) *ClusterListener {
 // This is used by store server. The keyspace should already exists in local store.
 func (clusterListener *ClusterListener) AddExistingKeyspace(keyspace string, clusterSize int, replicationFactor int) {
 	clusterListener.Lock()
-	clusterListener.clusters[keyspaceName(keyspace)] = topology.NewCluster(keyspace, clusterListener.dataCenter, clusterSize, replicationFactor)
+	clusterListener.clusters[keyspaceName(keyspace)] = topology.NewCluster(keyspace, clusterSize, replicationFactor)
 	clusterListener.Unlock()
 }
 
@@ -83,7 +83,7 @@ func (clusterListener *ClusterListener) GetOrSetCluster(keyspace string, cluster
 	clusterListener.Lock()
 	t, ok := clusterListener.clusters[keyspaceName(keyspace)]
 	if !ok {
-		t = topology.NewCluster(keyspace, clusterListener.dataCenter, clusterSize, replicationFactor)
+		t = topology.NewCluster(keyspace, clusterSize, replicationFactor)
 		clusterListener.clusters[keyspaceName(keyspace)] = t
 	}
 	if clusterSize > 0 {

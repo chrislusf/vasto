@@ -68,7 +68,7 @@ func TestHashing(t *testing.T) {
 
 func createRing(hosts int) *Cluster {
 	replicationFactor := 2
-	ring := NewCluster("ks1", "dc1", hosts, replicationFactor)
+	ring := NewCluster("ks1", hosts, replicationFactor)
 	for i := 0; i < hosts; i++ {
 		for r := 0; r < replicationFactor; r++ {
 			shardId := i - r

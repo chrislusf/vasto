@@ -61,7 +61,6 @@ func (ms *masterServer) CreateCluster(ctx context.Context, req *pb.CreateCluster
 
 	resp.Cluster = &pb.Cluster{
 		Keyspace:            req.Keyspace,
-		DataCenter:          req.DataCenter,
 		Nodes:               nodes,
 		ExpectedClusterSize: req.ClusterSize,
 		CurrentClusterSize:  uint32(len(nodes)),

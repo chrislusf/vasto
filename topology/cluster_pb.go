@@ -11,7 +11,6 @@ func (cluster *Cluster) ToCluster() *pb.Cluster {
 	}
 	return &pb.Cluster{
 		Keyspace:            cluster.keyspace,
-		DataCenter:          cluster.dataCenter,
 		Nodes:               cluster.toNodes(),
 		ExpectedClusterSize: uint32(cluster.ExpectedSize()),
 		CurrentClusterSize:  uint32(cluster.CurrentSize()),

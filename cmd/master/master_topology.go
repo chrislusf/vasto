@@ -107,7 +107,7 @@ func (k *keyspace) doGetOrCreateCluster(dataCenterName string, clusterSize int, 
 	k.Lock()
 	cluster, found := k.clusters[datacenterName(dataCenterName)]
 	if !found {
-		cluster = topology.NewCluster(string(k.name), dataCenterName, clusterSize, replicationFactor)
+		cluster = topology.NewCluster(string(k.name), clusterSize, replicationFactor)
 		k.clusters[datacenterName(dataCenterName)] = cluster
 		isNew = true
 	}

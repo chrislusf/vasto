@@ -21,7 +21,7 @@ func (c *commandDesc) Name() string {
 }
 
 func (c *commandDesc) Help() string {
-	return "keyspaces|datacenters|<keyspace> <data center>"
+	return "keyspaces|<keyspace> <data center>"
 }
 
 func (c *commandDesc) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, out io.Writer) error {
@@ -47,8 +47,7 @@ func (c *commandDesc) Do(vastoClient *vs.VastoClient, args []string, commandEnv 
 		for _, keyspace := range keyspaces {
 			fmt.Fprintf(out, "keyspace %v client:%d\n", keyspace.Keyspace, keyspace.ClientCount)
 			for _, cluster := range keyspace.Clusters {
-				fmt.Fprintf(out, "    cluster %v expected size %d\n",
-					cluster.DataCenter, cluster.ExpectedClusterSize)
+				fmt.Fprintf(out, "    cluster expected size %d\n", cluster.ExpectedClusterSize)
 				for _, node := range cluster.Nodes {
 					fmt.Fprintf(out, "        * node %v shard %v %v\n",
 						node.ShardInfo.ServerId, node.ShardInfo.ShardId, node.StoreResource.Address)
