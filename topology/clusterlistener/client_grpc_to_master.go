@@ -9,8 +9,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func (clusterListener *ClusterListener) registerClientAtMasterServer(master string, dataCenter string,
-	msgChan chan *pb.ClientMessage) error {
+func (clusterListener *ClusterListener) registerClientAtMasterServer(master string, msgChan chan *pb.ClientMessage) error {
 	grpcConnection, err := grpc.Dial(master, grpc.WithInsecure())
 	if err != nil {
 		return fmt.Errorf("%s fail to dial %s: %v", clusterListener.clientName, master, err)
@@ -28,7 +27,7 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 	go func() {
 		for keyspace := range clusterListener.clusters {
 			// glog.V(2).Infof("%s register cluster keyspace(%v) datacenter(%v)", clusterListener.clientName, keyspace, dataCenter)
-			if err := registerForClusterAtMaster(stream, string(keyspace), dataCenter, false, clusterListener.clientName); err != nil {
+			if err := registerForClusterAtMaster(stream, string(keyspace), false, clusterListener.clientName); err != nil {
 				// glog.V(2).Infof("%s register cluster keyspace(%v) datacenter(%v): %v", clusterListener.clientName, keyspace, dataCenter, err)
 				return
 			}
@@ -41,7 +40,7 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 			} else {
 				// glog.V(2).Infof("%s register cluster new keyspace(%v) datacenter(%v)", clusterListener.clientName, msg.keyspace, dataCenter)
 			}
-			if err := registerForClusterAtMaster(stream, string(msg.keyspace), dataCenter, msg.isUnfollow, clusterListener.clientName); err != nil {
+			if err := registerForClusterAtMaster(stream, string(msg.keyspace), msg.isUnfollow, clusterListener.clientName); err != nil {
 				if msg.isUnfollow {
 					// glog.V(2).Infof("%s unfollow cluster keyspace(%v) datacenter(%v): %v", clusterListener.clientName, msg.keyspace, dataCenter, err)
 				} else {
@@ -72,9 +71,8 @@ func (clusterListener *ClusterListener) registerClientAtMasterServer(master stri
 
 }
 
-func registerForClusterAtMaster(stream pb.VastoMaster_RegisterClientClient, keyspace, dataCenter string, isUnfollow bool, clientName string) error {
+func registerForClusterAtMaster(stream pb.VastoMaster_RegisterClientClient, keyspace string, isUnfollow bool, clientName string) error {
 	clientHeartbeat := &pb.ClientHeartbeat{
-		DataCenter: dataCenter,
 		ClientName: clientName,
 		ClusterFollow: &pb.ClientHeartbeat_ClusterFollowMessage{
 			Keyspace:   keyspace,

@@ -23,26 +23,22 @@ func (ms *masterServer) ResizeCluster(ctx context.Context, req *pb.ResizeRequest
 		return
 	}
 
-	cluster, found := keyspace.getCluster(req.DataCenter)
-	if !found {
-		resp.Error = fmt.Sprintf("no datacenter %v found", req.DataCenter)
+	cluster := keyspace.cluster
+	if cluster == nil {
+		resp.Error = fmt.Sprintf("no cluster for %v found", req.Keyspace)
 		return
 	}
 
-	dc, found := ms.topo.dataCenters.getDataCenter(req.DataCenter)
-	if !found {
-		resp.Error = fmt.Sprintf("no datacenter %v found", req.DataCenter)
-		return
-	}
+	dc := ms.topo.dataCenter
 
 	if cluster.GetNextCluster() != nil && cluster.GetNextCluster().CurrentSize() > 0 {
-		resp.Error = fmt.Sprintf("cluster %s %s is resizing %d => %d in progress ...",
-			req.Keyspace, req.DataCenter, cluster.CurrentSize(), cluster.GetNextCluster().ExpectedSize())
+		resp.Error = fmt.Sprintf("cluster %s is resizing %d => %d in progress ...",
+			req.Keyspace, cluster.CurrentSize(), cluster.GetNextCluster().ExpectedSize())
 		return
 	}
 
 	if cluster.ExpectedSize() == int(req.GetTargetClusterSize()) {
-		resp.Error = fmt.Sprintf("cluster %s %s is already size %d", req.Keyspace, req.DataCenter, cluster.ExpectedSize())
+		resp.Error = fmt.Sprintf("cluster %s is already size %d", req.Keyspace, cluster.ExpectedSize())
 		return
 	}
 
@@ -218,7 +214,7 @@ func (ms *masterServer) adjustAndBroadcastUpcomingShardStatuses(ctx context.Cont
 	}
 
 	// notify the new cluster size, clients can write to the new set of servers now
-	ms.clientChans.notifyClusterResize(keyspaceName(req.Keyspace), datacenterName(req.DataCenter), uint32(oldClusterSize), req.TargetClusterSize)
+	ms.clientChans.notifyClusterResize(keyspaceName(req.Keyspace), uint32(oldClusterSize), req.TargetClusterSize)
 
 	// wait a bit for the slow-to-change clients
 	time.Sleep(5 * time.Second)

@@ -47,7 +47,6 @@ func (ss *storeServer) registerAtMasterServer() error {
 
 	storeHeartbeat := &pb.StoreHeartbeat{
 		StoreResource: &pb.StoreResource{
-			DataCenter:   *ss.option.DataCenter,
 			Network:      "tcp",
 			Address:      ss.selfAddress(),
 			AdminAddress: ss.selfAdminAddress(),

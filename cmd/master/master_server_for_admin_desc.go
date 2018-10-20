@@ -14,11 +14,11 @@ func (ms *masterServer) Describe(ctx context.Context, req *pb.DescribeRequest) (
 	if req.GetDescCluster() != nil {
 		keyspace, found := ms.topo.keyspaces.getKeyspace(req.DescCluster.Keyspace)
 		if found {
-			cluster, found := keyspace.getCluster(req.DescCluster.DataCenter)
-			if found {
+			cluster := keyspace.cluster
+			if cluster != nil {
 				resp.DescCluster = &pb.DescribeResponse_DescCluster{
 					Cluster:     cluster.ToCluster(),
-					ClientCount: uint32(ms.clientsStat.getClusterClientCount(keyspace.name, datacenterName(req.DescCluster.DataCenter))),
+					ClientCount: uint32(ms.clientsStat.getKeyspaceClientCount(keyspace.name)),
 				}
 				if cluster.GetNextCluster() != nil {
 					resp.DescCluster.NextCluster = cluster.GetNextCluster().ToCluster()
@@ -27,24 +27,19 @@ func (ms *masterServer) Describe(ctx context.Context, req *pb.DescribeRequest) (
 		}
 	}
 	if req.GetDescDataCenters() != nil {
-		resp.DescDataCenters = &pb.DescribeResponse_DescDataCenters{}
-		ms.topo.dataCenters.RLock()
-		for dataCenterName, dataCenter := range ms.topo.dataCenters.dataCenters {
-			var servers []*pb.StoreResource
-			dataCenter.RLock()
-			for _, server := range dataCenter.servers {
-				t := server
-				servers = append(servers, t)
-			}
-			dataCenter.RUnlock()
-			resp.DescDataCenters.DataCenters = append(resp.DescDataCenters.DataCenters,
-				&pb.DescribeResponse_DescDataCenters_DataCenter{
-					DataCenter:     string(dataCenterName),
-					StoreResources: servers,
-					ClientCount:    uint32(ms.clientsStat.getDataCenterClientCount(dataCenterName)),
-				})
+		resp.DescDataCenter = &pb.DescribeResponse_DescDataCenter{}
+
+		dataCenter := ms.topo.dataCenter
+		var servers []*pb.StoreResource
+		dataCenter.RLock()
+		for _, server := range dataCenter.servers {
+			t := server
+			servers = append(servers, t)
 		}
-		ms.topo.dataCenters.RUnlock()
+		dataCenter.RUnlock()
+		resp.DescDataCenter.DataCenter = &pb.DescribeResponse_DescDataCenter_DataCenter{
+			StoreResources: servers,
+		}
 	}
 
 	if req.GetDescKeyspaces() != nil {
@@ -52,11 +47,7 @@ func (ms *masterServer) Describe(ctx context.Context, req *pb.DescribeRequest) (
 		ms.topo.keyspaces.RLock()
 		for keyspaceName, keyspace := range ms.topo.keyspaces.keyspaces {
 			var clusters []*pb.Cluster
-			keyspace.RLock()
-			for _, cluster := range keyspace.clusters {
-				clusters = append(clusters, cluster.ToCluster())
-			}
-			keyspace.RUnlock()
+			clusters = append(clusters, keyspace.cluster.ToCluster())
 			resp.DescKeyspaces.Keyspaces = append(resp.DescKeyspaces.Keyspaces,
 				&pb.DescribeResponse_DescKeyspaces_Keyspace{
 					Keyspace:    string(keyspaceName),

@@ -22,14 +22,14 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 
 	// add server to the data center
 	storeResource := storeHeartbeat.StoreResource
-	glog.V(1).Infof("[master] + store datacenter(%s) %v", storeResource.DataCenter, storeResource.Address)
+	glog.V(1).Infof("[master] + store %v", storeResource.Address)
 
-	dc := ms.topo.dataCenters.getOrCreateDataCenter(storeResource.DataCenter)
+	dc := ms.topo.dataCenter
 
 	if existing, hasData := dc.upsertServer(storeResource); hasData {
 		return fmt.Errorf("duplicate with existing resource %v", existing)
 	}
-	defer ms.topo.dataCenters.deleteServer(dc, storeResource)
+	defer ms.topo.dataCenter.deleteServer(storeResource)
 
 	seenShardsOnThisServer := make(map[string]*pb.ShardInfo)
 	defer ms.unRegisterShards(seenShardsOnThisServer, storeResource)
@@ -42,11 +42,11 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 		}
 		if err := ms.processShardInfo(seenShardsOnThisServer, storeResource, beat.ShardInfo); err != nil {
 			glog.Errorf("process shard status %v: %v", beat.ShardInfo, err)
-			glog.Errorf("[master] - store datacenter(%s) %v: %v", storeResource.DataCenter, storeResource.Address, e)
+			glog.Errorf("[master] - store %v: %v", storeResource.Address, e)
 			return err
 		}
 	}
-	glog.V(1).Infof("[master] - store datacenter(%s) %v: %v", storeResource.DataCenter, storeResource.Address, e)
+	glog.V(1).Infof("[master] - store %v: %v", storeResource.Address, e)
 
 	return nil
 }
@@ -54,7 +54,6 @@ func (ms *masterServer) RegisterStore(stream pb.VastoMaster_RegisterStoreServer)
 func (ms *masterServer) notifyUpdate(shardInfo *pb.ShardInfo, storeResource *pb.StoreResource) error {
 	return ms.clientChans.notifyStoreResourceUpdate(
 		keyspaceName(shardInfo.KeyspaceName),
-		datacenterName(storeResource.DataCenter),
 		[]*pb.ClusterNode{
 			{
 				StoreResource: storeResource,
@@ -69,7 +68,6 @@ func (ms *masterServer) notifyUpdate(shardInfo *pb.ShardInfo, storeResource *pb.
 func (ms *masterServer) notifyDeletion(shardInfo *pb.ShardInfo, storeResource *pb.StoreResource) error {
 	return ms.clientChans.notifyStoreResourceUpdate(
 		keyspaceName(shardInfo.KeyspaceName),
-		datacenterName(storeResource.DataCenter),
 		[]*pb.ClusterNode{
 			{
 				StoreResource: storeResource,
@@ -84,7 +82,6 @@ func (ms *masterServer) notifyDeletion(shardInfo *pb.ShardInfo, storeResource *p
 func (ms *masterServer) notifyPromotion(shardInfo *pb.ShardInfo, storeResource *pb.StoreResource) error {
 	return ms.clientChans.notifyStoreResourceUpdate(
 		keyspaceName(shardInfo.KeyspaceName),
-		datacenterName(storeResource.DataCenter),
 		[]*pb.ClusterNode{
 			{
 				StoreResource: storeResource,
@@ -99,7 +96,7 @@ func (ms *masterServer) notifyPromotion(shardInfo *pb.ShardInfo, storeResource *
 func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.ShardInfo,
 	storeResource *pb.StoreResource, shardInfo *pb.ShardInfo) error {
 	keyspace := ms.topo.keyspaces.getOrCreateKeyspace(shardInfo.KeyspaceName)
-	cluster := keyspace.getOrCreateCluster(storeResource.DataCenter, int(shardInfo.ClusterSize), int(shardInfo.ReplicationFactor))
+	cluster := keyspace.getOrCreateCluster(int(shardInfo.ClusterSize), int(shardInfo.ReplicationFactor))
 
 	if shardInfo.IsCandidate {
 		if cluster.GetNextCluster() == nil {
@@ -112,7 +109,7 @@ func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.S
 		cluster.RemoveShard(storeResource, shardInfo)
 		ms.notifyDeletion(shardInfo, storeResource)
 		delete(seenShardsOnThisServer, shardInfo.IdentifierOnThisServer())
-		glog.V(2).Infof("[master] - dc %s %s on %s master cluster %s", storeResource.DataCenter,
+		glog.V(2).Infof("[master] - %s on %s master cluster %s",
 			shardInfo.IdentifierOnThisServer(), storeResource.Address, cluster)
 	} else {
 		// println("updated shard info:", shardInfo.String(), "store", storeResource.GetAddress())
@@ -121,14 +118,14 @@ func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.S
 		seenShardsOnThisServer[shardInfo.IdentifierOnThisServer()] = shardInfo
 		if oldShardInfo == nil {
 			if shardInfo.IsCandidate {
-				glog.V(1).Infof("[master] => dc %s %s on %s master cluster %s", storeResource.DataCenter,
+				glog.V(1).Infof("[master] => %s on %s master cluster %s",
 					shardInfo.IdentifierOnThisServer(), storeResource.Address, cluster)
 			} else {
-				glog.V(1).Infof("[master] + dc %s %s on %s master cluster %s", storeResource.DataCenter,
+				glog.V(1).Infof("[master] + %s on %s master cluster %s",
 					shardInfo.IdentifierOnThisServer(), storeResource.Address, cluster)
 			}
 		} else if oldShardInfo.Status != shardInfo.Status {
-			glog.V(1).Infof("[master] * dc %s %s on %s master cluster %s status:%s=>%s", storeResource.DataCenter,
+			glog.V(1).Infof("[master] * %s on %s master cluster %s status:%s=>%s",
 				shardInfo.IdentifierOnThisServer(), storeResource.Address, cluster,
 				oldShardInfo.Status, shardInfo.Status)
 		}
@@ -140,9 +137,10 @@ func (ms *masterServer) processShardInfo(seenShardsOnThisServer map[string]*pb.S
 func (ms *masterServer) unRegisterShards(seenShardsOnThisServer map[string]*pb.ShardInfo, storeResource *pb.StoreResource) {
 	for _, shardInfo := range seenShardsOnThisServer {
 		keyspace := ms.topo.keyspaces.getOrCreateKeyspace(string(shardInfo.KeyspaceName))
-		if cluster, found := keyspace.getCluster(storeResource.DataCenter); found {
+		cluster := keyspace.cluster
+		if cluster != nil {
 			if shardInfo.IsCandidate {
-				if cluster.GetNextCluster() == nil {
+				if keyspace.cluster.GetNextCluster() == nil {
 					continue
 				}
 				cluster = cluster.GetNextCluster()

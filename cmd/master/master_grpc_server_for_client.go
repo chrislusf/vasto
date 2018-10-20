@@ -8,7 +8,6 @@ import (
 	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc/peer"
 	"net"
-	"strings"
 )
 
 func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServer) error {
@@ -26,19 +25,17 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 		return fmt.Errorf("failed to get peer address")
 	}
 
-	serverAddress := serverAddress(pr.Addr.String())
-	glog.V(0).Infof("+ client %v", serverAddress)
+	clientAddress := serverAddress(pr.Addr.String())
+	glog.V(0).Infof("+ client %v", clientAddress)
 
 	// clean up if disconnects
-	clientWatchedKeyspaceAndDataCenters := make(map[string]string)
+	clientWatchedKeyspaces := make(map[keyspaceName]string)
 	defer func() {
-		for ksAndDc, clientName := range clientWatchedKeyspaceAndDataCenters {
-			t := strings.Split(ksAndDc, ",")
-			keyspace, dc := keyspaceName(t[0]), datacenterName(t[1])
-			ms.clientChans.removeClient(keyspace, dc, serverAddress)
-			ms.OnClientDisconnectEvent(dc, keyspace, serverAddress, clientName)
+		for keyspace, clientName := range clientWatchedKeyspaces {
+			ms.clientChans.removeClient(keyspace, clientAddress)
+			ms.OnClientDisconnectEvent(keyspace, clientAddress, clientName)
 		}
-		glog.V(0).Infof("- client %v", serverAddress)
+		glog.V(0).Infof("- client %v", clientAddress)
 	}()
 
 	// the channel is used to stop spawned goroutines
@@ -54,28 +51,25 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 			return fmt.Errorf("read from client %v", err)
 		}
 
-		dc := datacenterName(clientHeartbeat.DataCenter)
 		clientName := clientHeartbeat.ClientName
 
 		if clientHeartbeat.GetClusterFollow() != nil {
 			keyspace := keyspaceName(clientHeartbeat.ClusterFollow.Keyspace)
-			clusterKey := fmt.Sprintf("%s,%s", keyspace, dc)
 
 			if clientHeartbeat.ClusterFollow.IsUnfollow {
-				delete(clientWatchedKeyspaceAndDataCenters, clusterKey)
-				ms.clientChans.removeClient(keyspace, dc, serverAddress)
-				ms.OnClientDisconnectEvent(dc, keyspace, serverAddress, clientName)
+				ms.clientChans.removeClient(keyspace, clientAddress)
+				ms.OnClientDisconnectEvent(keyspace, clientAddress, clientName)
 			} else {
-				clientWatchedKeyspaceAndDataCenters[clusterKey] = clientName
+				clientWatchedKeyspaces[keyspace] = clientName
 
 				// for client, just set the expected cluster size to zero, and fix it when actual cluster is registered
-				clusterRing, _ := ms.topo.keyspaces.getOrCreateKeyspace(string(keyspace)).doGetOrCreateCluster(string(dc), 0, 0)
+				clusterRing, _ := ms.topo.keyspaces.getOrCreateKeyspace(string(keyspace)).doGetOrCreateCluster(0, 0)
 
-				if ch, err := ms.clientChans.addClient(keyspace, dc, serverAddress); err == nil {
+				if ch, err := ms.clientChans.addClient(keyspace, clientAddress); err == nil {
 					// this is not added yet, start a goroutine that sends to the stream, until client disconnects
-					ms.OnClientConnectEvent(dc, keyspace, serverAddress, clientName)
+					ms.OnClientConnectEvent(keyspace, clientAddress, clientName)
 					go func() {
-						ms.clientChans.sendClientCluster(keyspace, dc, serverAddress, clusterRing)
+						ms.clientChans.sendClientCluster(keyspace, clientAddress, clusterRing)
 						for {
 							select {
 							case msg := <-ch:
@@ -84,7 +78,7 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 									return
 								}
 								if err := stream.Send(msg); err != nil {
-									glog.V(2).Infof("send to client %s message: %+v err: %v", serverAddress, msg, err)
+									glog.V(2).Infof("send to client %s message: %+v err: %v", clientAddress, msg, err)
 									return
 								}
 							case <-clientDisconnectedChan:

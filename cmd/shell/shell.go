@@ -22,7 +22,7 @@ type shell struct {
 func RunShell(option *ShellOption) {
 	var b = &shell{
 		option:      option,
-		vastoClient: vs.NewVastoClient(context.Background(), "", *option.Master, *option.DataCenter),
+		vastoClient: vs.NewVastoClient(context.Background(), "", *option.Master),
 	}
 
 	if *option.Keyspace != "" {

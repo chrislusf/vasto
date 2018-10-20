@@ -25,15 +25,15 @@ func (ms *masterServer) ReplaceNode(ctx context.Context, req *pb.ReplaceNodeRequ
 		return
 	}
 
-	cluster, found := keyspace.getCluster(req.DataCenter)
-	if !found {
-		resp.Error = fmt.Sprintf("no datacenter %v found", req.DataCenter)
+	cluster := keyspace.cluster
+	if cluster == nil {
+		resp.Error = fmt.Sprintf("no cluster %v found", req.Keyspace)
 		return
 	}
 
 	if cluster.GetNextCluster() != nil && cluster.GetNextCluster().CurrentSize() > 0 {
-		resp.Error = fmt.Sprintf("cluster %s %s is changing %d => %d in progress ...",
-			req.Keyspace, req.DataCenter, cluster.ExpectedSize(), cluster.GetNextCluster().ExpectedSize())
+		resp.Error = fmt.Sprintf("cluster %s is changing %d => %d in progress ...",
+			req.Keyspace, cluster.ExpectedSize(), cluster.GetNextCluster().ExpectedSize())
 		return
 	}
 

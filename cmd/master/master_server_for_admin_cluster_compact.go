@@ -19,15 +19,14 @@ func (ms *masterServer) CompactCluster(ctx context.Context, req *pb.CompactClust
 		return
 	}
 
-	cluster, found := keyspace.getCluster(req.DataCenter)
-	if !found {
-		resp.Error = fmt.Sprintf("no datacenter %v found", req.DataCenter)
+	if keyspace.cluster == nil {
+		resp.Error = fmt.Sprintf("no cluster %v created", req.Keyspace)
 		return
 	}
 
 	var servers []*pb.StoreResource
-	for i := 0; i < cluster.ExpectedSize(); i++ {
-		server, found := cluster.GetNode(i, 0)
+	for i := 0; i < keyspace.cluster.ExpectedSize(); i++ {
+		server, found := keyspace.cluster.GetNode(i, 0)
 		if !found {
 			continue
 		}

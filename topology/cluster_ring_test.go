@@ -76,7 +76,6 @@ func createRing(hosts int) *Cluster {
 				shardId += hosts
 			}
 			ring.SetShard(&pb.StoreResource{
-				DataCenter:   "dc1",
 				Network:      "tcp",
 				Address:      fmt.Sprint("localhost:", 7000+i),
 				AdminAddress: fmt.Sprint("localhost:", 8000+i),

@@ -21,7 +21,7 @@ func (c *commandDesc) Name() string {
 }
 
 func (c *commandDesc) Help() string {
-	return "keyspaces|<keyspace> <data center>"
+	return "keyspaces|datacenter|<keyspace>"
 }
 
 func (c *commandDesc) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, out io.Writer) error {
@@ -55,7 +55,7 @@ func (c *commandDesc) Do(vastoClient *vs.VastoClient, args []string, commandEnv 
 			}
 		}
 
-	} else if param == "datacenters" {
+	} else if param == "datacenter" {
 
 		descResponse, err := vastoClient.MasterClient.Describe(
 			context.Background(),
@@ -68,13 +68,9 @@ func (c *commandDesc) Do(vastoClient *vs.VastoClient, args []string, commandEnv 
 			return err
 		}
 
-		dataCenters := descResponse.DescDataCenters.DataCenters
-		for _, dataCenter := range dataCenters {
-			fmt.Fprintf(out, "datacenter %v client:%d\n", dataCenter.DataCenter, dataCenter.ClientCount)
-			for _, server := range dataCenter.StoreResources {
-				fmt.Fprintf(out, "    server %v total:%d GB, allocated:%d GB, Tags:%s\n",
-					server.Address, server.DiskSizeGb, server.AllocatedSizeGb, server.Tags)
-			}
+		for _, server := range descResponse.DescDataCenter.DataCenter.StoreResources {
+			fmt.Fprintf(out, "    server %v total:%d GB, allocated:%d GB, Tags:%s\n",
+				server.Address, server.DiskSizeGb, server.AllocatedSizeGb, server.Tags)
 		}
 
 	} else if len(args) == 2 {
@@ -83,8 +79,7 @@ func (c *commandDesc) Do(vastoClient *vs.VastoClient, args []string, commandEnv 
 			context.Background(),
 			&pb.DescribeRequest{
 				DescCluster: &pb.DescribeRequest_DescCluster{
-					Keyspace:   param,
-					DataCenter: args[1],
+					Keyspace: param,
 				},
 			},
 		)
@@ -94,7 +89,7 @@ func (c *commandDesc) Do(vastoClient *vs.VastoClient, args []string, commandEnv 
 		}
 
 		if descResponse.DescCluster == nil {
-			return fmt.Errorf("no cluster keyspace(%v) dc(%v) found", param, args[1])
+			return fmt.Errorf("no cluster keyspace(%v) found", param)
 		}
 
 		fmt.Fprintf(out, "Cluster Client Count : %d\n", descResponse.DescCluster.ClientCount)

@@ -19,9 +19,9 @@ func (ms *masterServer) DeleteCluster(ctx context.Context, req *pb.DeleteCluster
 		return
 	}
 
-	cluster, found := keyspace.getCluster(req.DataCenter)
-	if !found {
-		resp.Error = fmt.Sprintf("no datacenter %v found", req.DataCenter)
+	cluster := keyspace.cluster
+	if cluster == nil {
+		resp.Error = fmt.Sprintf("no cluster for %v found", req.Keyspace)
 		return
 	}
 

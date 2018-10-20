@@ -14,17 +14,16 @@ func (ms *masterServer) CreateCluster(ctx context.Context, req *pb.CreateCluster
 
 	resp = &pb.CreateClusterResponse{}
 
-	dc, foundDc := ms.topo.dataCenters.getDataCenter(req.DataCenter)
-	if !foundDc {
-		resp.Error = fmt.Sprintf("no datacenter %v found", req.DataCenter)
+	dc := ms.topo.dataCenter
+	if dc == nil {
+		resp.Error = fmt.Sprintf("no datacenter found")
 		return
 	}
 
 	keyspace, foundKeyspace := ms.topo.keyspaces.getKeyspace(req.Keyspace)
 	if foundKeyspace {
-		cluster, foundCluster := keyspace.clusters[datacenterName(req.DataCenter)]
-		if foundCluster && cluster.ExpectedSize() > 0 {
-			resp.Error = fmt.Sprintf("keyspace %s in datacenter %s already exists", req.Keyspace, req.DataCenter)
+		if keyspace.cluster != nil && keyspace.cluster.ExpectedSize() > 0 {
+			resp.Error = fmt.Sprintf("keyspace %s in already exists", req.Keyspace)
 			return
 		}
 	}

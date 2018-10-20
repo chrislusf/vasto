@@ -14,23 +14,21 @@ import (
 type VastoClient struct {
 	ctx             context.Context
 	Master          string
-	DataCenter      string
 	ClientName      string
 	ClusterListener *clusterlistener.ClusterListener
 	MasterClient    pb.VastoMasterClient
 }
 
 // NewVastoClient creates a vasto client which contains a listener for the vasto system topology changes
-func NewVastoClient(ctx context.Context, clientName, master, dataCenter string) *VastoClient {
+func NewVastoClient(ctx context.Context, clientName, master string) *VastoClient {
 	c := &VastoClient{
 		ctx:             ctx,
-		ClusterListener: clusterlistener.NewClusterListener(dataCenter, clientName),
+		ClusterListener: clusterlistener.NewClusterListener(clientName),
 		Master:          master,
 		ClientName:      clientName,
-		DataCenter:      dataCenter,
 	}
 	// c.ClusterListener.RegisterShardEventProcessor(&clusterlistener.ClusterEventLogger{Prefix: clientName + " "})
-	c.ClusterListener.StartListener(ctx, c.Master, c.DataCenter)
+	c.ClusterListener.StartListener(ctx, c.Master)
 
 	conn, err := grpc.Dial(c.Master, grpc.WithInsecure())
 	if err != nil {
@@ -57,7 +55,7 @@ func (c *VastoClient) NewClusterClient(keyspace string) (clusterClient *ClusterC
 }
 
 // CreateCluster creates a new cluster of the keyspace in the data center, with size and replication factor
-func (c *VastoClient) CreateCluster(keyspace, dataCenter string, clusterSize, replicationFactor int) (*pb.Cluster, error) {
+func (c *VastoClient) CreateCluster(keyspace string, clusterSize, replicationFactor int) (*pb.Cluster, error) {
 
 	if replicationFactor == 0 {
 		return nil, fmt.Errorf("replication factor %d should be greater than 0", replicationFactor)
@@ -70,7 +68,6 @@ func (c *VastoClient) CreateCluster(keyspace, dataCenter string, clusterSize, re
 	resp, err := c.MasterClient.CreateCluster(
 		c.ctx,
 		&pb.CreateClusterRequest{
-			DataCenter:        dataCenter,
 			Keyspace:          keyspace,
 			ClusterSize:       uint32(clusterSize),
 			ReplicationFactor: uint32(replicationFactor),
@@ -89,12 +86,11 @@ func (c *VastoClient) CreateCluster(keyspace, dataCenter string, clusterSize, re
 }
 
 // DeleteCluster deletes the cluster of the keyspace in the data center
-func (c *VastoClient) DeleteCluster(keyspace, dataCenter string) error {
+func (c *VastoClient) DeleteCluster(keyspace string) error {
 
 	resp, err := c.MasterClient.DeleteCluster(
 		c.ctx,
 		&pb.DeleteClusterRequest{
-			DataCenter: dataCenter,
 			Keyspace:   keyspace,
 		},
 	)
@@ -111,12 +107,11 @@ func (c *VastoClient) DeleteCluster(keyspace, dataCenter string) error {
 }
 
 // CompactCluster deletes the cluster of the keyspace in the data center
-func (c *VastoClient) CompactCluster(keyspace, dataCenter string) error {
+func (c *VastoClient) CompactCluster(keyspace string) error {
 
 	resp, err := c.MasterClient.CompactCluster(
 		c.ctx,
 		&pb.CompactClusterRequest{
-			DataCenter: dataCenter,
 			Keyspace:   keyspace,
 		},
 	)
@@ -133,12 +128,11 @@ func (c *VastoClient) CompactCluster(keyspace, dataCenter string) error {
 }
 
 // ResizeCluster changes the size of the cluster of the keyspace and data center
-func (c *VastoClient) ResizeCluster(keyspace, dataCenter string, newClusterSize int) error {
+func (c *VastoClient) ResizeCluster(keyspace string, newClusterSize int) error {
 
 	resp, err := c.MasterClient.ResizeCluster(
 		c.ctx,
 		&pb.ResizeRequest{
-			DataCenter:        dataCenter,
 			Keyspace:          keyspace,
 			TargetClusterSize: uint32(newClusterSize),
 		},
@@ -156,12 +150,11 @@ func (c *VastoClient) ResizeCluster(keyspace, dataCenter string, newClusterSize 
 }
 
 // ReplaceNode replaces one server in the cluster of the keyspace and data center.
-func (c *VastoClient) ReplaceNode(keyspace, dataCenter string, nodeId uint32, newAddress string) error {
+func (c *VastoClient) ReplaceNode(keyspace string, nodeId uint32, newAddress string) error {
 
 	resp, err := c.MasterClient.ReplaceNode(
 		c.ctx,
 		&pb.ReplaceNodeRequest{
-			DataCenter: dataCenter,
 			Keyspace:   keyspace,
 			NodeId:     uint32(nodeId),
 			NewAddress: newAddress,

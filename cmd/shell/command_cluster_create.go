@@ -21,28 +21,30 @@ func (c *commandCreateKeyspace) Name() string {
 }
 
 func (c *commandCreateKeyspace) Help() string {
-	return "cluster <keysapce> <datacenter> <server count> <replication factor>"
+	return "cluster <keysapce> <server count> <replication factor>"
 }
 
 func (c *commandCreateKeyspace) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) (err error) {
 
-	if len(args) != 5 {
+	if len(args) != 4 {
 		return errInvalidArguments
 	}
 	if args[0] != "cluster" {
 		return errInvalidArguments
 	}
 
-	keyspace, dc := args[1], args[2]
+	keyspace := args[1]
+	serverCountString := args[2]
+	replicationString := args[3]
 
-	clusterSize, err := strconv.ParseUint(args[3], 10, 64)
+	clusterSize, err := strconv.ParseUint(serverCountString, 10, 64)
 	if err != nil {
-		println("can not parse server count", args[3])
+		println("can not parse server count", serverCountString)
 		return errInvalidArguments
 	}
-	replicationFactor, err := strconv.ParseUint(args[4], 10, 64)
+	replicationFactor, err := strconv.ParseUint(replicationString, 10, 64)
 	if err != nil {
-		println("can not parse replication factor", args[4])
+		println("can not parse replication factor", replicationString)
 		return errInvalidArguments
 	}
 
@@ -56,7 +58,7 @@ func (c *commandCreateKeyspace) Do(vastoClient *vs.VastoClient, args []string, c
 		return errInvalidArguments
 	}
 
-	cluster, err := vastoClient.CreateCluster(keyspace, dc, int(clusterSize), int(replicationFactor))
+	cluster, err := vastoClient.CreateCluster(keyspace, int(clusterSize), int(replicationFactor))
 
 	if err != nil {
 		return fmt.Errorf("create cluster request: %v", err)

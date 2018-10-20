@@ -23,7 +23,6 @@ type StoreOption struct {
 	Bootstrap         *bool
 	DisableUnixSocket *bool
 	Master            *string
-	DataCenter        *string
 	LogFileSizeMb     *int
 	LogFileCount      *int
 	DiskSizeGb        *int
@@ -54,7 +53,7 @@ func RunStore(option *StoreOption) {
 	storeName := fmt.Sprintf("[store@%s:%d]", *option.ListenHost, *option.TcpPort)
 
 	ctx := context.Background()
-	clusterListener := clusterlistener.NewClusterListener(*option.DataCenter, storeName)
+	clusterListener := clusterlistener.NewClusterListener(storeName)
 
 	var ss = &storeServer{
 		option:          option,
@@ -77,7 +76,7 @@ func RunStore(option *StoreOption) {
 	for keyspaceName, ShardInfo := range ss.statusInCluster {
 		clusterListener.AddExistingKeyspace(keyspaceName, int(ShardInfo.ClusterSize), int(ShardInfo.ReplicationFactor))
 	}
-	clusterListener.StartListener(ctx, *ss.option.Master, *ss.option.DataCenter)
+	clusterListener.StartListener(ctx, *ss.option.Master)
 
 	for keyspaceName, storeStatus := range ss.statusInCluster {
 		if err := ss.startExistingNodes(keyspaceName, storeStatus); err != nil {

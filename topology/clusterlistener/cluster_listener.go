@@ -24,7 +24,6 @@ type ClusterListener struct {
 	sync.RWMutex
 	clusters                  map[keyspaceName]*topology.Cluster
 	keyspaceFollowMessageChan chan keyspaceFollowMessage
-	dataCenter                string
 	shardEventProcessors      []ShardEventProcessor
 	clientName                string
 	connPools                 map[string]pool.Pool
@@ -34,11 +33,10 @@ type ClusterListener struct {
 
 // NewClusterListener creates a cluster listener in a data center.
 // clientName is only for display purpose.
-func NewClusterListener(dataCenter string, clientName string) *ClusterListener {
+func NewClusterListener(clientName string) *ClusterListener {
 	return &ClusterListener{
 		clusters:                  make(map[keyspaceName]*topology.Cluster),
 		keyspaceFollowMessageChan: make(chan keyspaceFollowMessage, 1),
-		dataCenter:                dataCenter,
 		clientName:                clientName,
 		connPools:                 make(map[string]pool.Pool),
 	}
@@ -97,12 +95,12 @@ func (clusterListener *ClusterListener) GetOrSetCluster(keyspace string, cluster
 }
 
 // StartListener keeps the listener connected to the master.
-func (clusterListener *ClusterListener) StartListener(ctx context.Context, master, dataCenter string) {
+func (clusterListener *ClusterListener) StartListener(ctx context.Context, master string) {
 
 	clientMessageChan := make(chan *pb.ClientMessage)
 
 	go util.RetryForever(ctx, clusterListener.clientName+" cluster listener", func() error {
-		return clusterListener.registerClientAtMasterServer(master, dataCenter, clientMessageChan)
+		return clusterListener.registerClientAtMasterServer(master, clientMessageChan)
 	}, 2*time.Second)
 
 	go func() {

@@ -16,7 +16,6 @@ type GatewayOption struct {
 	TcpAddress *string
 	UnixSocket *string
 	Master     *string
-	DataCenter *string
 	Keyspace   *string
 }
 
@@ -31,7 +30,7 @@ func RunGateway(option *GatewayOption) {
 
 	var gs = &gatewayServer{
 		option:      option,
-		vastoClient: vs.NewVastoClient(context.Background(), "gateway", *option.Master, *option.DataCenter),
+		vastoClient: vs.NewVastoClient(context.Background(), "gateway", *option.Master),
 	}
 
 	if *option.TcpAddress != "" {

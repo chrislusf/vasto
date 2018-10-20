@@ -19,19 +19,19 @@ func (c *commandResizeCluster) Name() string {
 }
 
 func (c *commandResizeCluster) Help() string {
-	return "<keyspace> <data_center> <new_cluster_size>"
+	return "<keyspace> <new_cluster_size>"
 }
 
 func (c *commandResizeCluster) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) (err error) {
 
-	if len(args) != 3 {
+	if len(args) != 2 {
 		return errInvalidArguments
 	}
-	keyspace, dc := args[0], args[1]
-	newClusterSize, err := strconv.ParseUint(args[2], 10, 32)
+	keyspace := args[0]
+	newClusterSize, err := strconv.ParseUint(args[1], 10, 32)
 	if err != nil {
 		return errInvalidArguments
 	}
 
-	return vastoClient.ResizeCluster(keyspace, dc, int(newClusterSize))
+	return vastoClient.ResizeCluster(keyspace, int(newClusterSize))
 }

@@ -14,7 +14,7 @@ type ClusterEventLogger struct {
 
 // OnShardCreateEvent implements clusterlistener.ShardEventProcessor
 func (l *ClusterEventLogger) OnShardCreateEvent(cluster *topology.Cluster, resource *pb.StoreResource, shardInfo *pb.ShardInfo) {
-	glog.V(1).Infof("%s+ dc %s keyspace %s node %d shard %d %s cluster %s", l.Prefix, resource.DataCenter,
+	glog.V(1).Infof("%s+ keyspace %s node %d shard %d %s cluster %s", l.Prefix,
 		shardInfo.KeyspaceName, shardInfo.ServerId, shardInfo.ShardId, resource.Address, cluster)
 }
 
@@ -22,7 +22,7 @@ func (l *ClusterEventLogger) OnShardCreateEvent(cluster *topology.Cluster, resou
 func (l *ClusterEventLogger) OnShardUpdateEvent(cluster *topology.Cluster, resource *pb.StoreResource, shardInfo *pb.ShardInfo, oldShardInfo *pb.ShardInfo) {
 	if oldShardInfo == nil {
 	} else if oldShardInfo.Status != shardInfo.Status {
-		glog.V(1).Infof("%s* dc %s %s on %s cluster %s status:%s=>%s", l.Prefix, resource.DataCenter,
+		glog.V(1).Infof("%s* %s on %s cluster %s status:%s=>%s", l.Prefix,
 			shardInfo.IdentifierOnThisServer(), resource.GetAddress(), cluster,
 			oldShardInfo.Status, shardInfo.Status)
 	}
@@ -30,12 +30,12 @@ func (l *ClusterEventLogger) OnShardUpdateEvent(cluster *topology.Cluster, resou
 
 // OnShardRemoveEvent implements clusterlistener.ShardEventProcessor
 func (l *ClusterEventLogger) OnShardRemoveEvent(cluster *topology.Cluster, resource *pb.StoreResource, shardInfo *pb.ShardInfo) {
-	glog.V(1).Infof("%s- dc %s  %s on %s cluster %s", l.Prefix, resource.DataCenter,
+	glog.V(1).Infof("%s- %s on %s cluster %s", l.Prefix,
 		shardInfo.IdentifierOnThisServer(), resource.Address, cluster)
 }
 
 // OnShardPromoteEvent implements clusterlistener.ShardEventProcessor
 func (l *ClusterEventLogger) OnShardPromoteEvent(cluster *topology.Cluster, resource *pb.StoreResource, shardInfo *pb.ShardInfo) {
-	glog.V(1).Infof("%s=> dc %s  %s on %s cluster %s", l.Prefix, resource.DataCenter,
+	glog.V(1).Infof("%s=>%s on %s cluster %s", l.Prefix,
 		shardInfo.IdentifierOnThisServer(), resource.Address, cluster)
 }

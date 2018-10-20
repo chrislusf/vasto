@@ -47,7 +47,6 @@ func TestReplaceShard(t *testing.T) {
 	assert.Equal(t, node.StoreResource.Address, "localhost:7001", "original server address")
 
 	store := &pb.StoreResource{
-		DataCenter:   "dc1",
 		Network:      "tcp",
 		Address:      fmt.Sprint("localhost:", 7000+x),
 		AdminAddress: fmt.Sprint("localhost:", 8000+x),
@@ -81,7 +80,6 @@ func TestRemoveShard(t *testing.T) {
 	assert.Equal(t, node.StoreResource.Address, "localhost:7001", "original server address")
 
 	store := &pb.StoreResource{
-		DataCenter:   "dc1",
 		Network:      "tcp",
 		Address:      fmt.Sprint("localhost:", 7000+x),
 		AdminAddress: fmt.Sprint("localhost:", 8000+x),
@@ -123,7 +121,6 @@ func TestRemoveStore(t *testing.T) {
 	assert.Equal(t, node.StoreResource.Address, "localhost:7001", "original server address")
 
 	store := &pb.StoreResource{
-		DataCenter:   "dc1",
 		Network:      "tcp",
 		Address:      fmt.Sprint("localhost:", 7000+x),
 		AdminAddress: fmt.Sprint("localhost:", 8000+x),
@@ -161,7 +158,6 @@ func TestNextCluster(t *testing.T) {
 	x := 1
 
 	store := &pb.StoreResource{
-		DataCenter:   "dc1",
 		Network:      "tcp",
 		Address:      fmt.Sprint("localhost:", 7000+x),
 		AdminAddress: fmt.Sprint("localhost:", 8000+x),

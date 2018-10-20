@@ -20,24 +20,16 @@ shard:
 */
 
 type keyspaceName string
-type datacenterName string
 type serverAddress string
 
 type dataCenter struct {
-	name    datacenterName
 	servers map[serverAddress]*pb.StoreResource
 	sync.RWMutex
 }
 
 type keyspace struct {
-	sync.RWMutex
-	name     keyspaceName
-	clusters map[datacenterName]*topology.Cluster
-}
-
-type dataCenters struct {
-	sync.RWMutex
-	dataCenters map[datacenterName]*dataCenter
+	name    keyspaceName
+	cluster *topology.Cluster
 }
 
 type keyspaces struct {
@@ -46,8 +38,8 @@ type keyspaces struct {
 }
 
 type masterTopology struct {
-	keyspaces   *keyspaces
-	dataCenters *dataCenters
+	keyspaces  *keyspaces
+	dataCenter *dataCenter
 }
 
 func newMasterTopology() *masterTopology {
@@ -55,8 +47,8 @@ func newMasterTopology() *masterTopology {
 		keyspaces: &keyspaces{
 			keyspaces: make(map[keyspaceName]*keyspace),
 		},
-		dataCenters: &dataCenters{
-			dataCenters: make(map[datacenterName]*dataCenter),
+		dataCenter: &dataCenter{
+			servers: make(map[serverAddress]*pb.StoreResource),
 		},
 	}
 }
@@ -66,8 +58,7 @@ func (ks *keyspaces) getOrCreateKeyspace(ksName string) *keyspace {
 	k, hasData := ks.keyspaces[keyspaceName(ksName)]
 	if !hasData {
 		k = &keyspace{
-			name:     keyspaceName(ksName),
-			clusters: make(map[datacenterName]*topology.Cluster),
+			name: keyspaceName(ksName),
 		}
 		ks.keyspaces[k.name] = k
 	}
@@ -88,63 +79,24 @@ func (ks *keyspaces) removeKeyspace(ksName string) {
 	ks.Unlock()
 }
 
-func (k *keyspace) getCluster(dataCenterName string) (cluster *topology.Cluster, found bool) {
-	k.RLock()
-	cluster, found = k.clusters[datacenterName(dataCenterName)]
-	k.RUnlock()
-	return
-}
+func (k *keyspace) doGetOrCreateCluster(clusterSize int, replicationFactor int) (cluster *topology.Cluster, isNew bool) {
 
-func (k *keyspace) removeCluster(dataCenterName string) {
-	k.Lock()
-	delete(k.clusters, datacenterName(dataCenterName))
-	k.Unlock()
-}
-
-func (k *keyspace) doGetOrCreateCluster(dataCenterName string, clusterSize int, replicationFactor int) (
-	cluster *topology.Cluster, isNew bool) {
-
-	k.Lock()
-	cluster, found := k.clusters[datacenterName(dataCenterName)]
-	if !found {
-		cluster = topology.NewCluster(string(k.name), clusterSize, replicationFactor)
-		k.clusters[datacenterName(dataCenterName)] = cluster
+	if k.cluster == nil {
+		k.cluster = topology.NewCluster(string(k.name), clusterSize, replicationFactor)
 		isNew = true
 	}
-	k.Unlock()
+
+	cluster = k.cluster
 
 	return
 }
 
-func (k *keyspace) getOrCreateCluster(dataCenterName string, clusterSize int, replicationFactor int) *topology.Cluster {
-	cluster, _ := k.doGetOrCreateCluster(dataCenterName, clusterSize, replicationFactor)
+func (k *keyspace) getOrCreateCluster(clusterSize int, replicationFactor int) *topology.Cluster {
+	cluster, _ := k.doGetOrCreateCluster(clusterSize, replicationFactor)
 	cluster.SetExpectedSize(clusterSize)
 	cluster.SetReplicationFactor(replicationFactor)
 
 	return cluster
-}
-
-func (dcs *dataCenters) getOrCreateDataCenter(dataCenterName string) *dataCenter {
-
-	dcs.Lock()
-	dc, hasData := dcs.dataCenters[datacenterName(dataCenterName)]
-	if !hasData {
-		dc = &dataCenter{
-			name:    datacenterName(dataCenterName),
-			servers: make(map[serverAddress]*pb.StoreResource),
-		}
-		dcs.dataCenters[dc.name] = dc
-	}
-	dcs.Unlock()
-
-	return dc
-}
-
-func (dcs *dataCenters) getDataCenter(dataCenterName string) (dc *dataCenter, found bool) {
-	dcs.RLock()
-	dc, found = dcs.dataCenters[datacenterName(dataCenterName)]
-	dcs.RUnlock()
-	return
 }
 
 func (dc *dataCenter) upsertServer(storeResource *pb.StoreResource) (existing *pb.StoreResource, hasData bool) {
@@ -157,18 +109,7 @@ func (dc *dataCenter) upsertServer(storeResource *pb.StoreResource) (existing *p
 	return
 }
 
-func (dcs *dataCenters) deleteServer(dc *dataCenter, storeResource *pb.StoreResource) (
-	existing *pb.StoreResource, hasData bool) {
-	existing, hasData = dc.doDeleteServer(storeResource)
-	if len(dc.servers) == 0 {
-		dcs.Lock()
-		delete(dcs.dataCenters, dc.name)
-		dcs.Unlock()
-	}
-	return
-}
-
-func (dc *dataCenter) doDeleteServer(storeResource *pb.StoreResource) (existing *pb.StoreResource, hasData bool) {
+func (dc *dataCenter) deleteServer(storeResource *pb.StoreResource) (existing *pb.StoreResource, hasData bool) {
 	dc.Lock()
 	existing, hasData = dc.servers[serverAddress(storeResource.Address)]
 	if hasData {

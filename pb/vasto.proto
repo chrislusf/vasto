@@ -97,7 +97,6 @@ service VastoStore {
 //////////////////////////////////////////////////
 // 1. master received request to balance the data
 message BalanceRequest {
-    string data_center = 1;
     string store_group = 2;
     uint32 store_count = 3; // 0 means to use all existing nodes. can not be more than existing stores.
 }
@@ -113,7 +112,6 @@ message StoreMessage {
 }
 
 message ClientHeartbeat {
-    string data_center = 1;
     string client_name = 2;
 
     message ClusterFollowMessage {
@@ -160,7 +158,6 @@ message ClusterNode {
 }
 
 message StoreResource {
-    string data_center = 1;
     string network = 2;
     string address = 3;
     string admin_address = 4;
@@ -377,7 +374,6 @@ message DescribeRequest {
 
     message DescCluster {
         string keyspace = 1;
-        string data_center = 2;
     }
     DescCluster desc_cluster = 3;
 
@@ -387,15 +383,13 @@ message DescribeRequest {
 
 }
 message DescribeResponse {
-    message DescDataCenters {
+    message DescDataCenter {
         message DataCenter {
-            string data_center = 1;
             repeated StoreResource store_resources = 2;
-            uint32 client_count = 3;
         }
-        repeated DataCenter data_centers = 1;
+        DataCenter data_center = 1;
     }
-    DescDataCenters desc_data_centers = 1;
+    DescDataCenter desc_data_center = 1;
 
     message DescKeyspaces {
         message Keyspace {
@@ -418,7 +412,6 @@ message DescribeResponse {
 }
 
 message CreateClusterRequest {
-    string data_center = 1;
     string keyspace = 2;
     uint32 cluster_size = 3;
     uint32 replication_factor = 4;
@@ -432,7 +425,6 @@ message CreateClusterResponse {
 }
 
 message DeleteClusterRequest {
-    string data_center = 1;
     string keyspace = 2;
 }
 
@@ -441,7 +433,6 @@ message DeleteClusterResponse {
 }
 
 message CompactClusterRequest {
-    string data_center = 1;
     string keyspace = 2;
 }
 
@@ -450,7 +441,6 @@ message CompactClusterResponse {
 }
 
 message ReplaceNodeRequest {
-    string data_center = 1;
     string keyspace = 2;
     uint32 node_id = 3;
     string new_address = 4;
@@ -540,7 +530,6 @@ message ResizeCleanupResponse {
 }
 
 message ResizeRequest {
-    string data_center = 1;
     string keyspace = 2;
     uint32 target_cluster_size = 3;
 }

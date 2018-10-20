@@ -21,9 +21,9 @@ func TestOpen(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	c := vs.NewVastoClient(context.Background(), "[testing]", fmt.Sprintf("localhost:%d", masterPort), "dc1")
+	c := vs.NewVastoClient(context.Background(), "[testing]", fmt.Sprintf("localhost:%d", masterPort))
 
-	c.CreateCluster("ks1", "dc1", 1, 1)
+	c.CreateCluster("ks1", 1, 1)
 
 	log.Println("created keyspace ks1")
 
@@ -115,7 +115,6 @@ func startMasterAndStore() int {
 		TcpPort:           getInt32(getPort()),
 		DisableUnixSocket: getBool(false),
 		Master:            getString(fmt.Sprintf("localhost:%d", masterPort)),
-		DataCenter:        getString("dc1"),
 		LogFileSizeMb:     getInt(128),
 		LogFileCount:      getInt(3),
 		DiskSizeGb:        getInt(10),

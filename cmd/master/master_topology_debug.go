@@ -8,12 +8,7 @@ import (
 )
 
 func (k *keyspace) debug(prefix string) {
-	k.RLock()
-	for dcName, cluster := range k.clusters {
-		fmt.Printf("%s  data_center: %v %v\n", prefix, dcName, cluster.String())
-		cluster.Debug(prefix + "    ")
-	}
-	k.RUnlock()
+	k.cluster.Debug(prefix + "    ")
 	return
 }
 
@@ -41,12 +36,7 @@ func (topo *masterTopology) Debug() {
 	}
 	topo.keyspaces.RUnlock()
 
-	topo.dataCenters.RLock()
-	for dcName, dc := range topo.dataCenters.dataCenters {
-		fmt.Printf("data_center: %v\n", dcName)
-		dc.debug(" ")
-	}
-	topo.dataCenters.RUnlock()
+	topo.dataCenter.debug(" ")
 }
 
 func withConnect(node *pb.StoreResource, fn func(*grpc.ClientConn) error) error {
