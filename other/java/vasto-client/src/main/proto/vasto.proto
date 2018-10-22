@@ -1,0 +1,538 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.vasto";
+option java_outer_classname = "VastoProto";
+option objc_class_prefix = "VS";
+
+package pb;
+
+service VastoMaster {
+    rpc RegisterStore (stream StoreHeartbeat) returns (stream StoreMessage) {
+        // Stores send the heartbeat to Master
+        // Master remembers the stores
+        // and broadcast to all other stores and clients
+    }
+
+    rpc RegisterClient (stream ClientHeartbeat) returns (stream ClientMessage) {
+        // Stores send the heartbeat to Master
+        // Master remembers the stores
+        // and broadcast to all other stores and clients
+    }
+
+    rpc Describe (DescribeRequest) returns (DescribeResponse) {
+    }
+
+    rpc CreateCluster (CreateClusterRequest) returns (CreateClusterResponse) {
+    }
+
+    rpc DeleteCluster (DeleteClusterRequest) returns (DeleteClusterResponse) {
+    }
+
+    rpc CompactCluster (CompactClusterRequest) returns (CompactClusterResponse) {
+    }
+
+    rpc ResizeCluster (ResizeRequest) returns (ResizeResponse) {
+    }
+
+    rpc ReplaceNode (ReplaceNodeRequest) returns (ReplaceNodeResponse) {
+    }
+
+    rpc DebugMaster (Empty) returns (Empty) {
+    }
+
+}
+
+service VastoStore {
+    rpc BootstrapCopy (BootstrapCopyRequest) returns (stream BootstrapCopyResponse) {
+        /*
+        client side
+        1. if found local is out of sync with other nodes
+            discard all local data and binlog offsets
+        2. starts to copy
+        3. stop when getting the binlog offset
+        4. switch to pull changes mode
+        5. tell master that this local node is ready
+
+        server side
+        1. get current binlog offset
+        2. starts to stream data to client
+        3. send the binlog offset from step 1
+        */
+    }
+    rpc TailBinlog (PullUpdateRequest) returns (stream PullUpdateResponse) {
+        // client pull data from server
+    }
+    rpc CheckBinlog (CheckBinlogRequest) returns (CheckBinlogResponse) {
+    }
+    rpc CreateShard (CreateShardRequest) returns (CreateShardResponse) {
+    }
+    rpc DeleteKeyspace (DeleteKeyspaceRequest) returns (DeleteKeyspaceResponse) {
+    }
+    rpc CompactKeyspace (CompactKeyspaceRequest) returns (CompactKeyspaceResponse) {
+    }
+
+    rpc ReplicateNodePrepare (ReplicateNodePrepareRequest) returns (ReplicateNodePrepareResponse) {
+    }
+    rpc ReplicateNodeCommit (ReplicateNodeCommitRequest) returns (ReplicateNodeCommitResponse) {
+    }
+    rpc ReplicateNodeCleanup (ReplicateNodeCleanupRequest) returns (ReplicateNodeCleanupResponse) {
+    }
+
+    rpc ResizePrepare (ResizeCreateShardRequest) returns (ResizeCreateShardResponse) {
+    }
+    rpc ResizeCommit (ResizeCommitRequest) returns (ResizeCommitResponse) {
+    }
+    rpc ResizeCleanup (ResizeCleanupRequest) returns (ResizeCleanupResponse) {
+    }
+
+    rpc DebugStore (Empty) returns (Empty) {
+    }
+
+}
+
+//////////////////////////////////////////////////
+// 1. master received request to balance the data
+
+//////////////////////////////////////////////////
+// 1. master received request to balance the data
+message BalanceRequest {
+    string store_group = 2;
+    uint32 store_count = 3; // 0 means to use all existing nodes. can not be more than existing stores.
+}
+
+message StoreHeartbeat {
+    // only in the initial heartbeat
+    StoreResource store_resource = 1;
+    // sent to master one at a time, after the initial heartbeat
+    ShardInfo ShardInfo = 2;
+}
+
+message StoreMessage {
+}
+
+message ClientHeartbeat {
+    string client_name = 2;
+
+    message ClusterFollowMessage {
+        string keyspace = 1;
+        bool is_unfollow = 2;
+    }
+    ClusterFollowMessage cluster_follow = 3;
+
+}
+
+message ClientMessage {
+
+    Cluster cluster = 1;
+
+    message StoreResourceUpdate {
+        repeated ClusterNode nodes = 1;
+        bool is_delete = 2;
+        string keyspace = 3;
+        bool is_promotion = 4;
+    }
+    StoreResourceUpdate updates = 2;
+
+    message Resize {
+        uint32 current_cluster_size = 1;
+        uint32 target_cluster_size = 2;
+        string keyspace = 3;
+    }
+    Resize resize = 3;
+
+}
+
+message Cluster {
+    string keyspace = 1;
+    repeated ClusterNode nodes = 3;
+    uint32 expected_cluster_size = 4;
+    uint32 current_cluster_size = 5;
+    uint32 replication_factor = 6;
+}
+
+// denormalized
+message ClusterNode {
+    StoreResource store_resource = 1;
+    ShardInfo shard_info = 2;
+}
+
+message StoreResource {
+    string network = 2;
+    string address = 3;
+    string admin_address = 4;
+    repeated string tags = 7;
+    uint32 disk_size_gb = 8;
+    uint32 allocated_size_gb = 9;
+}
+
+// LocalShardsInCluster is saved to and load from disk
+message LocalShardsInCluster {
+    uint32 id = 1;
+    map<uint32, ShardInfo> shard_map = 2;
+    // duplicated info, need to validate on master when reconvene
+    uint32 cluster_size = 3;
+    // duplicated info, need to validate on master when reconvene
+    uint32 replication_factor = 4;
+}
+
+message ShardInfo {
+    string keyspace_name = 1;
+    uint32 server_id = 2;
+    uint32 shard_id = 3;
+    uint32 cluster_size = 4;
+    uint32 replication_factor = 5;
+    enum Status {
+        EMPTY = 0;
+        BOOTSTRAP = 1;
+        READY = 2;
+        DELETED = 3;
+    }
+    Status status = 6;
+    bool is_candidate = 7;
+    bool is_permanent_delete = 8;
+}
+
+//////////////////////////////////////////////////
+
+message Empty {
+}
+
+
+message KeyTypeValue {
+    bytes key = 1;
+    uint64 partition_hash = 2;
+    OpAndDataType data_type = 3;
+    bytes value = 4;
+}
+
+//////////////////////////////////////////////////
+//// data queries
+//////////////////////////////////////////////////
+message Requests {
+    string keyspace = 1;
+    repeated Request requests = 2;
+}
+
+message Responses {
+    repeated Response responses = 1;
+}
+
+message Request {
+    uint32 shard_id = 1;
+    PutRequest put = 2;
+    GetRequest get = 3;
+    GetByPrefixRequest get_by_prefix = 4;
+    DeleteRequest delete = 5;
+    MergeRequest merge = 6;
+}
+
+enum OpAndDataType {
+    BYTES = 0;
+    FLOAT64 = 1;
+    MAX_FLOAT64 = 2;
+    MIN_FLOAT64 = 3;
+}
+
+message PutRequest {
+    bytes key = 1;
+    uint64 partition_hash = 2;
+    uint64 updated_at_ns = 3;
+    uint32 ttl_second = 4;
+    OpAndDataType op_and_data_type = 5;
+    bytes value = 6;
+}
+
+message MergeRequest {
+    bytes key = 1;
+    uint64 partition_hash = 2;
+    uint64 updated_at_ns = 3;
+    OpAndDataType op_and_data_type = 4;
+    bytes value = 5;
+}
+
+message WriteResponse {
+    bool ok = 1;
+    string status = 2;
+}
+
+message DeleteRequest {
+    bytes key = 1;
+    uint64 partition_hash = 2;
+    uint64 updated_at_ns = 3;
+}
+
+message GetRequest {
+    bytes key = 1;
+    uint64 partition_hash = 2;
+}
+
+message GetResponse {
+    bool ok = 1;
+    string status = 2;
+    KeyTypeValue key_value = 3;
+}
+
+message GetByPrefixRequest {
+    bytes prefix = 1;
+    uint32 limit = 2;
+    bytes last_seen_key = 3;
+}
+
+message GetByPrefixResponse {
+    bool ok = 1;
+    string status = 2;
+    repeated KeyTypeValue key_values = 3;
+}
+
+message Response {
+    WriteResponse write = 1;
+    GetResponse get = 2;
+    GetByPrefixResponse get_by_prefix = 3;
+}
+
+message RawKeyValue {
+    bytes key = 1;
+    bytes value = 2;
+}
+
+message LogEntry {
+    uint64 updated_at_ns = 1;
+    PutRequest put = 2;
+    DeleteRequest delete = 3;
+    MergeRequest merge = 4;
+}
+
+//////////////////////////////////////////////////
+//// data copying
+//////////////////////////////////////////////////
+message CopyDoneMessge {
+    int32 shard = 1;
+    int64 copy_start_time_ns = 2;
+}
+
+message BootstrapCopyRequest {
+    string keyspace = 1;
+    uint32 shard_id = 2;
+    uint32 cluster_size = 3;
+    uint32 target_shard_id = 4;
+    uint32 target_cluster_size = 5;
+    string origin = 6;
+    uint64 limit = 7;
+}
+message BootstrapCopyResponse {
+
+    repeated RawKeyValue key_values = 1;
+
+    // this message is only sent at the end of copying
+    message BinlogTailProgress {
+        uint32 segment = 1;
+        uint64 offset = 2;
+    }
+    BinlogTailProgress binlogTailProgress = 2;
+}
+
+message PullUpdateRequest {
+    string keyspace = 1;
+    uint32 shard_id = 2;
+    uint32 segment = 3;
+    uint64 offset = 4;
+    uint32 limit = 5;
+    uint32 target_shard_id = 6;
+    uint32 target_cluster_size = 7;
+    string origin = 8;
+}
+
+message PullUpdateResponse {
+    uint32 next_segment = 1;
+    uint64 next_offset = 2;
+    repeated LogEntry entries = 3;
+    bool out_of_sync = 4;
+}
+
+message CheckBinlogRequest {
+    string keyspace = 1;
+    uint32 shard_id = 2;
+}
+message CheckBinlogResponse {
+    uint32 shard_id = 1;
+    uint32 earliest_segment = 2;
+    uint32 latest_segment = 3;
+}
+//////////////////////////////////////////////////
+//// admin
+//////////////////////////////////////////////////
+message DescribeRequest {
+
+    message DescDataCenters {
+    }
+    DescDataCenters desc_data_centers = 1;
+
+    message DescKeyspaces {
+    }
+    DescKeyspaces desc_keyspaces = 2;
+
+    message DescCluster {
+        string keyspace = 1;
+    }
+    DescCluster desc_cluster = 3;
+
+    message DescClients {
+    }
+    DescClients desc_clients = 4;
+
+}
+message DescribeResponse {
+    message DescDataCenter {
+        message DataCenter {
+            repeated StoreResource store_resources = 2;
+        }
+        DataCenter data_center = 1;
+    }
+    DescDataCenter desc_data_center = 1;
+
+    message DescKeyspaces {
+        message Keyspace {
+            string keyspace = 1;
+            repeated Cluster clusters = 2;
+            uint32 client_count = 3;
+        }
+        repeated Keyspace keyspaces = 1;
+    }
+    DescKeyspaces desc_keyspaces = 2;
+
+    message DescCluster {
+        Cluster cluster = 1;
+        Cluster next_cluster = 2;
+        uint32 client_count = 3;
+    }
+    DescCluster desc_cluster = 3;
+
+    uint32 client_count = 4;
+}
+
+message CreateClusterRequest {
+    string keyspace = 2;
+    uint32 cluster_size = 3;
+    uint32 replication_factor = 4;
+    uint32 total_disk_size_gb = 5;
+    repeated string tags = 6;
+}
+
+message CreateClusterResponse {
+    string error = 1;
+    Cluster cluster = 2;
+}
+
+message DeleteClusterRequest {
+    string keyspace = 2;
+}
+
+message DeleteClusterResponse {
+    string error = 1;
+}
+
+message CompactClusterRequest {
+    string keyspace = 2;
+}
+
+message CompactClusterResponse {
+    string error = 1;
+}
+
+message ReplaceNodeRequest {
+    string keyspace = 2;
+    uint32 node_id = 3;
+    string new_address = 4;
+}
+message ReplaceNodeResponse {
+    string error = 1;
+}
+////////  request response with store
+message CreateShardRequest {
+    string keyspace = 1;
+    uint32 server_id = 2;
+    uint32 cluster_size = 3;
+    uint32 replication_factor = 4;
+    uint32 shard_disk_size_gb = 5;
+}
+
+message CreateShardResponse {
+    string error = 1;
+}
+
+message DeleteKeyspaceRequest {
+    string keyspace = 1;
+}
+
+message DeleteKeyspaceResponse {
+    string error = 1;
+}
+
+message CompactKeyspaceRequest {
+    string keyspace = 1;
+}
+
+message CompactKeyspaceResponse {
+    string error = 1;
+}
+
+message ReplicateNodePrepareRequest {
+    string keyspace = 1;
+    uint32 server_id = 2;
+    uint32 cluster_size = 3;
+    uint32 replication_factor = 4;
+}
+
+message ReplicateNodePrepareResponse {
+    string error = 1;
+}
+
+message ReplicateNodeCommitRequest {
+    string keyspace = 1;
+}
+message ReplicateNodeCommitResponse {
+    string error = 1;
+}
+
+message ReplicateNodeCleanupRequest {
+    string keyspace = 1;
+}
+message ReplicateNodeCleanupResponse {
+    string error = 1;
+}
+
+message ResizeCreateShardRequest {
+    string keyspace = 1;
+    uint32 server_id = 2;
+    uint32 cluster_size = 3;
+    uint32 replication_factor = 4;
+    uint32 target_cluster_size = 5;
+}
+message ResizeCreateShardResponse {
+    string error = 1;
+}
+
+message ResizeCommitRequest {
+    string keyspace = 1;
+    uint32 target_cluster_size = 2;
+}
+message ResizeCommitResponse {
+    string error = 1;
+}
+
+message ResizeCleanupRequest {
+    string keyspace = 1;
+    uint32 target_cluster_size = 2;
+}
+message ResizeCleanupResponse {
+    string error = 1;
+}
+
+message ResizeRequest {
+    string keyspace = 2;
+    uint32 target_cluster_size = 3;
+}
+message ResizeResponse {
+    string error = 1;
+}
