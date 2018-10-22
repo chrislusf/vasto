@@ -17,25 +17,22 @@ type commandCreateKeyspace struct {
 }
 
 func (c *commandCreateKeyspace) Name() string {
-	return "create"
+	return "cluster.create"
 }
 
 func (c *commandCreateKeyspace) Help() string {
-	return "cluster <keysapce> <server count> <replication factor>"
+	return "<cluster_name> <server count> <replication factor>"
 }
 
 func (c *commandCreateKeyspace) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) (err error) {
 
-	if len(args) != 4 {
-		return errInvalidArguments
-	}
-	if args[0] != "cluster" {
+	if len(args) != 3 {
 		return errInvalidArguments
 	}
 
-	keyspace := args[1]
-	serverCountString := args[2]
-	replicationString := args[3]
+	keyspace := args[0]
+	serverCountString := args[1]
+	replicationString := args[2]
 
 	clusterSize, err := strconv.ParseUint(serverCountString, 10, 64)
 	if err != nil {

@@ -13,20 +13,20 @@ type commandClusterUse struct {
 }
 
 func (c *commandClusterUse) Name() string {
-	return "use"
+	return "cluster.use"
 }
 
 func (c *commandClusterUse) Help() string {
-	return "keyspace <keysapce>"
+	return "<cluster_name>"
 }
 
 func (c *commandClusterUse) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) (err error) {
 
-	if len(args) != 2 {
+	if len(args) != 1 {
 		return errInvalidArguments
 	}
 
-	commandEnv.keyspace = args[1]
+	commandEnv.keyspace = args[0]
 
 	if commandEnv.keyspace != "" {
 		commandEnv.clusterClient = vastoClient.NewClusterClient(commandEnv.keyspace)

@@ -14,22 +14,19 @@ type commandCompactCluster struct {
 }
 
 func (c *commandCompactCluster) Name() string {
-	return "compact"
+	return "cluster.compact"
 }
 
 func (c *commandCompactCluster) Help() string {
-	return "cluster <keysapce>"
+	return "<cluster_name>"
 }
 
 func (c *commandCompactCluster) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) error {
-	if len(args) != 2 {
-		return errInvalidArguments
-	}
-	if args[0] != "cluster" {
+	if len(args) != 1 {
 		return errInvalidArguments
 	}
 
-	keyspace := args[1]
+	keyspace := args[0]
 
 	return vastoClient.CompactCluster(keyspace)
 }

@@ -15,11 +15,11 @@ type commandResizeCluster struct {
 }
 
 func (c *commandResizeCluster) Name() string {
-	return "resize"
+	return "cluster.resize"
 }
 
 func (c *commandResizeCluster) Help() string {
-	return "<keyspace> <new_cluster_size>"
+	return "<cluster_name> <new_cluster_size>"
 }
 
 func (c *commandResizeCluster) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) (err error) {

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/peterh/liner"
+	"sort"
 )
 
 var (
@@ -104,6 +105,10 @@ func printGenericHelp() {
 Type:	"help <command>" for help on <command>
 `
 	fmt.Print(msg)
+
+	sort.Slice(commands, func(i, j int) bool {
+		return strings.Compare(commands[i].Name(), commands[j].Name()) < 0
+	})
 	for _, c := range commands {
 		fmt.Printf("\t%s %s \n", c.Name(), c.Help())
 	}
@@ -117,6 +122,11 @@ func printHelp(cmds []string) {
 		fmt.Println()
 	} else {
 		cmd := strings.ToLower(args[0])
+
+		sort.Slice(commands, func(i, j int) bool {
+			return strings.Compare(commands[i].Name(), commands[j].Name()) < 0
+		})
+
 		for _, c := range commands {
 			if c.Name() == cmd {
 				fmt.Println()

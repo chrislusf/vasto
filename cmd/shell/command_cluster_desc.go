@@ -17,63 +17,66 @@ type commandDesc struct {
 }
 
 func (c *commandDesc) Name() string {
-	return "desc"
+	return "cluster.desc"
 }
 
 func (c *commandDesc) Help() string {
-	return "keyspaces|datacenter|<keyspace>"
+	return "[<cluster_name>]"
 }
 
 func (c *commandDesc) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, out io.Writer) error {
 
-	param := "keyspaces"
+	param := ""
 	if len(args) > 0 {
 		param = args[0]
 	}
-	if param == "keyspaces" {
+	if param == "" {
+		{
+			descResponse, err := vastoClient.MasterClient.Describe(
+				context.Background(),
+				&pb.DescribeRequest{
+					DescDataCenters: &pb.DescribeRequest_DescDataCenters{},
+				},
+			)
 
-		descResponse, err := vastoClient.MasterClient.Describe(
-			context.Background(),
-			&pb.DescribeRequest{
-				DescKeyspaces: &pb.DescribeRequest_DescKeyspaces{},
-			},
-		)
+			if err != nil {
+				return err
+			}
 
-		if err != nil {
-			return err
+			fmt.Fprintf(out, "available servers:\n")
+			for _, server := range descResponse.DescDataCenter.DataCenter.StoreResources {
+				fmt.Fprintf(out, "    server %v total:%d GB, allocated:%d GB, Tags:%s\n",
+					server.Address, server.DiskSizeGb, server.AllocatedSizeGb, server.Tags)
+			}
+
 		}
 
-		keyspaces := descResponse.DescKeyspaces.Keyspaces
-		for _, keyspace := range keyspaces {
-			fmt.Fprintf(out, "keyspace %v client:%d\n", keyspace.Keyspace, keyspace.ClientCount)
-			for _, cluster := range keyspace.Clusters {
-				fmt.Fprintf(out, "    cluster expected size %d\n", cluster.ExpectedClusterSize)
-				for _, node := range cluster.Nodes {
-					fmt.Fprintf(out, "        * node %v shard %v %v\n",
-						node.ShardInfo.ServerId, node.ShardInfo.ShardId, node.StoreResource.Address)
+		{
+			descResponse, err := vastoClient.MasterClient.Describe(
+				context.Background(),
+				&pb.DescribeRequest{
+					DescKeyspaces: &pb.DescribeRequest_DescKeyspaces{},
+				},
+			)
+
+			if err != nil {
+				return err
+			}
+
+			keyspaces := descResponse.DescKeyspaces.Keyspaces
+			for _, keyspace := range keyspaces {
+				fmt.Fprintf(out, "keyspace %v client:%d\n", keyspace.Keyspace, keyspace.ClientCount)
+				for _, cluster := range keyspace.Clusters {
+					fmt.Fprintf(out, "    cluster expected size %d\n", cluster.ExpectedClusterSize)
+					for _, node := range cluster.Nodes {
+						fmt.Fprintf(out, "        * node %v shard %v %v\n",
+							node.ShardInfo.ServerId, node.ShardInfo.ShardId, node.StoreResource.Address)
+					}
 				}
 			}
+
 		}
-
-	} else if param == "datacenter" {
-
-		descResponse, err := vastoClient.MasterClient.Describe(
-			context.Background(),
-			&pb.DescribeRequest{
-				DescDataCenters: &pb.DescribeRequest_DescDataCenters{},
-			},
-		)
-
-		if err != nil {
-			return err
-		}
-
-		for _, server := range descResponse.DescDataCenter.DataCenter.StoreResources {
-			fmt.Fprintf(out, "    server %v total:%d GB, allocated:%d GB, Tags:%s\n",
-				server.Address, server.DiskSizeGb, server.AllocatedSizeGb, server.Tags)
-		}
-
-	} else if len(args) == 2 {
+	} else if len(args) == 1 {
 
 		descResponse, err := vastoClient.MasterClient.Describe(
 			context.Background(),

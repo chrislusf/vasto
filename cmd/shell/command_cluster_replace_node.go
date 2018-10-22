@@ -15,11 +15,11 @@ type commandClusterReplaceNode struct {
 }
 
 func (c *commandClusterReplaceNode) Name() string {
-	return "replace"
+	return "cluster.replace"
 }
 
 func (c *commandClusterReplaceNode) Help() string {
-	return "<keyspace> <node_id> <new_server_ip:new_server_port>"
+	return "<cluster_name> <node_id> <new_server_ip:new_server_port>"
 }
 
 func (c *commandClusterReplaceNode) Do(vastoClient *vs.VastoClient, args []string, commandEnv *commandEnv, writer io.Writer) (err error) {
