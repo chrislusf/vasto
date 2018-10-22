@@ -80,7 +80,7 @@ var (
 		TcpAddress: gateway.Flag("address", "gateway tcp host address").Default(":8281").String(),
 		UnixSocket: gateway.Flag("unixSocket", "gateway listening unix socket").Default("").Short('s').String(),
 		Master:     gateway.Flag("master", "master address").Default("localhost:8278").String(),
-		Keyspace:   gateway.Flag("keyspace", "keyspace name").Default("").String(),
+		Keyspace:   gateway.Flag("cluster", "cluster name").Default("").String(),
 	}
 	gatewayProfile = gateway.Flag("cpuprofile", "cpu profile output file").Default("").String()
 
@@ -91,7 +91,7 @@ var (
 		RequestCountStart: bench.Flag("requestNumberStart", "starting request index").Default("0").Int32(),
 		BatchSize:         bench.Flag("batchSize", "put requests in batch").Default("1").Short('b').Int32(),
 		Master:            bench.Flag("master", "master address").Default("localhost:8278").String(),
-		Keyspace:          bench.Flag("keyspace", "keyspace name").Default("benchmark").String(),
+		Keyspace:          bench.Flag("cluster", "cluster name").Default("benchmark").String(),
 		Tests:             bench.Flag("tests", "[put|get]").Default("put,get").Short('t').String(),
 		DisableUnixSocket: bench.Flag("disableUnixSocket", "avoid unix socket and only use tcp network").Default("false").Bool(),
 	}
@@ -100,7 +100,7 @@ var (
 	shell       = app.Command("shell", "Start a vasto shell")
 	shellOption = &sh.ShellOption{
 		Master:   shell.Flag("master", "master address").Default("localhost:8278").String(),
-		Keyspace: shell.Flag("keyspace", "keyspace name").Default("").String(),
+		Keyspace: shell.Flag("cluster", "cluster name").Default("").String(),
 	}
 
 	admin       = app.Command("admin", "Manage FixedCluster Size")
