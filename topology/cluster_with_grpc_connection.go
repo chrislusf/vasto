@@ -1,7 +1,9 @@
 package topology
 
 import (
+	"context"
 	"fmt"
+
 	"github.com/chrislusf/glog"
 	"github.com/chrislusf/vasto/pb"
 	"google.golang.org/grpc"
@@ -44,7 +46,7 @@ func doWithConnect(name string, node *pb.ClusterNode, serverId int, fn func(*pb.
 
 	// glog.V(2).Infof("connecting to server %d at %s", serverId, node.GetAdminAddress())
 
-	grpcConnection, err := grpc.Dial(node.StoreResource.AdminAddress, grpc.WithInsecure())
+	grpcConnection, err := grpc.DialContext(context.Background(), node.StoreResource.AdminAddress, grpc.WithInsecure())
 	if err != nil {
 		return fmt.Errorf("%s: fail to dial %s: %v", name, node.StoreResource.AdminAddress, err)
 	}

@@ -78,12 +78,7 @@ func RunStore(option *StoreOption) {
 	}
 	clusterListener.StartListener(ctx, *ss.option.Master)
 
-	for keyspaceName, storeStatus := range ss.statusInCluster {
-		if err := ss.startExistingNodes(keyspaceName, storeStatus); err != nil {
-			glog.Fatalf("%s load existing keyspace %v: %v", ss.storeName, keyspaceName, err)
-		}
-	}
-
+	// starts grpc servers first, for peers to repair data if needed
 	if *option.TcpPort != 0 {
 		grpcAddress := fmt.Sprintf("%s:%d", *option.ListenHost, option.GetAdminPort())
 		grpcListener, err := net.Listen("tcp", grpcAddress)
@@ -94,6 +89,14 @@ func RunStore(option *StoreOption) {
 		go ss.serveGrpc(grpcListener)
 	}
 
+	// wait until the grpc servers are started, especially peers grpc servers
+	for keyspaceName, storeStatus := range ss.statusInCluster {
+		if err := ss.startExistingNodes(keyspaceName, storeStatus); err != nil {
+			glog.Fatalf("%s load existing keyspace %v: %v", ss.storeName, keyspaceName, err)
+		}
+	}
+
+	// open up the tcp servers
 	if *option.TcpPort != 0 {
 		tcpAddress := fmt.Sprintf("%s:%d", *option.ListenHost, *option.TcpPort)
 		tcpListener, err := net.Listen("tcp", tcpAddress)

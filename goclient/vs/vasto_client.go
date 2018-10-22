@@ -91,7 +91,7 @@ func (c *VastoClient) DeleteCluster(keyspace string) error {
 	resp, err := c.MasterClient.DeleteCluster(
 		c.ctx,
 		&pb.DeleteClusterRequest{
-			Keyspace:   keyspace,
+			Keyspace: keyspace,
 		},
 	)
 
@@ -112,7 +112,7 @@ func (c *VastoClient) CompactCluster(keyspace string) error {
 	resp, err := c.MasterClient.CompactCluster(
 		c.ctx,
 		&pb.CompactClusterRequest{
-			Keyspace:   keyspace,
+			Keyspace: keyspace,
 		},
 	)
 

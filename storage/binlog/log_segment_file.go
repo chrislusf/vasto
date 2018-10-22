@@ -45,16 +45,17 @@ func (f *logSegmentFile) appendEntry(entry *pb.LogEntry) (err error) {
 
 	// lock writeBuffer, sizeBufForWrite, and file writes
 	f.accessLock.Lock()
+	defer f.accessLock.Unlock()
 
 	// write to disk
 	dataLen := len(encodedData)
+	// glog.V(0).Infof("entry size %d: %v", dataLen, entry)
+
 	binary.LittleEndian.PutUint32(f.sizeBufForWrite, uint32(dataLen))
 	if _, err := f.file.WriteAt(f.sizeBufForWrite, f.offset); err != nil {
-		f.accessLock.Unlock()
 		return fmt.Errorf("appendEntry write log entry size: %v", err)
 	}
 	writtenDataLen, err := f.file.WriteAt(encodedData, f.offset+4)
-	f.accessLock.Unlock()
 	if err != nil {
 		return fmt.Errorf("appendEntry write log entry data: %v", err)
 	}
@@ -128,7 +129,7 @@ func (f *logSegmentFile) readOneEntry(offset int64) (entry *pb.LogEntry, nextOff
 	dataLen := binary.LittleEndian.Uint32(f.sizeBufForRead)
 	data := make([]byte, dataLen)
 	n, err := f.file.ReadAt(data, offset+4)
-	if err != nil {
+	if err != nil && err != io.EOF {
 		glog.Warningf("reading %s offset %d size %d: %v", f.fullName, offset, dataLen, err)
 		return nil, 0, fmt.Errorf("read entry data: %v", err)
 	}
@@ -139,6 +140,7 @@ func (f *logSegmentFile) readOneEntry(offset int64) (entry *pb.LogEntry, nextOff
 	// unmarshal log entry
 	entry = &pb.LogEntry{}
 	if err := proto.Unmarshal(data, entry); err != nil {
+		glog.Warningf("unmarshal pb.LogEntry size %d %v: %v", dataLen, entry, err)
 		return nil, 0, fmt.Errorf("readOneEntry unmarshal: %v", err)
 	}
 	return entry, offset + int64(dataLen+4), nil

@@ -1,9 +1,15 @@
 package topology
 
+import "fmt"
+
 // ClusterShard has the tuple of server id and shard id in a cluster.
 type ClusterShard struct {
 	ShardId  int
 	ServerId int
+}
+
+func (shard ClusterShard) String() string {
+	return fmt.Sprintf("%d.%d", shard.ServerId, shard.ShardId)
 }
 
 // PeerShards list peer shards that are on other cluster nodes

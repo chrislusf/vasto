@@ -3,6 +3,10 @@ package store
 import (
 	"context"
 	"fmt"
+	"io"
+	"sync"
+	"time"
+
 	"github.com/chrislusf/glog"
 	"github.com/chrislusf/gorocksdb"
 	"github.com/chrislusf/vasto/pb"
@@ -10,8 +14,8 @@ import (
 	"github.com/chrislusf/vasto/topology"
 	"github.com/chrislusf/vasto/util"
 	"google.golang.org/grpc"
-	"io"
-	"sync"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (s *shard) peerShards() []topology.ClusterShard {
@@ -36,7 +40,7 @@ func (s *shard) maybeBootstrapAfterRestart(ctx context.Context) error {
 		return nil
 	}
 
-	glog.V(1).Infof("bootstrap from server %+v ...", bestPeerToCopy)
+	glog.V(1).Infof("%s bootstrap from server %+v ...", s, bestPeerToCopy)
 
 	return s.cluster.WithConnection(fmt.Sprintf("%s bootstrap after restart", s.String()), bestPeerToCopy.ServerId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
 		_, canTailBinlog, err := s.checkBinlogAvailable(ctx, grpcConnection, node)
@@ -65,7 +69,7 @@ func (s *shard) topoChangeBootstrap(ctx context.Context, bootstrapPlan *topology
 			return nil
 		}
 
-		glog.V(1).Infof("bootstrap from %d.%d ...", bestPeerToCopy.ServerId, bestPeerToCopy.ShardId)
+		glog.V(1).Infof("bootstrap %s from %s ...", s, bestPeerToCopy)
 
 		return topology.VastoNodes(existingPrimaryShards).WithConnection(fmt.Sprintf("%s bootstrap from one exisiting %d.%d", s.String(), bestPeerToCopy.ServerId, bestPeerToCopy.ShardId),
 			bestPeerToCopy.ServerId, func(node *pb.ClusterNode, grpcConnection *grpc.ClientConn) error {
@@ -278,6 +282,13 @@ func (s *shard) writeToSst(ctx context.Context, grpcConnection *grpc.ClientConn,
 
 	stream, err := client.BootstrapCopy(ctx, request)
 	if err != nil {
+		st := status.Convert(err)
+		for st.Code() == codes.Unavailable {
+			glog.V(1).Infof("%s waits on %s ...", s, sourceShardInfo)
+			time.Sleep(5 * time.Second)
+			stream, err = client.BootstrapCopy(ctx, request)
+			st = status.Convert(err)
+		}
 		return 0, 0, 0, fmt.Errorf("client.BootstrapCopy: %v", err)
 	}
 

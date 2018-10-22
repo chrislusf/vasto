@@ -99,8 +99,8 @@ var (
 
 	shell       = app.Command("shell", "Start a vasto shell")
 	shellOption = &sh.ShellOption{
-		Master:     shell.Flag("master", "master address").Default("localhost:8278").String(),
-		Keyspace:   shell.Flag("keyspace", "keyspace name").Default("").String(),
+		Master:   shell.Flag("master", "master address").Default("localhost:8278").String(),
+		Keyspace: shell.Flag("keyspace", "keyspace name").Default("").String(),
 	}
 
 	admin       = app.Command("admin", "Manage FixedCluster Size")

@@ -17,7 +17,7 @@ func (s *shard) isBootstrapNeeded(ctx context.Context, bootstrapOption *topology
 	maxSegment := uint32(0)
 	checkedServerCount := 0
 
-	glog.V(1).Infof("shard %v checkBinlogAvailable on peers %v", s.id, peerShards)
+	glog.V(1).Infof("shard %s checkBinlogAvailable on peers %v", s, peerShards)
 
 	for _, peer := range peerShards {
 		_, ok := s.cluster.GetNode(peer.ServerId, 0)

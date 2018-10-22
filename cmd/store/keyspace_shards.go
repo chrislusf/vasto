@@ -3,6 +3,8 @@ package store
 import (
 	"sort"
 	"sync"
+
+	"github.com/chrislusf/glog"
 )
 
 type keyspaceName string
@@ -22,6 +24,9 @@ func (ks *keyspaceShards) getShards(ksName string) (shards []*shard, found bool)
 	ks.RLock()
 	shards, found = ks.keyspaceToShards[keyspaceName(ksName)]
 	ks.RUnlock()
+	if !found {
+		glog.V(0).Infof("failed to find keyspace: %v", ksName)
+	}
 	return
 }
 
@@ -36,6 +41,7 @@ func (ks *keyspaceShards) getShard(keyspaceName string, shardId VastoShardId) (s
 			return shard, true
 		}
 	}
+	glog.V(0).Infof("failed to find shard %d from %+v", shardId, shards)
 	return
 }
 
