@@ -20,7 +20,7 @@ public class VastoBenchmark {
         ClusterClient ks = client.newClusterClient("benchmark");
 
         AtomicLongArray counters = new AtomicLongArray(2);
-        int concurrency = 10;
+        int concurrency = 16;
         CountDownLatch latch = new CountDownLatch(concurrency);
         int count = 1000000;
         int partitionSize = count / concurrency;
