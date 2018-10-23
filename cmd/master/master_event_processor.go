@@ -53,11 +53,11 @@ func (c *clientsStat) removeClient(keyspace keyspaceName, server serverAddress) 
 }
 
 func (ms *masterServer) OnClientConnectEvent(keyspace keyspaceName, clientAddress serverAddress, clientName string) {
-	glog.V(1).Infof("[master] + client %v from %v keyspace(%v)", clientName, clientAddress, keyspace)
+	glog.V(0).Infof("[master] + client %v from %v keyspace(%v)", clientName, clientAddress, keyspace)
 	ms.clientsStat.addClient(keyspace, clientAddress)
 }
 
 func (ms *masterServer) OnClientDisconnectEvent(keyspace keyspaceName, clientAddress serverAddress, clientName string) {
-	glog.V(1).Infof("[master] - client %v from %v keyspace(%v)", clientName, clientAddress, keyspace)
+	glog.V(0).Infof("[master] - client %v from %v keyspace(%v)", clientName, clientAddress, keyspace)
 	ms.clientsStat.removeClient(keyspace, clientAddress)
 }

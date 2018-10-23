@@ -26,7 +26,7 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 	}
 
 	clientAddress := serverAddress(pr.Addr.String())
-	glog.V(0).Infof("+ client %v", clientAddress)
+	glog.V(1).Infof("+ client %v", clientAddress)
 
 	// clean up if disconnects
 	clientWatchedKeyspaces := make(map[keyspaceName]string)
@@ -35,7 +35,7 @@ func (ms *masterServer) RegisterClient(stream pb.VastoMaster_RegisterClientServe
 			ms.clientChans.removeClient(keyspace, clientAddress)
 			ms.OnClientDisconnectEvent(keyspace, clientAddress, clientName)
 		}
-		glog.V(0).Infof("- client %v", clientAddress)
+		glog.V(1).Infof("- client %v", clientAddress)
 	}()
 
 	// the channel is used to stop spawned goroutines
