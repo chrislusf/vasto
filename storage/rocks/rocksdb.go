@@ -13,6 +13,7 @@ import (
 // Rocks has options to run a local rocksdb instance
 type Rocks struct {
 	path             string
+	mergeOperator    gorocksdb.MergeOperator
 	db               *gorocksdb.DB
 	dbOptions        *gorocksdb.Options
 	wo               *gorocksdb.WriteOptions
@@ -34,30 +35,39 @@ func NewDb(path string, mergeOperator gorocksdb.MergeOperator) *Rocks {
 		compactionFilter: &shardingCompactionFilter{},
 	}
 	r.setup(path, mergeOperator)
+	r.Reopen()
+
 	return r
 }
 
 func (d *Rocks) setup(path string, mergeOperator gorocksdb.MergeOperator) {
 	d.path = path
+	d.mergeOperator = mergeOperator
+}
+
+func (d *Rocks) Reopen() {
+
+	atomic.StoreInt32(&d.clientCounter, 0)
+
 	d.dbOptions = gorocksdb.NewDefaultOptions()
 	d.dbOptions.SetCreateIfMissing(true)
 	d.dbOptions.SetAllowIngestBehind(true)
 	// d.dbOptions.SetUseDirectReads(true)
 	d.dbOptions.SetCompactionFilter(d.compactionFilter)
-	if mergeOperator != nil {
-		d.dbOptions.SetMergeOperator(mergeOperator)
+	if d.mergeOperator != nil {
+		d.dbOptions.SetMergeOperator(d.mergeOperator)
 	}
 	// d.dbOptions.SetAllowConcurrentMemtableWrites()
+
+	d.wo = gorocksdb.NewDefaultWriteOptions()
+	//d.wo.DisableWAL(true)
+	d.ro = gorocksdb.NewDefaultReadOptions()
 
 	var err error
 	d.db, err = gorocksdb.OpenDb(d.dbOptions, d.path)
 	if err != nil {
 		glog.Fatalf("open db at %s : %v", d.path, err)
 	}
-
-	d.wo = gorocksdb.NewDefaultWriteOptions()
-	//d.wo.DisableWAL(true)
-	d.ro = gorocksdb.NewDefaultReadOptions()
 }
 
 // Put puts to local rocksdb
@@ -110,6 +120,10 @@ func (d *Rocks) Delete(k []byte) (err error) {
 // Destroy removes all data for the local rocksdb
 func (d *Rocks) Destroy() {
 	os.RemoveAll(d.path)
+}
+
+func (d *Rocks) EnsureDirectory() {
+	os.Mkdir(d.path, 0755)
 }
 
 // Close shuts down local rocksdb

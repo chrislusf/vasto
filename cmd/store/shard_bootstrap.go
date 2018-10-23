@@ -199,6 +199,11 @@ func (s *shard) doBootstrapCopy(ctx context.Context, grpcConnection *grpc.Client
 
 	glog.V(1).Infof("bootstrap %s from %s %s filter by %d/%d", s.String(), node.StoreResource.Address, node.ShardInfo.IdentifierOnThisServer(), targetShardId, targetClusterSize)
 
+	s.db.Close()
+	s.db.Destroy()
+	s.db.EnsureDirectory()
+	s.db.Reopen()
+
 	counter, segment, offset, err := s.writeToSst(ctx, grpcConnection, node.ShardInfo, clusterSize, targetClusterSize, targetShardId)
 
 	glog.V(1).Infof("bootstrap %s from %s %s filter by %d/%d received %d entries", s.String(), node.StoreResource.Address, node.ShardInfo.IdentifierOnThisServer(), targetShardId, targetClusterSize, counter)
