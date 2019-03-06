@@ -289,7 +289,7 @@ func (s *shard) writeToSst(ctx context.Context, grpcConnection *grpc.ClientConn,
 	if err != nil {
 		st := status.Convert(err)
 		for st.Code() == codes.Unavailable {
-			glog.V(1).Infof("%s waits on %s ...", s, sourceShardInfo)
+			glog.V(1).Infof("%s waits on %s ...", s, sourceShardInfo.String())
 			time.Sleep(5 * time.Second)
 			stream, err = client.BootstrapCopy(ctx, request)
 			st = status.Convert(err)
