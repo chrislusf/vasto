@@ -98,22 +98,29 @@ See https://godoc.org/github.com/chrislusf/vasto/goclient/vs
 ## Example
 
 ```go
-    // create a vasto client talking to master at localhost:8278, in data center dc1
-    c := vs.NewVastoClient(context.Background(), "client_name", "localhost:8278")
+    // create a vasto client talking to master at localhost:8278
+    vc := vs.NewVastoClient(context.Background(), "client_name", "localhost:8278")
     
-    // create a cluster for keyspace ks1, in data center dc1, with one server, and one copy of data.
-    c.CreateCluster("ks1", 1, 1)
+    // create a cluster for keyspace ks1, with one server, and one copy of data.
+    vc.CreateCluster("ks1", 1, 1)
     
     // get a cluster client for ks1
-    ks := c.NewClusterClient("ks1")
+    cc := vc.NewClusterClient("ks1")
 
+    // operate with the cluster client
     var key, value []byte
-    ...
-    ks.Put(key, value)    
+    cc.Put(key, value)    
+    cc.Get(vs.Key(key))
     ...
 
-    data, _, _ := ks.Get(vs.Key(key))
+    // change cluster size to 3 servers
+    vc.ResizeCluster("ks1", 3)
+
+    // operate with the existing cluster client
+    cc.Put(key, value)    
+    cc.Get(vs.Key(key))
     ...
+
 ```
 
 
